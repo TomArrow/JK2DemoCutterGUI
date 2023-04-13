@@ -21,7 +21,7 @@ namespace DemoCutterGUI
 
 		const int SPEED_SHIFT = 14;
 
-		private List<DemoLinePoint> linePoints;
+		private List<DemoLinePoint> linePoints = new List<DemoLinePoint>();
 
 		public void addPoint(DemoLinePoint newPoint)
         {
@@ -94,7 +94,7 @@ namespace DemoCutterGUI
 				return point;
 			}
 		}
-		void lineInterpolate(int playTime, float playTimeFraction, ref int demoTime, ref float demoTimeFraction, ref float demoSpeed)
+		public void lineInterpolate(int playTime, float playTimeFraction, ref int demoTime, ref float demoTimeFraction, ref float demoSpeed)
 		{
 			Vector3 dx, dy;
 			DemoLinePoint point = linePointSynch(playTime);
@@ -142,7 +142,7 @@ namespace DemoCutterGUI
 			/***/demoTimeFraction -= /***/demoTime;
 			/***/demoTime += point.demoTime;
 		}
-		void lineAt(int playTime, float playTimeFraction, ref int demoTime, ref float demoTimeFraction, ref float demoSpeed)
+		public void lineAt(int playTime, float playTimeFraction, ref int demoTime, ref float demoTimeFraction, ref float demoSpeed)
 		{
 			//if (!demo.line.locked)
 			if (false)
