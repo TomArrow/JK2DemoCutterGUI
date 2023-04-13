@@ -20,9 +20,12 @@ namespace DemoCutterGUI
     /// </summary>
     public partial class MainWindow : Window
     {
+        CombineCutter combineCutter = new CombineCutter();
         public MainWindow()
         {
             InitializeComponent();
+            combineCutter.Show();
+            this.WindowState = WindowState.Minimized;
         }
     }
 }
