@@ -1,37 +1,72 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace DemoCutterGUI
 {
 
 
-	class DemoLinePoint
-    {
+	public class DemoLinePoint : INotifyPropertyChanged
+	{
 		public DemoLinePoint next, prev;
-		public int time, demoTime;
-	}
+		public int time { get; set; }
+		public int demoTime {get;set;}
+
+        public event PropertyChangedEventHandler PropertyChanged;
+    }
 
 	class JommeTimePoints
     {
+
+		public event EventHandler Updated;
 
 		const int SPEED_SHIFT = 14;
 
 		private List<DemoLinePoint> linePoints = new List<DemoLinePoint>();
 
+		ListView boundView = null;
+
 		public void addPoint(DemoLinePoint newPoint)
         {
+            newPoint.PropertyChanged += NewPoint_PropertyChanged;
 			linePoints.Add(newPoint);
 			callThisOnChange();
         }
-		public void removePoint(DemoLinePoint pointToRemove)
+
+        private void NewPoint_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-			linePoints.Remove(pointToRemove);
 			callThisOnChange();
+		}
+
+		private void OnUpdated()
+        {
+			Updated?.Invoke(this, new EventArgs());
+
+		}
+
+        public void removePoint(DemoLinePoint pointToRemove)
+        {
+            if (linePoints.Contains(pointToRemove))
+            {
+				pointToRemove.PropertyChanged += NewPoint_PropertyChanged;
+				linePoints.Remove(pointToRemove);
+				callThisOnChange();
+			} else
+            {
+				throw new Exception("Trying to remove point that's not in list.");
+            }
+        }
+
+		public void bindListView(ListView view)
+        {
+			boundView = view;
+			view.ItemsSource = linePoints;
         }
 
 		// Manages order and references to next and previous etc.
@@ -67,6 +102,12 @@ namespace DemoCutterGUI
 				linePoints[0].next = null;
 				linePoints[0].prev = null;
 			}
+			if(boundView != null)
+            {
+				ICollectionView view = CollectionViewSource.GetDefaultView(boundView.ItemsSource);
+				view.Refresh();
+            }
+			OnUpdated();
 		}
 
 

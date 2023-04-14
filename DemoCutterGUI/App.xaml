@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:DemoCutterGUI"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <local:ExampleData x:Key="ExampleData"/>
     </Application.Resources>
 </Application>

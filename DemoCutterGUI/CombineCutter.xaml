@@ -3,10 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:talex="http://schemas.talex-soft.com/2010/xaml/presentation"
         xmlns:local="clr-namespace:DemoCutterGUI"
         xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         mc:Ignorable="d"
-        Title="CombineCutter" Height="450" Width="800">
+        d:DataContext="{StaticResource ResourceKey=ExampleData}"
+        Title="CombineCutter" Height="450" Width="1000">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition></RowDefinition>
@@ -14,10 +16,27 @@
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition Width="200"></ColumnDefinition>
+            <ColumnDefinition Width="250"></ColumnDefinition>
+            <ColumnDefinition Width="250"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <glWpfControl:GLWpfControl 
             x:Name="OpenTkControl" 
             Render="OpenTkControl_OnRender"/>
+        <ListView Grid.Row="0" Grid.Column="1" x:Name="demoLinePointsView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=DemoLinePoints}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel>
+                        <WrapPanel>
+                            <Label Margin="2" Padding="2" FontSize="10">Time</Label>
+                            <talex:NumericUpDown  Value="{Binding time,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"  FontSize="10"></talex:NumericUpDown>
+                            <Label Margin="2" Padding="2" FontSize="10">DemoTime</Label>
+                            <talex:NumericUpDown  Value="{Binding demoTime,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"   FontSize="10"></talex:NumericUpDown>
+                        </WrapPanel>
+                        <WrapPanel></WrapPanel>
+                        
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
     </Grid>
 </Window>

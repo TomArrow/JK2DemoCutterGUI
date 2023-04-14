@@ -26,6 +26,7 @@ namespace DemoCutterGUI
             InitializeComponent();
             combineCutter.Show();
             this.WindowState = WindowState.Minimized;
+            this.Close();
         }
     }
 }

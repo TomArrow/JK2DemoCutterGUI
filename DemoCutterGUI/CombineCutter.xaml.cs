@@ -49,6 +49,14 @@ namespace DemoCutterGUI
             points.addPoint(new DemoLinePoint() {time=406,demoTime=205 });
             points.addPoint(new DemoLinePoint() {time=606,demoTime=405 });
             points.addPoint(new DemoLinePoint() {time=608,demoTime=407 });
+
+            points.bindListView(demoLinePointsView);
+            points.Updated += Points_Updated;
+        }
+
+        private void Points_Updated(object sender, EventArgs e)
+        {
+            OpenTkControl.InvalidateVisual();
         }
 
         const double maxFps = 165;
