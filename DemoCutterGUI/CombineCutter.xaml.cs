@@ -21,13 +21,18 @@ namespace DemoCutterGUI
 
     public class ScrubControl:INotifyPropertyChanged { 
         public double scrubPosition { get; set; }
+        public double absoluteMin { get; set; } = -100; // set automatically so that all times and demos are visible
+        public double absoluteMax { get; set; } = 10000; // set automatically so that all times and demos are visible
+
+        public double currentMin { get; set; }
+        public double currentMax { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public double getAbsolutePosition(double rangeStart,double rangeEnd)
-        {
+        //public double getAbsolutePosition(double rangeStart,double rangeEnd)
+        //{
 
-        }
+        //}
     }
 
 
@@ -40,6 +45,7 @@ namespace DemoCutterGUI
 
         ScrubControl scrubControl = new ScrubControl();
 
+
         public bool speedPreservationMode { get; private set; } = false;
         public bool speedChangeDemoTimeMode { get; private set; } = true;
 
@@ -49,8 +55,8 @@ namespace DemoCutterGUI
             InitializeComponent();
             var settings = new GLWpfControlSettings
             {
-                MajorVersion = 3,
-                MinorVersion = 2,
+                MajorVersion = 2,
+                MinorVersion = 1,
                 RenderContinuously = false
             };
             OpenTkControl.Start(settings);
@@ -74,10 +80,13 @@ namespace DemoCutterGUI
             points.bindCutterWindow(this);
             points.Updated += Points_Updated;
             scrubSlider.DataContext = scrubControl;
+            rangeSlider.DataContext = scrubControl;
         }
 
         private void Points_Updated(object sender, EventArgs e)
         {
+            scrubControl.absoluteMin = Math.Min(0,points.lowestTime)-5000;
+            scrubControl.absoluteMax = points.highestTime+10000;
             OpenTkControl.InvalidateVisual();
         }
 
@@ -138,13 +147,24 @@ namespace DemoCutterGUI
             GL.Color4(0,0,0,1);
             GL.LineWidth(1);
             GL.Begin(PrimitiveType.LineStrip);
-            for(int i = 0; i < maxValue; i++)
+            double actualWidth = OpenTkControl.ActualWidth;
+            double from = scrubControl.currentMin;
+            double to = scrubControl.currentMax;
+            double step = (to - from)/actualWidth;
+            double openGLStep = 2.0 / actualWidth;
+            if((to-from) > 1.0 && actualWidth > 1.0) // Avoid endless loop if we're not yet
             {
-                int demoTime = 0;
-                float demoTimeFraction = 0;
-                float demoSpeed = 0;
-                points.lineAt(i,0, ref demoTime, ref demoTimeFraction, ref demoSpeed);
-                GL.Vertex2((float)i/ divider - 1f, (demoSpeed / 5f - 1f));
+                for (double i = from, openGLLoc = -1.0; i <= to; i += step, openGLLoc += openGLStep)
+                {
+                    int demoTime = 0;
+                    float demoTimeFraction = 0;
+                    float demoSpeed = 0;
+                    int snappedTime = (int)i;
+                    float fraction = (float)((double)i - (double)snappedTime);
+                    points.lineAt(snappedTime, fraction, ref demoTime, ref demoTimeFraction, ref demoSpeed);
+                    //GL.Vertex2((float)i/ divider - 1f, (demoSpeed / 5f - 1f));
+                    GL.Vertex2(openGLLoc, (demoSpeed / 5f - 1f));
+                }
             }
             GL.End();
 
@@ -158,6 +178,11 @@ namespace DemoCutterGUI
         }
 
         private void scrubSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            OpenTkControl.InvalidateVisual();
+        }
+
+        private void rangeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             OpenTkControl.InvalidateVisual();
         }

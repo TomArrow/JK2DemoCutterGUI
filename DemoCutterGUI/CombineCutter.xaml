@@ -6,6 +6,7 @@
         xmlns:talex="http://schemas.talex-soft.com/2010/xaml/presentation"
         xmlns:local="clr-namespace:DemoCutterGUI"
         xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
+        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
         d:DataContext="{StaticResource ResourceKey=ExampleData}"
         Title="CombineCutter" Height="450" Width="1000">
@@ -16,6 +17,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="40"></RowDefinition>
             <RowDefinition></RowDefinition>
+            <RowDefinition Height="20"></RowDefinition>
             <RowDefinition Height="20"></RowDefinition>
             <RowDefinition Height="20"></RowDefinition>
         </Grid.RowDefinitions>
@@ -57,5 +59,6 @@
             <Button>New Time Point</Button>
             <Button>Delete Time Point(s)</Button>
         </WrapPanel>
+        <mah:RangeSlider LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="3" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>
     </Grid>
 </Window>

@@ -118,6 +118,10 @@ namespace DemoCutterGUI
 
 		public bool updatingOnPropertyChange = true;
 
+
+		public int lowestTime { get; private set; }
+		public int highestTime { get; private set; }
+
 		private List<DemoLinePoint> linePoints = new List<DemoLinePoint>();
 
 		ListView boundView = null;
@@ -173,7 +177,9 @@ namespace DemoCutterGUI
 		public void callThisOnChange()
         {
 			linePoints.Sort((a,b)=> a.time - b.time);
-			if(linePoints.Count > 1)
+			lowestTime = 0;
+			highestTime = 0;
+			if (linePoints.Count > 1)
             {
 				for(int i = 0; i < linePoints.Count; i++)
 				{
@@ -181,12 +187,14 @@ namespace DemoCutterGUI
 					{
 						linePoints[i].prev = null;
 						linePoints[i].next = linePoints[i + 1];
+						lowestTime = linePoints[i].time;
 					}
 					else if (i == linePoints.Count - 1)
 					{
 
 						linePoints[i].next = null;
 						linePoints[i].prev = linePoints[i - 1];
+						highestTime = linePoints[i].time;
 					}
 					else
 					{
@@ -197,9 +205,11 @@ namespace DemoCutterGUI
 				}
 			} else if (linePoints.Count == 1)
             {
+				lowestTime = highestTime = linePoints[0].time;
 				linePoints[0].next = null;
 				linePoints[0].prev = null;
-			}
+            }
+            else
 			if(boundView != null)
             {
 				ICollectionView view = CollectionViewSource.GetDefaultView(boundView.ItemsSource);
