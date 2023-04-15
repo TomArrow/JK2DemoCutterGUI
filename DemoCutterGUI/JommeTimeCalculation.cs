@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PropertyChanged;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -14,40 +15,133 @@ namespace DemoCutterGUI
 
 	public class DemoLinePoint : INotifyPropertyChanged
 	{
-		public DemoLinePoint next, prev;
+		public DemoLinePoint next { get; set; }
+		public DemoLinePoint prev { get; set; }
+		public JommeTimePoints pointsCollection = null;
 		public int time { get; set; }
 		public int demoTime {get;set;}
 
+		[DependsOn("time", "demoTime", "next","prev")]
+		public double effectiveSpeed
+        {
+			get
+            {
+				if(prev == null)
+                {
+					return (double)demoTime/(double)time ;
+                } else
+                {
+					return (double)(demoTime - prev.demoTime) / (double)Math.Max(1,time-prev.time); // Avoid division by zero
+				}
+            }
+            set
+            {
+				double desiredSpeed = value;
+				int prevTime = prev == null ? 0 : prev.time;
+				int prevDemoTime = prev == null ? 0 : prev.demoTime;
+				int timeDelta = time - prevTime;
+				int demoTimeDelta = demoTime - prevDemoTime;
+
+				int newTime = time;
+				int newDemoTime = demoTime;
+				bool demoTimeMode = pointsCollection != null && pointsCollection.cutterWindow != null && pointsCollection.cutterWindow.speedChangeDemoTimeMode;
+				if (demoTimeMode)
+                {
+					newDemoTime = (int)((double)prevDemoTime + (double)timeDelta * desiredSpeed);
+                } else
+                {
+					newTime = (int)((double)prevTime + (double)demoTimeDelta / desiredSpeed);
+				}
+
+				// Not yet implemented
+				if (pointsCollection != null && pointsCollection.cutterWindow != null && pointsCollection.cutterWindow.speedPreservationMode)
+                {
+					pointsCollection.updatingOnPropertyChange = false;
+					// Propagate change to later points to sorta preserve their speed
+					// Otherwise changing our stuff here would also change the effective speed of later points.
+					if (demoTimeMode)
+                    {
+						int demoTimeChange = newDemoTime - demoTime;
+						// Just propagate this to all following points too, that should do the trick.
+						DemoLinePoint point = this;
+						while(point != null)
+                        {
+							point.demoTime += demoTimeChange;
+							point = point.next;
+                        }
+					} else
+                    {
+						// K this will be a bit more complex.
+						// But not too much more because all following ones will be applied in demotime mode because
+						// we don't want their positions to shift around. 
+						DemoLinePoint nextPoint = this.next;
+						if (nextPoint != null)
+                        {
+							// We need to do a proper adjustment for the next point.
+							double nextCurrentSpeed = (double)(nextPoint.demoTime - demoTime) / (double)Math.Max(1, nextPoint.time - time);
+							time = newTime;
+							int nextPointNewDemoTime = (int)((double)demoTime + (double)(nextPoint.time-time) * nextCurrentSpeed); // Preserve the speed it had before
+							int nextPointDemoTimeChange = nextPointNewDemoTime - nextPoint.demoTime;
+							while(nextPoint != null)
+                            {
+								nextPoint.demoTime += nextPointDemoTimeChange;
+								nextPoint = nextPoint.next;
+                            }
+						} else
+                        { // Doesn't matter then, nothing coming after this.
+							time = newTime;
+						}
+                    }
+					pointsCollection.updatingOnPropertyChange = true;
+					pointsCollection.callThisOnChange();
+				} else
+                {
+					// Simple mode. Just change time of this.
+					time = newTime;
+					demoTime = newDemoTime;
+				}
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
+
+
+
     }
 
-	class JommeTimePoints
+	public class JommeTimePoints
     {
 
 		public event EventHandler Updated;
 
 		const int SPEED_SHIFT = 14;
 
+		public bool updatingOnPropertyChange = true;
+
 		private List<DemoLinePoint> linePoints = new List<DemoLinePoint>();
 
 		ListView boundView = null;
+		public CombineCutter cutterWindow { get; private set; }
 
 		public void addPoint(DemoLinePoint newPoint)
         {
             newPoint.PropertyChanged += NewPoint_PropertyChanged;
+			newPoint.pointsCollection = this;
 			linePoints.Add(newPoint);
 			callThisOnChange();
         }
 
         private void NewPoint_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-			callThisOnChange();
+            if (updatingOnPropertyChange)
+            {
+				callThisOnChange();
+			}
 		}
 
 		private void OnUpdated()
         {
 			Updated?.Invoke(this, new EventArgs());
-
 		}
 
         public void removePoint(DemoLinePoint pointToRemove)
@@ -67,6 +161,10 @@ namespace DemoCutterGUI
         {
 			boundView = view;
 			view.ItemsSource = linePoints;
+        }
+		public void bindCutterWindow(CombineCutter cutterWindowA)
+        {
+			cutterWindow = cutterWindowA;
         }
 
 		// Manages order and references to next and previous etc.

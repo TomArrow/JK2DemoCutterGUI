@@ -9,20 +9,29 @@
         mc:Ignorable="d"
         d:DataContext="{StaticResource ResourceKey=ExampleData}"
         Title="CombineCutter" Height="450" Width="1000">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="checkedToVisibe" />
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="40"></RowDefinition>
             <RowDefinition></RowDefinition>
             <RowDefinition Height="20"></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition Width="250"></ColumnDefinition>
-            <ColumnDefinition Width="250"></ColumnDefinition>
+            <ColumnDefinition Width="290"></ColumnDefinition>
+            <ColumnDefinition Width="270"></ColumnDefinition>
         </Grid.ColumnDefinitions>
-        <glWpfControl:GLWpfControl 
+        <glWpfControl:GLWpfControl Grid.RowSpan="2"
             x:Name="OpenTkControl" 
             Render="OpenTkControl_OnRender"/>
-        <ListView Grid.Row="0" Grid.Column="1" x:Name="demoLinePointsView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=DemoLinePoints}">
+        <WrapPanel Grid.Row="0" Grid.Column="1">
+            <CheckBox x:Name="speedPreserveCheck" ToolTip="With this, deleting elements tries to preserve the speed of the following element, adjusting all elements after. This does not take into account the more advanced interpolation and is very simplistic" Checked="UpdateSettingsFromGUI" Unchecked="UpdateSettingsFromGUI">Speed preservation mode</CheckBox>
+            <CheckBox x:Name="speedChangeDemoTimeModeCheck" ToolTip="When changing by speed, should we change demoTime instead of time?" Checked="UpdateSettingsFromGUI" Unchecked="UpdateSettingsFromGUI" IsEnabled="{Binding ElementName=speedPreserveCheck,Path=IsChecked}" IsChecked="True">DemoTime mode</CheckBox>
+            <CheckBox x:Name="speedSlidersCheck" IsChecked="False" >Speed sliders</CheckBox>
+        </WrapPanel>
+        <ListView Grid.Row="1" Grid.Column="1" x:Name="demoLinePointsView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=DemoLinePoints}">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <StackPanel>
@@ -31,8 +40,12 @@
                             <talex:NumericUpDown  Value="{Binding time,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"  FontSize="10"></talex:NumericUpDown>
                             <Label Margin="2" Padding="2" FontSize="10">DemoTime</Label>
                             <talex:NumericUpDown  Value="{Binding demoTime,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"   FontSize="10"></talex:NumericUpDown>
+                            <talex:NumericUpDown  DecimalPlaces="2" Increment="0.1" Maximum="999999999999999999" Minimum="0" Value="{Binding effectiveSpeed,Mode=TwoWay}" IsEnabled="{Binding ElementName=speedPreserveCheck,Path=IsChecked}"  Margin="2" Padding="2" Width="40"   FontSize="10"></talex:NumericUpDown>
                         </WrapPanel>
-                        <WrapPanel></WrapPanel>
+                        <WrapPanel>
+                            <Slider Minimum="0" Maximum="10" Width="200" Visibility="{Binding ElementName=speedSlidersCheck,Path=IsChecked, Converter={StaticResource checkedToVisibe}}" Value="{Binding effectiveSpeed,Mode=TwoWay}" IsEnabled="{Binding ElementName=speedPreserveCheck,Path=IsChecked}" IsManipulationEnabled="{Binding ElementName=speedPreserveCheck,Path=IsChecked}" IsHitTestVisible="{Binding ElementName=speedPreserveCheck,Path=IsChecked}" Focusable="{Binding ElementName=speedPreserveCheck,Path=IsChecked}"   Margin="2" Padding="2"></Slider>
+
+                        </WrapPanel>
                         
                     </StackPanel>
                 </DataTemplate>

@@ -23,6 +23,9 @@ namespace DemoCutterGUI
     public partial class CombineCutter : Window
     {
 
+        public bool speedPreservationMode { get; private set; } = false;
+        public bool speedChangeDemoTimeMode { get; private set; } = true;
+
         JommeTimePoints points = new JommeTimePoints();
         public CombineCutter()
         {
@@ -51,6 +54,7 @@ namespace DemoCutterGUI
             points.addPoint(new DemoLinePoint() {time=608,demoTime=407 });
 
             points.bindListView(demoLinePointsView);
+            points.bindCutterWindow(this);
             points.Updated += Points_Updated;
         }
 
@@ -62,6 +66,7 @@ namespace DemoCutterGUI
         const double maxFps = 165;
         const double minTimeDelta = 1000.0 / maxFps;
         DateTime lastUpdate = DateTime.Now;
+
 
         private void OpenTkControl_OnRender(TimeSpan delta)
         {
@@ -76,6 +81,32 @@ namespace DemoCutterGUI
             float divider = (float)maxValue / 2.0f;
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            // Reference line at 1x
+            GL.Color4(0.5, 0.9, 0.5, 1);
+            GL.LineWidth(1);
+            GL.Begin(PrimitiveType.LineStrip);
+            GL.Vertex2(-1, 1f/5f-1f);
+            GL.Vertex2(1, 1f / 5f - 1f);
+            GL.End();
+
+            // Reference line at 0.5x
+            GL.Color4(0.75, 0.75, 0.95, 1);
+            GL.LineWidth(1);
+            GL.Begin(PrimitiveType.LineStrip);
+            GL.Vertex2(-1, 0.5f/5f-1f);
+            GL.Vertex2(1, 0.5f / 5f - 1f);
+            GL.End();
+
+            // Reference line at 2x
+            GL.Color4(0.75, 0.75, 0.95, 1);
+            GL.LineWidth(1);
+            GL.Begin(PrimitiveType.LineStrip);
+            GL.Vertex2(-1, 2f/5f-1f);
+            GL.Vertex2(1, 2f / 5f - 1f);
+            GL.End();
+
+            // Actual speed graph
             GL.Color4(0,0,0,1);
             GL.LineWidth(1);
             GL.Begin(PrimitiveType.LineStrip);
@@ -88,7 +119,14 @@ namespace DemoCutterGUI
                 GL.Vertex2((float)i/ divider - 1f, (demoSpeed / 5f - 1f));
             }
             GL.End();
+
             lastUpdate =DateTime.Now;
+        }
+
+        private void UpdateSettingsFromGUI(object sender, RoutedEventArgs e)
+        {
+            speedPreservationMode = speedPreserveCheck.IsChecked.HasValue && speedPreserveCheck.IsChecked.Value;
+            speedChangeDemoTimeMode = speedChangeDemoTimeModeCheck.IsChecked.HasValue && speedChangeDemoTimeModeCheck.IsChecked.Value;
         }
     }
 }
