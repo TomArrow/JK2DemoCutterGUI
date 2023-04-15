@@ -17,6 +17,7 @@
             <RowDefinition Height="40"></RowDefinition>
             <RowDefinition></RowDefinition>
             <RowDefinition Height="20"></RowDefinition>
+            <RowDefinition Height="20"></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition></ColumnDefinition>
@@ -51,5 +52,10 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
+        <Slider x:Name="scrubSlider" Value="{Binding scrubPosition,Mode=TwoWay}" ValueChanged="scrubSlider_ValueChanged" Grid.Row="2" Minimum="-1" Maximum="1"></Slider>
+        <WrapPanel Grid.Row="2" Grid.Column="1" Grid.RowSpan="2">
+            <Button>New Time Point</Button>
+            <Button>Delete Time Point(s)</Button>
+        </WrapPanel>
     </Grid>
 </Window>

@@ -3,6 +3,7 @@ using OpenTK.Mathematics;
 using OpenTK.Wpf;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,11 +18,27 @@ using System.Windows.Shapes;
 
 namespace DemoCutterGUI
 {
+
+    public class ScrubControl:INotifyPropertyChanged { 
+        public double scrubPosition { get; set; }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public double getAbsolutePosition(double rangeStart,double rangeEnd)
+        {
+
+        }
+    }
+
+
+
     /// <summary>
     /// Interaction logic for CombineCutter.xaml
     /// </summary>
     public partial class CombineCutter : Window
     {
+
+        ScrubControl scrubControl = new ScrubControl();
 
         public bool speedPreservationMode { get; private set; } = false;
         public bool speedChangeDemoTimeMode { get; private set; } = true;
@@ -56,6 +73,7 @@ namespace DemoCutterGUI
             points.bindListView(demoLinePointsView);
             points.bindCutterWindow(this);
             points.Updated += Points_Updated;
+            scrubSlider.DataContext = scrubControl;
         }
 
         private void Points_Updated(object sender, EventArgs e)
@@ -106,6 +124,16 @@ namespace DemoCutterGUI
             GL.Vertex2(1, 2f / 5f - 1f);
             GL.End();
 
+            // Scrub line
+            float scrubPosition = (float)scrubControl.scrubPosition;
+            GL.Color4(0.75, 0.75, 0.95, 1);
+            GL.LineWidth(1);
+            GL.Begin(PrimitiveType.LineStrip);
+            GL.Vertex2(scrubPosition, -1f);
+            GL.Vertex2(scrubPosition, 1f);
+            GL.End();
+
+
             // Actual speed graph
             GL.Color4(0,0,0,1);
             GL.LineWidth(1);
@@ -127,6 +155,11 @@ namespace DemoCutterGUI
         {
             speedPreservationMode = speedPreserveCheck.IsChecked.HasValue && speedPreserveCheck.IsChecked.Value;
             speedChangeDemoTimeMode = speedChangeDemoTimeModeCheck.IsChecked.HasValue && speedChangeDemoTimeModeCheck.IsChecked.Value;
+        }
+
+        private void scrubSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            OpenTkControl.InvalidateVisual();
         }
     }
 }
