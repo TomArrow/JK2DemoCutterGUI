@@ -31,6 +31,7 @@ namespace DemoCutterGUI
 
 
         // Just fun for debugging
+        public bool inversionTest { get; set; } = false;
         public double inversionTestValue { get; set; } = 1000;
         public double verifyTestPositionValue { get; set; } = 1000;
 
@@ -92,8 +93,9 @@ namespace DemoCutterGUI
             points.Updated += Points_Updated;
             scrubSlider.DataContext = scrubControl;
             rangeSlider.DataContext = scrubControl;
-            inversionTestValueControl.DataContext = scrubControl;
-            inversionTestValueVerifyControl.DataContext = scrubControl;
+            //inversionTestValueControl.DataContext = scrubControl;
+            //inversionTestValueVerifyControl.DataContext = scrubControl;
+            debuggingTab.DataContext = scrubControl;
         }
 
         private void Points_Updated(object sender, EventArgs e)
@@ -157,16 +159,19 @@ namespace DemoCutterGUI
 
 
             // Inverse lineat test
-            float inverseTestPosition = points.lineAtInverse((float)scrubControl.inversionTestValue);
-            float relativeInverseTestPosition = (float)scrubControl.relativeFromAbsolute(inverseTestPosition);
-            float blah = 0;
-            scrubControl.verifyTestPositionValue = points.lineAtSimple(inverseTestPosition,ref blah);
-            GL.Color4(0.95, 0.75, 0.75, 1);
-            GL.LineWidth(1);
-            GL.Begin(PrimitiveType.LineStrip);
-            GL.Vertex2(relativeInverseTestPosition, -1f);
-            GL.Vertex2(relativeInverseTestPosition, 1f);
-            GL.End();
+            if (scrubControl.inversionTest)
+            {
+                float inverseTestPosition = points.lineAtInverse((float)scrubControl.inversionTestValue);
+                float relativeInverseTestPosition = (float)scrubControl.relativeFromAbsolute(inverseTestPosition);
+                float blah = 0;
+                scrubControl.verifyTestPositionValue = points.lineAtSimple(inverseTestPosition, ref blah);
+                GL.Color4(0.95, 0.75, 0.75, 1);
+                GL.LineWidth(1);
+                GL.Begin(PrimitiveType.LineStrip);
+                GL.Vertex2(relativeInverseTestPosition, -1f);
+                GL.Vertex2(relativeInverseTestPosition, 1f);
+                GL.End();
+            }
 
 
             // Actual speed graph
@@ -219,6 +224,12 @@ namespace DemoCutterGUI
         }
 
         private void inversionTestValueControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
+        {
+
+            OpenTkControl.InvalidateVisual();
+        }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
 
             OpenTkControl.InvalidateVisual();

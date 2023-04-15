@@ -61,10 +61,11 @@
         </WrapPanel>
         <mah:RangeSlider LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="3" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>
         <TabControl Grid.Column="3" Grid.Row="1">
-            <TabItem Header="Debugging">
+            <TabItem Header="Debugging" x:Name="debuggingTab">
                 <StackPanel>
+                    <CheckBox IsChecked="{Binding inversionTest}" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked">Inverse Line Test</CheckBox>
                     <WrapPanel>
-                        
+
                         <Label>Inversion test value</Label>
                         <talex:NumericUpDown x:Name="inversionTestValueControl" Value="{Binding inversionTestValue,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"  DecimalPlaces="2" FontSize="10" ValueChanged="inversionTestValueControl_ValueChanged"></talex:NumericUpDown>
                         <talex:NumericUpDown x:Name="inversionTestValueVerifyControl" IsEnabled="False" Value="{Binding verifyTestPositionValue}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"   DecimalPlaces="2" FontSize="10" ValueChanged="inversionTestValueControl_ValueChanged"></talex:NumericUpDown>
