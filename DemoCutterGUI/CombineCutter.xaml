@@ -56,9 +56,22 @@
         </ListView>
         <Slider x:Name="scrubSlider" Value="{Binding scrubPosition,Mode=TwoWay}" ValueChanged="scrubSlider_ValueChanged" Grid.Row="2" Minimum="-1" Maximum="1"></Slider>
         <WrapPanel Grid.Row="2" Grid.Column="1" Grid.RowSpan="2">
-            <Button>New Time Point</Button>
-            <Button>Delete Time Point(s)</Button>
+            <Button x:Name="newTimePointBtn" Click="newTimePointBtn_Click">New Time Point</Button>
+            <Button x:Name="delTimePointBtn" IsEnabled="False">Delete Time Point(s)</Button>
         </WrapPanel>
         <mah:RangeSlider LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="3" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>
+        <TabControl Grid.Column="3" Grid.Row="1">
+            <TabItem Header="Debugging">
+                <StackPanel>
+                    <WrapPanel>
+                        
+                        <Label>Inversion test value</Label>
+                        <talex:NumericUpDown x:Name="inversionTestValueControl" Value="{Binding inversionTestValue,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"  DecimalPlaces="2" FontSize="10" ValueChanged="inversionTestValueControl_ValueChanged"></talex:NumericUpDown>
+                        <talex:NumericUpDown x:Name="inversionTestValueVerifyControl" IsEnabled="False" Value="{Binding verifyTestPositionValue}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"   DecimalPlaces="2" FontSize="10" ValueChanged="inversionTestValueControl_ValueChanged"></talex:NumericUpDown>
+
+                    </WrapPanel>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>

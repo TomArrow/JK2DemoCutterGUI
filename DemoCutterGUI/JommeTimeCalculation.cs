@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -243,7 +244,21 @@ namespace DemoCutterGUI
 				return point;
 			}
 		}
-		public void lineInterpolate(int playTime, float playTimeFraction, ref int demoTime, ref float demoTimeFraction, ref float demoSpeed)
+
+		DemoLinePoint linePointSynchDemoTime(float demoTime)
+		{
+			if (linePoints.Count == 0)
+            {
+				return null;
+            }
+            else
+            {
+				DemoLinePoint point = linePoints[0];
+				for (; point.next != null && point.next.demoTime <= demoTime; point = point.next) ;
+				return point;
+			}
+		}
+		void lineInterpolate(int playTime, float playTimeFraction, ref int demoTime, ref float demoTimeFraction, ref float demoSpeed)
 		{
 			Vector3 dx, dy;
 			DemoLinePoint point = linePointSynch(playTime);
@@ -256,12 +271,12 @@ namespace DemoCutterGUI
 				calcTimeHigh = (playTime >> 16) * speed;
 				calcTimeLow = (playTime & 0xffff) * speed;
 				calcTimeLow += (Int64)(playTimeFraction * speed);
-				/***/demoTime = (int)((calcTimeHigh << (16 - SPEED_SHIFT)) + (calcTimeLow >> SPEED_SHIFT));
-				/***/demoTimeFraction = (float)(calcTimeLow & ((1 << SPEED_SHIFT) - 1)) / (1 << SPEED_SHIFT);
+				demoTime = (int)((calcTimeHigh << (16 - SPEED_SHIFT)) + (calcTimeLow >> SPEED_SHIFT));
+				demoTimeFraction = (float)(calcTimeLow & ((1 << SPEED_SHIFT) - 1)) / (1 << SPEED_SHIFT);
 				if (point != null)
-					/***/demoTime += point.demoTime;
-				/***/demoTime += 0;//demo.line.offset; // Forgot what this even does, shrug
-				/***/demoSpeed = currentSpeed;//demo.line.speed;
+					demoTime += point.demoTime;
+				demoTime += 0;//demo.line.offset; // Forgot what this even does, shrug
+				demoSpeed = currentSpeed;//demo.line.speed;
 				return;
 			}
 			dx.Y = point.next.time - point.time;
@@ -286,11 +301,85 @@ namespace DemoCutterGUI
 				dx.Z = dx.Y;
 				dy.Z = dy.Y;
 			}
-			/***/demoTimeFraction = JommeTimeCalculation.dsplineCalc((playTime - point.time) + playTimeFraction, dx, dy, ref demoSpeed);
-			/***/demoTime = (int)/***/demoTimeFraction;
-			/***/demoTimeFraction -= /***/demoTime;
-			/***/demoTime += point.demoTime;
+			demoTimeFraction = JommeTimeCalculation.dsplineCalc((playTime - point.time) + playTimeFraction, dx, dy, ref demoSpeed);
+			demoTime = (int)demoTimeFraction;
+			demoTimeFraction -= demoTime;
+			demoTime += point.demoTime;
 		}
+
+		float lineInterpolateInverse(float demoTime)
+		{
+			Vector3 dx, dy;
+			DemoLinePoint point = linePointSynchDemoTime(demoTime);
+			if (point == null || point.next == null || point.demoTime > demoTime)
+			{
+				if(point == null) // We simplify a bit here. Should be good enough for what we're doing.
+                {
+					return demoTime;
+                } else if (point.demoTime > demoTime) // No past points, only future point.
+                {
+					float speed = (float)point.demoTime / (float)point.time;
+					return demoTime / speed;
+                } else
+                {
+					// No future points. Just go linear from last point at speed 1.
+					return (demoTime- (float)point.demoTime)+(float)point.time;
+                }
+
+				/*Int64 calcTimeLow, calcTimeHigh;
+				Int64 speed = (Int64)((float)(1 << SPEED_SHIFT) * currentSpeed);// demo.line.speed;
+				if (point != null)
+					playTime -= point.time;
+				calcTimeHigh = (playTime >> 16) * speed;
+				calcTimeLow = (playTime & 0xffff) * speed;
+				calcTimeLow += (Int64)(playTimeFraction * speed);
+				demoTime = (int)((calcTimeHigh << (16 - SPEED_SHIFT)) + (calcTimeLow >> SPEED_SHIFT));
+				demoTimeFraction = (float)(calcTimeLow & ((1 << SPEED_SHIFT) - 1)) / (1 << SPEED_SHIFT);
+				if (point != null)
+					demoTime += point.demoTime;
+				demoTime += 0;//demo.line.offset; // Forgot what this even does, shrug
+				demoSpeed = currentSpeed;//demo.line.speed;
+				return;*/
+			}
+			dx.Y = point.next.time - point.time;
+			dy.Y = point.next.demoTime - point.demoTime;
+			if (point.prev != null)
+			{
+				dx.X = point.time - point.prev.time;
+				dy.X = point.demoTime - point.prev.demoTime;
+			}
+			else
+			{
+				dx.X = dx.Y;
+				dy.X = dy.Y;
+			}
+			if (point.next.next != null)
+			{
+				dx.Z = point.next.next.time - point.next.time; ;
+				dy.Z = point.next.next.demoTime - point.next.demoTime; ;
+			}
+			else
+			{
+				dx.Z = dx.Y;
+				dy.Z = dy.Y;
+			}
+			//demoTimeFraction = JommeTimeCalculation.dsplineCalc((playTime - point.time) + playTimeFraction, dx, dy, ref demoSpeed);
+			float offset = (demoTime - (float)point.demoTime);
+			float timeGuess = (offset / dy.Y)*dx.Y;
+			return point.time+ JommeTimeCalculation.dsplineCalcInverseNewton(offset, timeGuess, dx, dy);
+
+		}
+
+		public float lineAtSimple(float playTime, ref float demoSpeed)
+        {
+			int playTimeInt = (int)playTime;
+			float fraction = playTime - (float)playTimeInt;
+			int resultTime = 0;
+			float resultFraction = 0;
+			lineAt(playTimeInt,fraction,ref resultTime, ref resultFraction, ref demoSpeed);
+			return resultFraction + (float)resultTime;
+        }
+
 		public void lineAt(int playTime, float playTimeFraction, ref int demoTime, ref float demoTimeFraction, ref float demoSpeed)
 		{
 			//if (!demo.line.locked)
@@ -302,20 +391,50 @@ namespace DemoCutterGUI
 				calcTimeHigh = (playTime >> 16) * speed;
 				calcTimeLow = (playTime & 0xffff) * speed;
 				calcTimeLow += (Int64)(playTimeFraction * speed);
-				/***/demoTime = (int)((calcTimeHigh << (16 - SPEED_SHIFT)) + (calcTimeLow >> SPEED_SHIFT));
-				/***/demoTimeFraction = (float)(calcTimeLow & ((1 << SPEED_SHIFT) - 1)) / (1 << SPEED_SHIFT);
-				/***/demoTime += 0;// demo.line.offset;
-				/***/demoSpeed = currentSpeed;//demo.line.speed;
+				demoTime = (int)((calcTimeHigh << (16 - SPEED_SHIFT)) + (calcTimeLow >> SPEED_SHIFT));
+				demoTimeFraction = (float)(calcTimeLow & ((1 << SPEED_SHIFT) - 1)) / (1 << SPEED_SHIFT);
+				demoTime += 0;// demo.line.offset;
+				demoSpeed = currentSpeed;//demo.line.speed;
 			}
 			else
 			{
 				lineInterpolate(playTime, playTimeFraction, ref demoTime,ref  demoTimeFraction, ref demoSpeed);
 			}
-			if (/***/demoTime < 0 || /***/demoTimeFraction < 0)
+			if (demoTime < 0 || demoTimeFraction < 0)
 			{
-				/***/demoTimeFraction = 0;
-				/***/demoTime = 0;
+				demoTimeFraction = 0;
+				demoTime = 0;
 			}
+		}
+
+		// Returns time from demoTime
+		public float lineAtInverse(float demoTime)
+		{
+			//if (!demo.line.locked)
+			/*if (false)
+			{
+				Int64 calcTimeLow, calcTimeHigh;
+				Int64 speed =  (Int64)((float)(1 << SPEED_SHIFT) * currentSpeed);//demo.line.speed;
+
+				calcTimeHigh = (playTime >> 16) * speed;
+				calcTimeLow = (playTime & 0xffff) * speed;
+				calcTimeLow += (Int64)(playTimeFraction * speed);
+				demoTime = (int)((calcTimeHigh << (16 - SPEED_SHIFT)) + (calcTimeLow >> SPEED_SHIFT));
+				demoTimeFraction = (float)(calcTimeLow & ((1 << SPEED_SHIFT) - 1)) / (1 << SPEED_SHIFT);
+				demoTime += 0;// demo.line.offset;
+				demoSpeed = currentSpeed;//demo.line.speed;
+			}
+			else*/
+			float time = 0;
+			{
+				time = lineInterpolateInverse(demoTime);
+			}
+			return time;
+			//if (time < 0)
+			//{
+			//	demoTimeFraction = 0;
+			//	demoTime = 0;
+			//}
 		}
 	}
 
@@ -323,6 +442,7 @@ namespace DemoCutterGUI
     {
 
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static float dsMax(float x, float y)
 		{
 			if (y > x)
@@ -330,6 +450,7 @@ namespace DemoCutterGUI
 			else
 				return x;
 		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static float dsMin(float x, float y)
 		{
 			if (y < x)
@@ -337,6 +458,7 @@ namespace DemoCutterGUI
 			else
 				return x;
 		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static float dsplineTangent(float h1, float h2, float d1, float d2)
 		{
 			float hsum = h1 + h2;
@@ -360,33 +482,57 @@ namespace DemoCutterGUI
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static public float dsplineCalc(float x, Vector3 dx, Vector3 dy, ref float deriv)
 		{
 			float tan1, tan2;
 			float c2, c3;
 			float delta, del1, del2;
 
-			//tan1 = dsplineTangent(dx[0], dx[1], dy[0], dy[1]);
 			tan1 = dsplineTangent(dx.X, dx.Y, dy.X, dy.Y);
-			//tan2 = dsplineTangent(dx[1], dx[2], dy[1], dy[2]);
 			tan2 = dsplineTangent(dx.Y, dx.Z, dy.Y, dy.Z);
 
-			//delta = dy[1] / dx[1];
 			delta = dy.Y / dx.Y;
-            //del1 = (tan1 - delta) / dx[1];
             del1 = (tan1 - delta) / dx.Y;
-            //del2 = (tan2 - delta) / dx[1];
             del2 = (tan2 - delta) / dx.Y;
 			c2 = -(del1 + del1 + del2);
-			//c3 = (del1 + del2) / dx[1];
 			c3 = (del1 + del2) / dx.Y;
-			//if (deriv != null)
-			//{
-				//*deriv = tan1 + 2 * x * c2 + 3 * x * x * c3;
-				deriv = tan1 + 2 * x * c2 + 3 * x * x * c3;
-			//}
+			deriv = tan1 + 2 * x * c2 + 3 * x * x * c3;
 			return x * (tan1 + x * (c2 + x * c3));
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static public float dsplineCalcInverseNewton(float y, float xGuess, Vector3 dx, Vector3 dy,float tolerance=0.25f,float epsilon=1e-6f,int maxIterations=1000)
+		{
+			float x = xGuess;
+			int iterations = 0;
+
+			float value = 0;
+			float deriv = 0;
+			float diff = 0;
+			while (iterations < maxIterations)
+			{
+				value = dsplineCalc(x,dx,dy,ref deriv);
+				diff = value - y;
+
+				if(Math.Abs(deriv) < epsilon)
+                {
+					break;
+                }
+
+				x = x - diff / deriv;
+
+				if (Math.Abs(diff) < tolerance)
+				{
+					break;
+				}
+
+				iterations++;
+			}
+			return x;
+		}
+
+
 
 	}
 }

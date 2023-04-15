@@ -29,10 +29,21 @@ namespace DemoCutterGUI
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+
+        // Just fun for debugging
+        public double inversionTestValue { get; set; } = 1000;
+        public double verifyTestPositionValue { get; set; } = 1000;
+
         //public double getAbsolutePosition(double rangeStart,double rangeEnd)
         //{
 
         //}
+
+        public double relativeFromAbsolute(double absolute)
+        {
+            double delta = currentMax - currentMin;
+            return (absolute - currentMin) / delta * 2.0 - 1.0;
+        }
     }
 
 
@@ -81,6 +92,8 @@ namespace DemoCutterGUI
             points.Updated += Points_Updated;
             scrubSlider.DataContext = scrubControl;
             rangeSlider.DataContext = scrubControl;
+            inversionTestValueControl.DataContext = scrubControl;
+            inversionTestValueVerifyControl.DataContext = scrubControl;
         }
 
         private void Points_Updated(object sender, EventArgs e)
@@ -143,6 +156,19 @@ namespace DemoCutterGUI
             GL.End();
 
 
+            // Inverse lineat test
+            float inverseTestPosition = points.lineAtInverse((float)scrubControl.inversionTestValue);
+            float relativeInverseTestPosition = (float)scrubControl.relativeFromAbsolute(inverseTestPosition);
+            float blah = 0;
+            scrubControl.verifyTestPositionValue = points.lineAtSimple(inverseTestPosition,ref blah);
+            GL.Color4(0.95, 0.75, 0.75, 1);
+            GL.LineWidth(1);
+            GL.Begin(PrimitiveType.LineStrip);
+            GL.Vertex2(relativeInverseTestPosition, -1f);
+            GL.Vertex2(relativeInverseTestPosition, 1f);
+            GL.End();
+
+
             // Actual speed graph
             GL.Color4(0,0,0,1);
             GL.LineWidth(1);
@@ -184,6 +210,17 @@ namespace DemoCutterGUI
 
         private void rangeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            OpenTkControl.InvalidateVisual();
+        }
+
+        private void newTimePointBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void inversionTestValueControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
+        {
+
             OpenTkControl.InvalidateVisual();
         }
     }
