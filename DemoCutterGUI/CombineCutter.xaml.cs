@@ -1,9 +1,13 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using BitmapFontLibrary;
+using BitmapFontLibrary.Model;
+using Ninject;
+using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Wpf;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing.Text;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -62,6 +66,10 @@ namespace DemoCutterGUI
         public bool speedChangeDemoTimeMode { get; private set; } = true;
 
         JommeTimePoints points = new JommeTimePoints();
+
+
+        BitmapFont font = null;
+
         public CombineCutter()
         {
             InitializeComponent();
@@ -71,6 +79,7 @@ namespace DemoCutterGUI
                 MinorVersion = 1,
                 RenderContinuously = false
             };
+            OpenTkControl.Loaded += OpenTkControl_Loaded;
             OpenTkControl.Start(settings);
 
             //points.addPoint(new DemoLinePoint() {time=10,demoTime=10 });
@@ -96,6 +105,16 @@ namespace DemoCutterGUI
             //inversionTestValueControl.DataContext = scrubControl;
             //inversionTestValueVerifyControl.DataContext = scrubControl;
             debuggingTab.DataContext = scrubControl;
+
+
+        }
+
+
+        private void OpenTkControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            // var ifc = new InstalledFontCollection();
+
+
         }
 
         private void Points_Updated(object sender, EventArgs e)
@@ -112,6 +131,18 @@ namespace DemoCutterGUI
 
         private void OpenTkControl_OnRender(TimeSpan delta)
         {
+
+            if(font == null)
+            {
+
+                IKernel kernel = new StandardKernel(new BitmapFontModule());
+                font = kernel.Get<BitmapFont>();
+                font.Initialize("data/mph-2b-damase128.fnt");
+            }
+
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
+
             double timeSinceLast = (DateTime.Now - lastUpdate).TotalMilliseconds;
             //if (timeSinceLast < minTimeDelta) System.Threading.Thread.Sleep((int)(minTimeDelta- timeSinceLast));
             if (timeSinceLast > minTimeDelta) OpenTkControl.InvalidateVisual();
@@ -198,6 +229,25 @@ namespace DemoCutterGUI
                 }
             }
             GL.End();
+
+
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            //GL.BlendFunc(BlendingFactor.Zero, BlendingFactor.SrcColor);
+
+            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            // GL.ClearColor(1.0f, 1.0f, 1.5f, 1.0f);
+            GL.Color3(1.0f, 1.0f, 1.0f);
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
+            GL.Ortho(-1000.0, 1000.0, -1000.0, 1000.0, -1.0, 1.0);
+            font.Draw("My text", 0.0f, 0.5f, 0.0f, new TextConfiguration
+            {
+                SizeInPixels = 100,
+                MaximalWidth = 1000,
+                Alignment = BitmapFontLibrary.Model.TextAlignment.LeftAligned
+            });
+            GL.Disable(EnableCap.Blend);
 
             lastUpdate =DateTime.Now;
         }

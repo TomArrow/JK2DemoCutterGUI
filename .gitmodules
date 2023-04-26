@@ -1,0 +1,3 @@
+[submodule "ext/BitmapFontLibrary"]
+	path = ext/BitmapFontLibrary
+	url = git@github.com:Kr0oked/BitmapFontLibrary.git

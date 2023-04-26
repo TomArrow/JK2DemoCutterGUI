@@ -6,19 +6,91 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFont.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFont.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFontModule.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFontModule.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFontStandAlone.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFontStandAlone.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Helper\CharAdapter.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Helper\CharAdapter.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Helper\ICharAdapter.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Helper\ICharAdapter.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Helper\IIntAdapter.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Helper\IIntAdapter.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Helper\IntAdapter.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Helper\IntAdapter.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Helper\IStringAdapter.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Helper\IStringAdapter.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Helper\StringAdapter.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Helper\StringAdapter.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\IBitmapFont.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\IBitmapFont.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Exception\FontLoaderException.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Exception\FontLoaderException.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\FontLoader.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\FontLoader.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\IFontLoader.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\IFontLoader.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Binary\BinaryFontFileParser.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Binary\BinaryFontFileParser.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\IFontFileParser.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\IFontFileParser.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Text\ITextReader.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Text\ITextReader.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Text\TextElementType.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Text\TextElementType.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Text\TextFontFileParser.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Text\TextFontFileParser.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Text\TextReader.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Text\TextReader.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\IXmlSchemaReader.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\IXmlSchemaReader.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\IXmlSettingsBuilder.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\IXmlSettingsBuilder.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\XmlFontFileParser.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\XmlFontFileParser.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\XmlSchemaReader.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\XmlSchemaReader.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\XmlSettingsBuilder.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Parser\Xml\XmlSettingsBuilder.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Texture\FontTextureLoader.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Texture\FontTextureLoader.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Texture\IFontTextureLoader.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Loader\Texture\IFontTextureLoader.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\Channel.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\Channel.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\ChannelValue.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\ChannelValue.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\Character.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\Character.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\Font.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\Font.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\FontTexture.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\FontTexture.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\ICharacter.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\ICharacter.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\IFont.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\IFont.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\IFontTexture.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\IFontTexture.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\ILine.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\ILine.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\ITextConfiguration.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\ITextConfiguration.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\Line.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\Line.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\TextAlignment.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\TextAlignment.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Model\TextConfiguration.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Model\TextConfiguration.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\CharacterSprites.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\CharacterSprites.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\DisplayLists.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\DisplayLists.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\FontAlign.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\FontAlign.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\FontRenderer.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\FontRenderer.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\ICharacterSprites.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\ICharacterSprites.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\IDisplayLists.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\IDisplayLists.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\IFontAlign.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\IFontAlign.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\IFontRenderer.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\IFontRenderer.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\ILineCalculator.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\ILineCalculator.cs" />
+<Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\LineCalculator.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\Renderer\LineCalculator.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MahApps.Metro" Version="2.4.9" />
+    <PackageReference Include="Ninject" Version="3.3.6" />
     <PackageReference Include="OpenTK.GLWpfControl" Version="4.2.3" />
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
+    <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
     <PackageReference Include="TAlex.WPF.Controls" Version="3.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ext\" />
+    <None Update="data\mph-2b-damase128.fnt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="data\mph-2b-damase128_0.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ext\BitmapFontLibrary\Data\Xsd\BitmapFont.xsd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ext\BitmapFontLibrary\" />
   </ItemGroup>
 
 </Project>
