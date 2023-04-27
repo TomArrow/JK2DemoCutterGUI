@@ -128,7 +128,10 @@ namespace DemoCutterGUI
         const double minTimeDelta = 1000.0 / maxFps;
         DateTime lastUpdate = DateTime.Now;
 
-
+        struct TimeMarker {
+            public double time;
+            public double x;
+        }
         private void OpenTkControl_OnRender(TimeSpan delta)
         {
 
@@ -231,22 +234,63 @@ namespace DemoCutterGUI
             GL.End();
 
 
+            // Time markers. Simple way for now.
+            //double minUnitBase = 1000; // Milliseconds
+            double desiredTimeMarkersCount = 5;
+            double timeMarkerStepBase = 10;
+            double timeMarkerStep = (to - from) / desiredTimeMarkersCount;
+            double baseAlignedTimeMarkerStep = Math.Pow(timeMarkerStepBase, Math.Round(Math.Log(timeMarkerStep) / Math.Log(timeMarkerStepBase))); // Basically make it a power of timeMarkerStepBase
+            List<TimeMarker> timeMarkers = new List<TimeMarker>();
+            double startPoint = baseAlignedTimeMarkerStep*Math.Ceiling(from/ baseAlignedTimeMarkerStep)- baseAlignedTimeMarkerStep;
+            while (startPoint < to)
+            {
+                startPoint += baseAlignedTimeMarkerStep;
+                double x = 2.0*(startPoint-from)/(to-from)-1.0;
+                timeMarkers.Add(new TimeMarker() { time=startPoint,x=x });
+            }
+
+
+            GL.Color4(0, 0, 0, 1);
+            GL.LineWidth(1);
+            double actualHeight = OpenTkControl.ActualHeight;
+            double desiredTimeMarkerLineHeight = 10;
+            double relativeHeight = 2.0*desiredTimeMarkerLineHeight / actualHeight;
+            double fontHeight = 20;
+            double relativeFontHeight = 2.0* fontHeight/actualHeight;
+            foreach (TimeMarker timeMarker in timeMarkers)
+            {
+                GL.Begin(PrimitiveType.LineStrip);
+                GL.Vertex2(timeMarker.x, -1f+ relativeFontHeight);
+                GL.Vertex2(timeMarker.x, -1f+ relativeHeight+ relativeFontHeight);
+                GL.End();
+            }
+
+
+            // Time marker texts
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            //GL.BlendFunc(BlendingFactor.Zero, BlendingFactor.SrcColor);
-
-            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            // GL.ClearColor(1.0f, 1.0f, 1.5f, 1.0f);
             GL.Color3(1.0f, 1.0f, 1.0f);
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
-            GL.Ortho(-1000.0, 1000.0, -1000.0, 1000.0, -1.0, 1.0);
-            font.Draw("My text", 0.0f, 0.5f, 0.0f, new TextConfiguration
+            double verticalScale = 1000.0;
+            double horizontalScale = 1000.0*actualWidth / actualHeight;
+            GL.Ortho(-horizontalScale, horizontalScale, -1000.0, 1000.0, -1.0, 1.0);
+
+            /*font.Draw("My text", 0.0f, -500f, 0.0f, new TextConfiguration()
             {
-                SizeInPixels = 100,
+                SizeInPixels = (uint)(relativeFontHeight*1000.0),
                 MaximalWidth = 1000,
                 Alignment = BitmapFontLibrary.Model.TextAlignment.LeftAligned
-            });
+            });*/
+            foreach (TimeMarker timeMarker in timeMarkers)
+            {
+                font.Draw(Math.Round(timeMarker.time).ToString(), (float)timeMarker.x*(float)horizontalScale-(float)horizontalScale/2f, 1000.0f*(-1f+(float)relativeFontHeight), 0.0f, new TextConfiguration
+                {
+                    SizeInPixels = (uint)(relativeFontHeight * 1000.0),
+                    MaximalWidth = (float)horizontalScale,
+                    Alignment = BitmapFontLibrary.Model.TextAlignment.Centered
+                });
+            }
             GL.Disable(EnableCap.Blend);
 
             lastUpdate =DateTime.Now;
