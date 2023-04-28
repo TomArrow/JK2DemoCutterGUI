@@ -131,6 +131,7 @@ namespace DemoCutterGUI
         struct TimeMarker {
             public double time;
             public double x;
+            public bool isSubDivMarker;
         }
         private void OpenTkControl_OnRender(TimeSpan delta)
         {
@@ -236,21 +237,39 @@ namespace DemoCutterGUI
 
             // Time markers. Simple way for now.
             //double minUnitBase = 1000; // Milliseconds
-            double desiredTimeMarkersCount = 5;
+            double desiredTimeMarkersCount = actualWidth/150;
             double timeMarkerStepBase = 10;
+            int[] subdiv = new int[] { 0,2,4,5,6,8 };
             double timeMarkerStep = (to - from) / desiredTimeMarkersCount;
             double baseAlignedTimeMarkerStep = Math.Pow(timeMarkerStepBase, Math.Round(Math.Log(timeMarkerStep) / Math.Log(timeMarkerStepBase))); // Basically make it a power of timeMarkerStepBase
+            int markersCountWithoutSubdiv = (int)(Math.Ceiling((to - from) / baseAlignedTimeMarkerStep)+0.5);
+            int markersCountWithSubdiv = markersCountWithoutSubdiv;
+            int subdivIndex = 0;
+            while (markersCountWithSubdiv<desiredTimeMarkersCount && subdivIndex<subdiv.Length-1)
+            {
+                subdivIndex++;
+                markersCountWithSubdiv = markersCountWithoutSubdiv * (subdiv[subdivIndex]);
+            }
+            int subDivCount = subdiv[subdivIndex];
+            double subDivOffset = baseAlignedTimeMarkerStep / ((double)subDivCount);
             List<TimeMarker> timeMarkers = new List<TimeMarker>();
-            double startPoint = baseAlignedTimeMarkerStep*Math.Ceiling(from/ baseAlignedTimeMarkerStep)- baseAlignedTimeMarkerStep;
+            double startPoint = baseAlignedTimeMarkerStep*Math.Floor(from/ baseAlignedTimeMarkerStep)- baseAlignedTimeMarkerStep;
             while (startPoint < to)
             {
                 startPoint += baseAlignedTimeMarkerStep;
                 double x = 2.0*(startPoint-from)/(to-from)-1.0;
                 timeMarkers.Add(new TimeMarker() { time=startPoint,x=x });
+                // do subdiv:
+                for(int i = 1; i < subDivCount; i++)
+                {
+                    double timeHere = startPoint + (double)i * subDivOffset;
+                    x = 2.0 * (timeHere - from) / (to - from) - 1.0;
+                    timeMarkers.Add(new TimeMarker() { time= timeHere, x=x,isSubDivMarker = true });
+                }
             }
 
 
-            GL.Color4(0, 0, 0, 1);
+            
             GL.LineWidth(1);
             double actualHeight = OpenTkControl.ActualHeight;
             double desiredTimeMarkerLineHeight = 10;
@@ -259,6 +278,14 @@ namespace DemoCutterGUI
             double relativeFontHeight = 2.0* fontHeight/actualHeight;
             foreach (TimeMarker timeMarker in timeMarkers)
             {
+                if (timeMarker.isSubDivMarker)
+                {
+                    GL.Color4(0.8, 0.8, 0.8, 1);
+                }
+                else
+                {
+                    GL.Color4(0, 0, 0, 1);
+                }
                 GL.Begin(PrimitiveType.LineStrip);
                 GL.Vertex2(timeMarker.x, -1f+ relativeFontHeight);
                 GL.Vertex2(timeMarker.x, -1f+ relativeHeight+ relativeFontHeight);
@@ -268,7 +295,7 @@ namespace DemoCutterGUI
 
             // Time marker texts
             GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.BlendFunc(BlendingFactor.ConstantColor, BlendingFactor.OneMinusSrcColor);
             GL.Color3(1.0f, 1.0f, 1.0f);
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
@@ -284,9 +311,19 @@ namespace DemoCutterGUI
             });*/
             foreach (TimeMarker timeMarker in timeMarkers)
             {
-                font.Draw(Math.Round(timeMarker.time).ToString(), (float)timeMarker.x*(float)horizontalScale-(float)horizontalScale/2f, 1000.0f*(-1f+(float)relativeFontHeight), 0.0f, new TextConfiguration
+                double fontSize = relativeFontHeight * 1000.0;
+                if (timeMarker.isSubDivMarker)
                 {
-                    SizeInPixels = (uint)(relativeFontHeight * 1000.0),
+                    fontSize *=  0.75;
+                    GL.BlendColor(0.75f, 0.75f, 0.75f, 1.0f);
+                } else
+                {
+
+                    GL.BlendColor(0f, 0f, 0f, 1.0f);
+                }
+                font.Draw(timeMarker.time.ToString("0.##"), (float)timeMarker.x*(float)horizontalScale-(float)horizontalScale/2f, 1000.0f*(-1f+(float)relativeFontHeight), 0.0f, new TextConfiguration
+                {
+                    SizeInPixels = (uint)fontSize,
                     MaximalWidth = (float)horizontalScale,
                     Alignment = BitmapFontLibrary.Model.TextAlignment.Centered
                 });
