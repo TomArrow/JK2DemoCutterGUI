@@ -22,19 +22,20 @@
             <RowDefinition Height="20"></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="20"></ColumnDefinition>
             <ColumnDefinition></ColumnDefinition>
             <ColumnDefinition Width="290"></ColumnDefinition>
             <ColumnDefinition Width="270"></ColumnDefinition>
         </Grid.ColumnDefinitions>
-        <glWpfControl:GLWpfControl Grid.RowSpan="2"
+        <glWpfControl:GLWpfControl Grid.RowSpan="2" Grid.Column="1"
             x:Name="OpenTkControl" 
             Render="OpenTkControl_OnRender"/>
-        <WrapPanel Grid.Row="0" Grid.Column="1">
+        <WrapPanel Grid.Row="0" Grid.Column="2">
             <CheckBox x:Name="speedPreserveCheck" ToolTip="With this, deleting elements tries to preserve the speed of the following element, adjusting all elements after. This does not take into account the more advanced interpolation and is very simplistic" Checked="UpdateSettingsFromGUI" Unchecked="UpdateSettingsFromGUI">Speed preservation mode</CheckBox>
             <CheckBox x:Name="speedChangeDemoTimeModeCheck" ToolTip="When changing by speed, should we change demoTime instead of time?" Checked="UpdateSettingsFromGUI" Unchecked="UpdateSettingsFromGUI" IsEnabled="{Binding ElementName=speedPreserveCheck,Path=IsChecked}" IsChecked="True">DemoTime mode</CheckBox>
             <CheckBox x:Name="speedSlidersCheck" IsChecked="False" >Speed sliders</CheckBox>
         </WrapPanel>
-        <ListView Grid.Row="1" Grid.Column="1" x:Name="demoLinePointsView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=DemoLinePoints}">
+        <ListView Grid.Row="1" Grid.Column="2" x:Name="demoLinePointsView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=DemoLinePoints}">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <StackPanel>
@@ -54,13 +55,14 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <Slider x:Name="scrubSlider" Value="{Binding scrubPosition,Mode=TwoWay}" ValueChanged="scrubSlider_ValueChanged" Grid.Row="2" Minimum="-1" Maximum="1"></Slider>
-        <WrapPanel Grid.Row="2" Grid.Column="1" Grid.RowSpan="2">
+        <Slider x:Name="scrubSlider" Value="{Binding scrubPosition,Mode=TwoWay}" Grid.Column="1" ValueChanged="scrubSlider_ValueChanged" Grid.Row="2" Minimum="-1" Maximum="1"></Slider>
+        <WrapPanel Grid.Row="2" Grid.Column="2" Grid.RowSpan="2">
             <Button x:Name="newTimePointBtn" Click="newTimePointBtn_Click">New Time Point</Button>
             <Button x:Name="delTimePointBtn" IsEnabled="False">Delete Time Point(s)</Button>
         </WrapPanel>
-        <mah:RangeSlider LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="3" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>
-        <TabControl Grid.Column="3" Grid.Row="1">
+        <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSliderVert" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="4" Minimum="{Binding absoluteMinVert}" Maximum="{Binding absoluteMaxVert}" LowerValue="{Binding currentMinVert,Mode=TwoWay}" UpperValue="{Binding currentMaxVert,Mode=TwoWay}" Orientation="Vertical"></mah:RangeSlider>
+        <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="4" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>
+        <TabControl Grid.Column="4" Grid.Row="1">
             <TabItem Header="Debugging" x:Name="debuggingTab">
                 <StackPanel>
                     <CheckBox IsChecked="{Binding inversionTest}" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked">Inverse Line Test</CheckBox>
