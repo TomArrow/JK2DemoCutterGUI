@@ -33,6 +33,21 @@ namespace DemoCutterGUI
         {
             return (float)((demoSpeed - scrubControl.currentMinVert) / (scrubControl.currentMaxVert - scrubControl.currentMinVert)) * 2f - 1f;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float getXFromTime(float time)
+        {
+            return (float)((time - scrubControl.currentMin) / (scrubControl.currentMax - scrubControl.currentMin)) * 2f - 1f;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double getRelativeSizeHorz(double size)
+        {
+            return size / OpenTkControl.ActualWidth * 2.0;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double getRelativeSizeVert(double size)
+        {
+            return size / OpenTkControl.ActualHeight * 2.0;
+        }
         public void DrawVariousLines()
         {
             // Reference line at 1x
@@ -63,12 +78,12 @@ namespace DemoCutterGUI
             GL.End();
 
             // Scrub line
-            float scrubPosition = (float)scrubControl.scrubPosition;
+            double scrubPositionX = (scrubControl.scrubPosition - scrubControl.currentMin)/(scrubControl.currentMax- scrubControl.currentMin)*2.0-1.0 ;
             GL.Color4(0.75, 0.75, 0.95, 1);
             GL.LineWidth(1);
             GL.Begin(PrimitiveType.LineStrip);
-            GL.Vertex2(scrubPosition, -1f);
-            GL.Vertex2(scrubPosition, 1f);
+            GL.Vertex2(scrubPositionX, -1f);
+            GL.Vertex2(scrubPositionX, 1f);
             GL.End();
 
 
@@ -112,6 +127,25 @@ namespace DemoCutterGUI
                 }
             }
             GL.End();
+
+            // Line dots
+            float lineDotSize =8;
+            float lineDotSizeHorz = (float)getRelativeSizeHorz(lineDotSize);
+            float lineDotSizeVert = (float)getRelativeSizeVert(lineDotSize);
+            GL.Begin(PrimitiveType.Triangles);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            points.Foreach((in DemoLinePoint linePoint) =>
+            {
+                double speed = linePoint.effectiveSpeed;
+                float y = getYFromDemoSpeed((float)speed);
+                float x = getXFromTime(linePoint.time);
+                GL.Color4(1f, 0f, 0f, 1f);
+                GL.Vertex3(x,y,0);
+                GL.Vertex3(x- lineDotSizeHorz/2.0f, y- lineDotSizeVert, 0);
+                GL.Vertex3(x + lineDotSizeHorz / 2.0f, y- lineDotSizeVert, 0);
+            });
+            GL.End();
+
         }
 
         public void DrawTimeMarkers(double actualWidth, double to, double from)

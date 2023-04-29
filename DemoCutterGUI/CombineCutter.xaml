@@ -55,7 +55,7 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <Slider x:Name="scrubSlider" Value="{Binding scrubPosition,Mode=TwoWay}" Grid.Column="1" ValueChanged="scrubSlider_ValueChanged" Grid.Row="2" Minimum="-1" Maximum="1"></Slider>
+        <Slider x:Name="scrubSlider" Value="{Binding scrubPosition,Mode=TwoWay}" Grid.Column="1" ValueChanged="scrubSlider_ValueChanged" Grid.Row="2" Minimum="{Binding currentMin}" Maximum="{Binding currentMax}"></Slider>
         <WrapPanel Grid.Row="2" Grid.Column="2" Grid.RowSpan="2">
             <Button x:Name="newTimePointBtn" Click="newTimePointBtn_Click">New Time Point</Button>
             <Button x:Name="delTimePointBtn" IsEnabled="False">Delete Time Point(s)</Button>

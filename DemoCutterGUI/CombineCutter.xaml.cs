@@ -199,7 +199,10 @@ namespace DemoCutterGUI
 
         private void newTimePointBtn_Click(object sender, RoutedEventArgs e)
         {
-
+            int newTime = (int)scrubControl.scrubPosition;
+            float demoSpeed = 0;
+            float demoTime = points.lineAtSimple(newTime,ref demoSpeed);
+            points.addPoint(new DemoLinePoint() {time=newTime,demoTime= (int)demoTime });
         }
 
         private void inversionTestValueControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)

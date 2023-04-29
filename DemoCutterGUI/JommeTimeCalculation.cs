@@ -94,7 +94,7 @@ namespace DemoCutterGUI
 						}
                     }
 					pointsCollection.updatingOnPropertyChange = true;
-					pointsCollection.callThisOnChange();
+					pointsCollection.callThisOnChange(false);
 				} else
                 {
 					// Simple mode. Just change time of this.
@@ -112,6 +112,8 @@ namespace DemoCutterGUI
 
 	public class JommeTimePoints
     {
+
+		public delegate void ForeachHandler(in DemoLinePoint point); // Technically the in keyword doessn't prevent changes to the point, but just be respectful. It's a hint for you.	
 
 		public event EventHandler Updated;
 
@@ -132,15 +134,29 @@ namespace DemoCutterGUI
         {
             newPoint.PropertyChanged += NewPoint_PropertyChanged;
 			newPoint.pointsCollection = this;
-			linePoints.Add(newPoint);
-			callThisOnChange();
+            lock (linePoints)
+            {
+				linePoints.Add(newPoint);
+            }
+			callThisOnChange(true);
+        }
+
+		public void Foreach(ForeachHandler handler)
+        {
+            lock (linePoints)
+            {
+				foreach(DemoLinePoint point in linePoints)
+                {
+					handler(point);
+				}
+            }
         }
 
         private void NewPoint_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (updatingOnPropertyChange)
             {
-				callThisOnChange();
+				callThisOnChange(false);
 			}
 		}
 
@@ -151,21 +167,28 @@ namespace DemoCutterGUI
 
         public void removePoint(DemoLinePoint pointToRemove)
         {
-            if (linePoints.Contains(pointToRemove))
-            {
-				pointToRemove.PropertyChanged += NewPoint_PropertyChanged;
-				linePoints.Remove(pointToRemove);
-				callThisOnChange();
-			} else
-            {
-				throw new Exception("Trying to remove point that's not in list.");
-            }
+			lock (linePoints)
+			{
+				if (linePoints.Contains(pointToRemove))
+				{
+					pointToRemove.PropertyChanged += NewPoint_PropertyChanged;
+					linePoints.Remove(pointToRemove);
+					callThisOnChange(true);
+				}
+				else
+				{
+					throw new Exception("Trying to remove point that's not in list.");
+				}
+			}
         }
 
 		public void bindListView(ListView view)
         {
-			boundView = view;
-			view.ItemsSource = linePoints;
+			lock (linePoints)
+			{
+				boundView = view;
+				view.ItemsSource = linePoints.ToArray();
+			}
         }
 		public void bindCutterWindow(CombineCutter cutterWindowA)
         {
@@ -175,48 +198,61 @@ namespace DemoCutterGUI
 		// Manages order and references to next and previous etc.
 		// Not efficient or elegant but this isn't the game, it's just a silly little GUI, we can handle a bit of inefficiency
 		// and it makes it easier to work with this
-		public void callThisOnChange()
+		public void callThisOnChange(bool itemRemovedOrAdded)
         {
-			linePoints.Sort((a,b)=> a.time - b.time);
-			lowestTime = 0;
-			highestTime = 0;
-			if (linePoints.Count > 1)
+            lock (linePoints)
             {
-				for(int i = 0; i < linePoints.Count; i++)
+
+				linePoints.Sort((a,b)=> a.time - b.time);
+				lowestTime = 0;
+				highestTime = 0;
+				if (linePoints.Count > 1)
 				{
-					if (i == 0)
+					for(int i = 0; i < linePoints.Count; i++)
 					{
-						linePoints[i].prev = null;
-						linePoints[i].next = linePoints[i + 1];
-						lowestTime = linePoints[i].time;
-					}
-					else if (i == linePoints.Count - 1)
-					{
+						if (i == 0)
+						{
+							linePoints[i].prev = null;
+							linePoints[i].next = linePoints[i + 1];
+							lowestTime = linePoints[i].time;
+						}
+						else if (i == linePoints.Count - 1)
+						{
 
-						linePoints[i].next = null;
-						linePoints[i].prev = linePoints[i - 1];
-						highestTime = linePoints[i].time;
-					}
-					else
-					{
+							linePoints[i].next = null;
+							linePoints[i].prev = linePoints[i - 1];
+							highestTime = linePoints[i].time;
+						}
+						else
+						{
 
-						linePoints[i].next = linePoints[i + 1];
-						linePoints[i].prev = linePoints[i - 1];
+							linePoints[i].next = linePoints[i + 1];
+							linePoints[i].prev = linePoints[i - 1];
+						}
 					}
+				} else if (linePoints.Count == 1)
+				{
+					lowestTime = highestTime = linePoints[0].time;
+					linePoints[0].next = null;
+					linePoints[0].prev = null;
 				}
-			} else if (linePoints.Count == 1)
-            {
-				lowestTime = highestTime = linePoints[0].time;
-				linePoints[0].next = null;
-				linePoints[0].prev = null;
-            }
-            else
-			if(boundView != null)
-            {
-				ICollectionView view = CollectionViewSource.GetDefaultView(boundView.ItemsSource);
-				view.Refresh();
-            }
-			OnUpdated();
+
+				if(boundView != null)
+				{							// TODO Rethink this whole thing. When clicking too fast you can end up with a desync between the WPF element and the list and the program crashes.
+                    if (itemRemovedOrAdded)
+                    {
+						boundView.ItemsSource = null;
+						boundView.ItemsSource = linePoints;
+                    }
+                    else
+                    {
+						ICollectionView view = CollectionViewSource.GetDefaultView(boundView.ItemsSource);
+						view.Refresh();
+					}
+
+				}
+				OnUpdated();
+			}
 		}
 
 
@@ -233,29 +269,35 @@ namespace DemoCutterGUI
 
 		DemoLinePoint linePointSynch(int playTime)
 		{
-			if (linePoints.Count == 0)
-            {
-				return null;
-            }
-            else
-            {
-				DemoLinePoint point = linePoints[0];
-				for (; point.next != null && point.next.time <= playTime; point = point.next) ;
-				return point;
+			lock (linePoints)
+			{
+				if (linePoints.Count == 0)
+				{
+					return null;
+				}
+				else
+				{
+					DemoLinePoint point = linePoints[0];
+					for (; point.next != null && point.next.time <= playTime; point = point.next) ;
+					return point;
+				}
 			}
 		}
 
 		DemoLinePoint linePointSynchDemoTime(float demoTime)
 		{
-			if (linePoints.Count == 0)
-            {
-				return null;
-            }
-            else
-            {
-				DemoLinePoint point = linePoints[0];
-				for (; point.next != null && point.next.demoTime <= demoTime; point = point.next) ;
-				return point;
+			lock (linePoints)
+			{
+				if (linePoints.Count == 0)
+				{
+					return null;
+				}
+				else
+				{
+					DemoLinePoint point = linePoints[0];
+					for (; point.next != null && point.next.demoTime <= demoTime; point = point.next) ;
+					return point;
+				}
 			}
 		}
 		void lineInterpolate(int playTime, float playTimeFraction, ref int demoTime, ref float demoTimeFraction, ref float demoSpeed)
