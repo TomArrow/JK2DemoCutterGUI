@@ -216,5 +216,22 @@ namespace DemoCutterGUI
 
             OpenTkControl.InvalidateVisual();
         }
+
+        private void demoLinePointsView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            delTimePointBtn.IsEnabled = demoLinePointsView.SelectedItems.Count > 0;
+
+
+        }
+
+        private void delTimePointBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+            List<DemoLinePoint> selectedPoints = demoLinePointsView.SelectedItems.Cast<DemoLinePoint>().ToList();
+            foreach(DemoLinePoint point in selectedPoints)
+            {
+                points.removePoint(point);
+            }
+        }
     }
 }

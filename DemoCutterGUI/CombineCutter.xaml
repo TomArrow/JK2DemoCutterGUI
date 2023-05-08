@@ -35,7 +35,7 @@
             <CheckBox x:Name="speedChangeDemoTimeModeCheck" ToolTip="When changing by speed, should we change demoTime instead of time?" Checked="UpdateSettingsFromGUI" Unchecked="UpdateSettingsFromGUI" IsEnabled="{Binding ElementName=speedPreserveCheck,Path=IsChecked}" IsChecked="True">DemoTime mode</CheckBox>
             <CheckBox x:Name="speedSlidersCheck" IsChecked="False" >Speed sliders</CheckBox>
         </WrapPanel>
-        <ListView Grid.Row="1" Grid.Column="2" x:Name="demoLinePointsView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=DemoLinePoints}">
+        <ListView Grid.Row="1" Grid.Column="2" x:Name="demoLinePointsView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=DemoLinePoints}" SelectionChanged="demoLinePointsView_SelectionChanged">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <StackPanel>
@@ -58,7 +58,7 @@
         <Slider x:Name="scrubSlider" Value="{Binding scrubPosition,Mode=TwoWay}" Grid.Column="1" ValueChanged="scrubSlider_ValueChanged" Grid.Row="2" Minimum="{Binding currentMin}" Maximum="{Binding currentMax}"></Slider>
         <WrapPanel Grid.Row="2" Grid.Column="2" Grid.RowSpan="2">
             <Button x:Name="newTimePointBtn" Click="newTimePointBtn_Click">New Time Point</Button>
-            <Button x:Name="delTimePointBtn" IsEnabled="False">Delete Time Point(s)</Button>
+            <Button x:Name="delTimePointBtn" IsEnabled="False" Click="delTimePointBtn_Click">Delete Time Point(s)</Button>
         </WrapPanel>
         <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSliderVert" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="4" Minimum="{Binding absoluteMinVert}" Maximum="{Binding absoluteMaxVert}" LowerValue="{Binding currentMinVert,Mode=TwoWay}" UpperValue="{Binding currentMaxVert,Mode=TwoWay}" Orientation="Vertical"></mah:RangeSlider>
         <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="4" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>
