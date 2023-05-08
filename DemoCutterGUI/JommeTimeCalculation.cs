@@ -1,6 +1,7 @@
 ﻿using PropertyChanged;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
@@ -126,6 +127,7 @@ namespace DemoCutterGUI
 		public int highestTime { get; private set; }
 
 		private List<DemoLinePoint> linePoints = new List<DemoLinePoint>();
+		private ObservableCollection<DemoLinePoint> linePointsObservable = new ObservableCollection<DemoLinePoint>();
 
 		ListView boundView = null;
 		public CombineCutter cutterWindow { get; private set; }
@@ -137,6 +139,7 @@ namespace DemoCutterGUI
             lock (linePoints)
             {
 				linePoints.Add(newPoint);
+				linePointsObservable.Add(newPoint);
             }
 			callThisOnChange(true);
         }
@@ -171,8 +174,9 @@ namespace DemoCutterGUI
 			{
 				if (linePoints.Contains(pointToRemove))
 				{
-					pointToRemove.PropertyChanged += NewPoint_PropertyChanged;
+					pointToRemove.PropertyChanged -= NewPoint_PropertyChanged;
 					linePoints.Remove(pointToRemove);
+					linePointsObservable.Remove(pointToRemove);
 					callThisOnChange(true);
 				}
 				else
@@ -182,12 +186,16 @@ namespace DemoCutterGUI
 			}
         }
 
+		ICollectionView cv = null;
+
 		public void bindListView(ListView view)
         {
 			lock (linePoints)
 			{
 				boundView = view;
-				view.ItemsSource = linePoints.ToArray();
+				cv = CollectionViewSource.GetDefaultView(linePointsObservable);
+				cv.SortDescriptions.Add(new SortDescription("time",ListSortDirection.Ascending));
+				view.ItemsSource = cv;
 			}
         }
 		public void bindCutterWindow(CombineCutter cutterWindowA)
@@ -238,18 +246,8 @@ namespace DemoCutterGUI
 				}
 
 				if(boundView != null)
-				{							// TODO Rethink this whole thing. When clicking too fast you can end up with a desync between the WPF element and the list and the program crashes.
-                    if (itemRemovedOrAdded)
-                    {
-						boundView.ItemsSource = null;
-						boundView.ItemsSource = linePoints;
-                    }
-                    else
-                    {
-						ICollectionView view = CollectionViewSource.GetDefaultView(boundView.ItemsSource);
-						view.Refresh();
-					}
-
+				{    
+					cv.Refresh();
 				}
 				OnUpdated();
 			}
