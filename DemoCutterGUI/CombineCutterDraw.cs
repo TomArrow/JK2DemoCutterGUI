@@ -114,9 +114,11 @@ namespace DemoCutterGUI
         {
             List<DemoWrapper> visibleDemos = new List<DemoWrapper>();
             demos.Foreach((in Demo demo)=> {
-                float combinedDemoStartTime = demo.highlightDemoTime - demo.highlightOffset;
+                float demoSpeed = 0;
+                float demoHighlightTimeInCombinedDemoTime = points.lineAtSimple(demo.highlightDemoTime,ref demoSpeed);
+                float combinedDemoStartTime = demoHighlightTimeInCombinedDemoTime - demo.highlightOffset;
                 float timelineTimeStart = points.lineAtInverse(combinedDemoStartTime);
-                float possibleEndTime = demo.highlightDemoTime + 10000; // Maybe make it configurable at some point.
+                float possibleEndTime = demoHighlightTimeInCombinedDemoTime + 10000; // Maybe make it configurable at some point.
                 float timelineTimeEnd = points.lineAtInverse(possibleEndTime);
 
                 // Overlap with current timeline section?
@@ -152,6 +154,7 @@ namespace DemoCutterGUI
             {
                 double xLeft = 2.0 * ((demo.timelineTimeStart - from) / (to - from)) - 1.0;
                 double xRight = 2.0 * ((demo.timelineTimeEnd - from) / (to - from)) - 1.0;
+                double xHighlight = 2.0 * ((demo.demo.highlightDemoTime - from) / (to - from)) - 1.0;
                 double yTop = offset;
                 double yBottom = offset - singleHeight;
 
@@ -177,6 +180,14 @@ namespace DemoCutterGUI
                 GL.Vertex3(xLeft, yBottom + singleBorder, 0);
                 GL.End();
 
+
+                // Highlight point
+                GL.Color4(0, 0, 1, 1);
+                GL.LineWidth(3);
+                GL.Begin(PrimitiveType.Lines);
+                GL.Vertex3(xHighlight, yTop, 0);
+                GL.Vertex3(xHighlight, yBottom, 0);
+                GL.End();
 
 
                 // Text
