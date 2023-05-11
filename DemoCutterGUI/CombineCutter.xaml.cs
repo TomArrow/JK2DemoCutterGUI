@@ -71,6 +71,7 @@ namespace DemoCutterGUI
         public bool speedChangeDemoTimeMode { get; private set; } = true;
 
         JommeTimePoints points = new JommeTimePoints();
+        Demos demos = new Demos();
 
 
         BitmapFont font = null;
@@ -113,6 +114,7 @@ namespace DemoCutterGUI
             //inversionTestValueVerifyControl.DataContext = scrubControl;
             debuggingTab.DataContext = scrubControl;
 
+            demos.bindListView(demosView);
 
         }
 
@@ -232,6 +234,28 @@ namespace DemoCutterGUI
             {
                 points.removePoint(point);
             }
+        }
+
+        private void newDemoBtn_Click(object sender, RoutedEventArgs e)
+        {
+            List<Demo> selectedDemos = demosView.SelectedItems.Cast<Demo>().ToList();
+            Demo after = selectedDemos.Count > 0 ? selectedDemos[0] : null;
+
+            demos.Add(new Demo() { highlightDemoTime = after == null ? default : after.highlightDemoTime },after);
+        }
+
+        private void removeDemoBtn_Click(object sender, RoutedEventArgs e)
+        {
+            List<Demo> selectedDemos = demosView.SelectedItems.Cast<Demo>().ToList();
+            foreach (Demo demo in selectedDemos)
+            {
+                demos.Remove(demo);
+            }
+        }
+
+        private void demosView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            removeDemoBtn.IsEnabled = demosView.SelectedItems.Count > 0;
         }
     }
 }

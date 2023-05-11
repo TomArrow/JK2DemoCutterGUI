@@ -60,9 +60,30 @@
             <Button x:Name="newTimePointBtn" Click="newTimePointBtn_Click">New Time Point</Button>
             <Button x:Name="delTimePointBtn" IsEnabled="False" Click="delTimePointBtn_Click">Delete Time Point(s)</Button>
         </WrapPanel>
+        <WrapPanel Grid.Row="2" Grid.Column="3" Grid.RowSpan="2">
+            <Button x:Name="newDemoBtn" Click="newDemoBtn_Click">New demo</Button>
+            <Button x:Name="removeDemoBtn" Click="removeDemoBtn_Click" IsEnabled="False">Remove demo</Button>
+        </WrapPanel>
         <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSliderVert" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="4" Minimum="{Binding absoluteMinVert}" Maximum="{Binding absoluteMaxVert}" LowerValue="{Binding currentMinVert,Mode=TwoWay}" UpperValue="{Binding currentMaxVert,Mode=TwoWay}" Orientation="Vertical"></mah:RangeSlider>
         <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="4" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>
         <TabControl Grid.Column="4" Grid.Row="1">
+            <TabItem Header="Demos">
+                <ListView Grid.Row="1" Grid.Column="2" x:Name="demosView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=Demos}" SelectionChanged="demosView_SelectionChanged">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel x:Name="demosStackPanel">
+                                <WrapPanel>
+                                    <Label Margin="2" Padding="2" FontSize="10">HLTime</Label>
+                                    <talex:NumericUpDown  Value="{Binding highlightDemoTime,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"  FontSize="10"></talex:NumericUpDown>
+                                    <Label Margin="2" Padding="2" FontSize="10">HLOffset</Label>
+                                    <talex:NumericUpDown  Value="{Binding highlightOffset,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"   FontSize="10"></talex:NumericUpDown>
+                                </WrapPanel>
+                                <TextBox Text="{Binding name,Mode=TwoWay}" HorizontalAlignment="Stretch" MaxWidth="{Binding ElementName=demosStackPanel, Path=ActualWidth}"></TextBox>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </TabItem>
             <TabItem Header="Debugging" x:Name="debuggingTab">
                 <StackPanel>
                     <CheckBox IsChecked="{Binding inversionTest}" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked">Inverse Line Test</CheckBox>
