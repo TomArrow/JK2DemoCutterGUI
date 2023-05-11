@@ -103,12 +103,123 @@ namespace DemoCutterGUI
             }
         }
 
+        class DemoWrapper {
+            public Demo demo;
+            public float timelineTimeStart = 0;
+            public float timelineTimeEnd = 0;
+        }
+
+
+        public void DrawDemos(double actualWidth, double to, double from)
+        {
+            List<DemoWrapper> visibleDemos = new List<DemoWrapper>();
+            demos.Foreach((in Demo demo)=> {
+                float combinedDemoStartTime = demo.highlightDemoTime - demo.highlightOffset;
+                float timelineTimeStart = points.lineAtInverse(combinedDemoStartTime);
+                float possibleEndTime = demo.highlightDemoTime + 10000; // Maybe make it configurable at some point.
+                float timelineTimeEnd = points.lineAtInverse(possibleEndTime);
+
+                // Overlap with current timeline section?
+                if(timelineTimeStart < to && timelineTimeEnd > from)
+                {
+                    // It's visible
+                    visibleDemos.Add(new DemoWrapper() { 
+                        demo=demo,
+                        timelineTimeStart=timelineTimeStart,
+                        timelineTimeEnd = timelineTimeEnd,
+                    });
+                }
+
+            });
+
+            if (visibleDemos.Count == 0) return;
+
+
+            // Preparations for text
+            double actualHeight = OpenTkControl.ActualHeight;
+            double fontHeight =13;
+            double relativeFontHeight = 2.0 * fontHeight / actualHeight;
+            double verticalScale = 1000.0;
+            double horizontalScale = 1000.0 * actualWidth / actualHeight;
+
+            // Now start drawing them
+            double singleHeight = 2.0/(double)visibleDemos.Count;
+            double singlePaddingSize = 2;
+            double singleBorder = Math.Min(singleHeight * 0.5, 2.0*singlePaddingSize/actualHeight);
+            double singleBorderHorz = 2.0*singlePaddingSize/actualWidth;
+            double offset = 1.0;
+            foreach (DemoWrapper demo in visibleDemos)
+            {
+                double xLeft = 2.0 * ((demo.timelineTimeStart - from) / (to - from)) - 1.0;
+                double xRight = 2.0 * ((demo.timelineTimeEnd - from) / (to - from)) - 1.0;
+                double yTop = offset;
+                double yBottom = offset - singleHeight;
+
+                // Box
+                GL.BindTexture(TextureTarget.Texture2D, 0);
+                GL.Color4(1.0, 0.8, 0.8, 1);
+                GL.Begin(PrimitiveType.Quads);
+
+                GL.Vertex3(xLeft, yTop- singleBorder, 0);
+                GL.Vertex3(xRight, yTop- singleBorder, 0);
+                GL.Vertex3(xRight, yBottom+ singleBorder, 0);
+                GL.Vertex3(xLeft, yBottom+ singleBorder, 0);
+                GL.End();
+
+                // Darker outline
+                GL.Color4(0.7, 0.4, 0.4, 1);
+                GL.LineWidth(1);
+                GL.Begin(PrimitiveType.LineLoop);
+
+                GL.Vertex3(xLeft, yTop - singleBorder, 0);
+                GL.Vertex3(xRight, yTop - singleBorder, 0);
+                GL.Vertex3(xRight, yBottom + singleBorder, 0);
+                GL.Vertex3(xLeft, yBottom + singleBorder, 0);
+                GL.End();
+
+
+
+                // Text
+                GL.Enable(EnableCap.Blend);
+                GL.Color4(1f, 1f, 1f, 1f);
+                GL.BlendColor(0f, 0f, 0f, 1.0f);
+                GL.BlendFunc(BlendingFactor.ConstantColor, BlendingFactor.OneMinusSrcColor);
+                GL.MatrixMode(MatrixMode.Projection);
+                GL.LoadIdentity();
+                GL.Ortho(-horizontalScale, horizontalScale, -1000.0, 1000.0, -1.0, 1.0);
+                double fontSize = relativeFontHeight * 1000.0;
+                double textXLeft = Math.Max(-1.0 + singleBorderHorz, singleBorderHorz + xLeft);
+                double maxWidth = Math.Max(0.001, (xRight-singleBorderHorz)-textXLeft);
+                font.Draw(demo.demo.name, (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)yTop - (float)singleBorder*2.0f), 0.0f, new TextConfiguration
+                {
+                    SizeInPixels = (uint)fontSize,
+                    MaximalWidth = (float)(maxWidth*horizontalScale),
+                    Alignment = BitmapFontLibrary.Model.TextAlignment.LeftAligned
+                });
+                GL.Disable(EnableCap.Blend);
+                GL.LoadIdentity();
+
+
+                offset = yBottom;
+            }
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+
+
+
+
+
+        }
+
+
+
         public void DrawSpeedGraph(double actualWidth, double to, double from)
         {
             // Actual speed graph
             GL.Color4(0, 0, 0, 1);
             GL.LineWidth(1);
             GL.Begin(PrimitiveType.LineStrip);
+            //GL.Color4(1f, 0f, 0f, 1f);
             double step = (to - from) / actualWidth;
             double openGLStep = 2.0 / actualWidth;
             if ((to - from) > 1.0 && actualWidth > 1.0) // Avoid endless loop if we're not yet

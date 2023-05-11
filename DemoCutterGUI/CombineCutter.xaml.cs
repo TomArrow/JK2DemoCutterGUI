@@ -89,6 +89,9 @@ namespace DemoCutterGUI
             OpenTkControl.Loaded += OpenTkControl_Loaded;
             OpenTkControl.Start(settings);
 
+            points.Updated += Points_Updated;
+            demos.Updated += Demos_Updated;
+
             //points.addPoint(new DemoLinePoint() {time=10,demoTime=10 });
             //points.addPoint(new DemoLinePoint() {time=200,demoTime=100 });
             //points.addPoint(new DemoLinePoint() {time=400,demoTime=200 });
@@ -103,10 +106,20 @@ namespace DemoCutterGUI
             points.addPoint(new DemoLinePoint() {time=406,demoTime=205 });
             points.addPoint(new DemoLinePoint() {time=606,demoTime=405 });
             points.addPoint(new DemoLinePoint() {time=608,demoTime=407 });
+            points.addPoint(new DemoLinePoint() {time=50000,demoTime=50000 });
+
+            demos.Add(new Demo() { highlightDemoTime = 5000, highlightOffset = 10000 });
+            demos.Add(new Demo() { highlightDemoTime = 7000, highlightOffset = 10000, name = "demo1" });
+            demos.Add(new Demo() { highlightDemoTime = 7500, highlightOffset = 10000, name = "demo2" });
+            demos.Add(new Demo() { highlightDemoTime = 8000, highlightOffset = 10000, name = "demo3" });
+            demos.Add(new Demo() { highlightDemoTime = 12000, highlightOffset = 10000, name = "demo4" });
+            demos.Add(new Demo() { highlightDemoTime = 15000, highlightOffset = 10000, name = "demo5_abcdefg_235235HD_blahblahblah___ERBEREBERBERBEBERBER_1234325ups_blahblahbalh.dm_15" });
+            demos.Add(new Demo() { highlightDemoTime = 15500, highlightOffset = 10000, name = "demo6" });
+            demos.Add(new Demo() { highlightDemoTime = 15700, highlightOffset = 10000, name = "demo7" });
+            demos.Add(new Demo() { highlightDemoTime = 17000, highlightOffset = 10000, name = "demo8" });
 
             points.bindListView(demoLinePointsView);
             points.bindCutterWindow(this);
-            points.Updated += Points_Updated;
             scrubSlider.DataContext = scrubControl;
             rangeSlider.DataContext = scrubControl;
             rangeSliderVert.DataContext = scrubControl;
@@ -118,6 +131,10 @@ namespace DemoCutterGUI
 
         }
 
+        private void Demos_Updated(object sender, EventArgs e)
+        {
+            OpenTkControl.InvalidateVisual();
+        }
 
         private void OpenTkControl_Loaded(object sender, RoutedEventArgs e)
         {
@@ -168,13 +185,15 @@ namespace DemoCutterGUI
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-
-            this.DrawVariousLines();
-
-
             double actualWidth = OpenTkControl.ActualWidth;
             double from = scrubControl.currentMin;
             double to = scrubControl.currentMax;
+
+            this.DrawDemos(actualWidth, to, from);
+
+
+            this.DrawVariousLines();
+
             this.DrawSpeedGraph(actualWidth, to, from);
 
 

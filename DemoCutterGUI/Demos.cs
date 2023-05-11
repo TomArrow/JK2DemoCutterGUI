@@ -10,7 +10,7 @@ using System.Windows.Data;
 
 namespace DemoCutterGUI
 {
-    public class Demo
+    public class Demo : INotifyPropertyChanged
     {
         public string name { get; set; } = "";
         public int order { get; set; } = 0;
@@ -20,12 +20,20 @@ namespace DemoCutterGUI
 
         internal Demo wishAfter = null;
         internal Demo wishBefore = null;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
         public int sortIndex { get; internal set; } = 0;
     }
 
 
     class Demos
     {
+
+        public delegate void ForeachHandler(in Demo point); // Technically the in keyword doessn't prevent changes to the point, but just be respectful. It's a hint for you.	
+
+        public event EventHandler Updated;
+
         List<Demo> demos = new List<Demo>();
         ObservableCollection<Demo> demosObservable = new ObservableCollection<Demo>();
 
@@ -47,12 +55,23 @@ namespace DemoCutterGUI
         {
             lock (demos)
             {
+                demo.PropertyChanged += Demo_PropertyChanged;
                 demo.wishAfter = after;
                 demo.wishBefore = before;
                 demos.Add(demo);
                 demosObservable.Add(demo);
                 callOnUpdate();
             }
+        }
+
+        private void Demo_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            OnUpdated();
+        }
+
+        private void OnUpdated()
+        {
+            Updated?.Invoke(this, new EventArgs());
         }
 
         public void callOnUpdate()
@@ -128,16 +147,31 @@ namespace DemoCutterGUI
                     cv.Refresh();
                 }
 
+                OnUpdated();
             }
+
         }
 
         public void Remove(Demo demo)
         {
             lock (demos)
             {
+                demo.PropertyChanged -= Demo_PropertyChanged;
                 demos.Remove(demo);
                 demosObservable.Remove(demo);
                 callOnUpdate();
+            }
+        }
+
+
+        public void Foreach(ForeachHandler handler)
+        {
+            lock (demos)
+            {
+                foreach (Demo demo in demos)
+                {
+                    handler(demo);
+                }
             }
         }
     }
