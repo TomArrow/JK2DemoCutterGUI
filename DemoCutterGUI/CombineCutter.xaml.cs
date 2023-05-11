@@ -6,6 +6,7 @@ using OpenTK.Mathematics;
 using OpenTK.Wpf;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Drawing.Text;
 using System.Linq;
@@ -109,7 +110,7 @@ namespace DemoCutterGUI
             points.addPoint(new DemoLinePoint() {time=50000,demoTime=50000 });
 
             demos.Add(new Demo() { highlightDemoTime = 5000, highlightOffset = 10000 });
-            demos.Add(new Demo() { highlightDemoTime = 7000, highlightOffset = 10000, name = "demo1" });
+            demos.Add(new Demo(new AdditionalHighlights() { 5000, 7000, 12000 }) { highlightDemoTime = 7000, highlightOffset = 10000, name = "demo1" });
             demos.Add(new Demo() { highlightDemoTime = 7500, highlightOffset = 10000, name = "demo2" });
             demos.Add(new Demo() { highlightDemoTime = 8000, highlightOffset = 10000, name = "demo3" });
             demos.Add(new Demo() { highlightDemoTime = 12000, highlightOffset = 10000, name = "demo4" });
@@ -275,6 +276,18 @@ namespace DemoCutterGUI
         private void demosView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             removeDemoBtn.IsEnabled = demosView.SelectedItems.Count > 0;
+        }
+
+        private void AddSecondaryDemoHighlightOffset_Click(object sender, RoutedEventArgs e)
+        {
+            Demo demo = (Demo)((Button)sender).DataContext;
+            demo.additionalHighlights.Add(10000);
+        }
+
+        private void RemoveSecondaryDemoHighlightOffset_Click(object sender, RoutedEventArgs e)
+        {
+            AdditionalHighlight highlight = (AdditionalHighlight)((Button)sender).DataContext;
+            highlight.associatedDemo.additionalHighlights.Remove(highlight);
         }
     }
 }

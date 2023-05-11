@@ -10,18 +10,59 @@ using System.Windows.Data;
 
 namespace DemoCutterGUI
 {
+
+    public class AdditionalHighlights : ObservableCollection<AdditionalHighlight>
+    {
+        private Demo _owner = null;
+        public void Add(int time)
+        {
+            lock (this)
+            {
+                this.Add(new AdditionalHighlight() { time = time, associatedDemo = _owner });
+            }
+        }
+
+        public void SetOwner(Demo owner)
+        {
+            lock (this)
+            {
+                _owner = owner;
+                foreach (var item in this)
+                {
+                    item.associatedDemo = _owner;
+                }
+            }
+        }
+    }
+
+    public class AdditionalHighlight : INotifyPropertyChanged
+    {
+        public int time { get; set; } = 0;
+        public Demo associatedDemo { get; internal set; } = null;
+        //public AdditionalHighlight(int timeA) { time = timeA; }
+        //public static implicit operator AdditionalHighlight(int timeA) => new AdditionalHighlight(timeA);
+
+        public event PropertyChangedEventHandler PropertyChanged;
+    }
     public class Demo : INotifyPropertyChanged
     {
+
         public string name { get; set; } = "";
         public int order { get; set; } = 0;
         public int highlightDemoTime { get; set; } = 0;
         public int highlightOffset { get; set; } = 10000;
-        public List<int> additionalHighlights { get; init; } = new List<int>();
+        public AdditionalHighlights additionalHighlights { get; private set; } = null;
 
         internal Demo wishAfter = null;
         internal Demo wishBefore = null;
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        public Demo(AdditionalHighlights additionalHighlightsA = null)
+        {
+            additionalHighlights = additionalHighlightsA == null? new AdditionalHighlights() : additionalHighlightsA;
+            additionalHighlights.SetOwner(this);
+        }
 
         public int sortIndex { get; internal set; } = 0;
     }
@@ -101,7 +142,7 @@ namespace DemoCutterGUI
                     if(toResort == null)
                     {
                         nothingToResort = true;
-                        continue;
+                        //continue;
                     }
 
                     // Store all the other demos in other array and rewrite the list while taking the to-be-resorted demo's wish into account
@@ -112,7 +153,7 @@ namespace DemoCutterGUI
                     int sortIndex = 0;
                     foreach(Demo demo in otherDemos)
                     {
-                        if(toResort.wishBefore == demo)
+                        if(toResort != null && toResort.wishBefore == demo)
                         {
                             demos.Add(toResort);
                             toResort.wishBefore = null;
@@ -121,7 +162,7 @@ namespace DemoCutterGUI
                             demos.Add(demo);
                             demo.sortIndex = sortIndex++;
                             resorted = true;
-                        } else if(toResort.wishAfter == demo)
+                        } else if(toResort != null && toResort.wishAfter == demo)
                         {
                             demos.Add(demo);
                             demo.sortIndex = sortIndex++;
@@ -137,7 +178,7 @@ namespace DemoCutterGUI
                             demo.sortIndex = sortIndex++;
                         }
                     }
-                    if (!resorted)
+                    if (!resorted && toResort != null)
                     {
                         throw new Exception("Demos::callOnUpdate: Wasn't able to sort in the demo. This indicates a programming/logic error somewhere.");
                     }
