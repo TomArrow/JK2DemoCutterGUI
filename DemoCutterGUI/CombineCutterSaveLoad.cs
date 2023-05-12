@@ -31,7 +31,46 @@ namespace DemoCutterGUI
         
         private void btnLoad_Click(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.DefaultExt = "json";
+            ofd.Filter = "JSON Project files (*.json)|*.json|All files (*.*)|*.*";
+            if(ofd.ShowDialog() != true)
+            {
+                return;
+            }
+            string jsonData = File.ReadAllText(ofd.FileName);
+
+            JsonSerializerOptions opts = new JsonSerializerOptions();
+            opts.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals | System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
+            ProjectSaveFileData deSerialized = JsonSerializer.Deserialize<ProjectSaveFileData>(jsonData, opts);
+            if(deSerialized == null)
+            {
+                MessageBox.Show("Loading failed.");
+                return;
+            }
+
+            currentlyActiveProjectFile = ofd.FileName;
+
+            points.Clear();
+            demos.Clear();
+            foreach(DemoLinePoint point in deSerialized.pointList)
+            {
+                points.addPoint(point);
+            }
+
+            Demo last = null;
+            foreach(Demo demo in deSerialized.demoList)
+            {
+                demos.Add(demo, last);
+                last = demo;
+            }
+
+        }
+        private void btnNew_Click(object sender, RoutedEventArgs e)
+        {
+            currentlyActiveProjectFile = null;
+            points.Clear();
+            demos.Clear();
         }
 
         private void SaveProject(bool forceFileDialogue = false)
@@ -61,8 +100,11 @@ namespace DemoCutterGUI
 
             JsonSerializerOptions opts = new JsonSerializerOptions();
             opts.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals | System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
+            opts.WriteIndented = true;
             string saveFileDataJson = JsonSerializer.Serialize(saveFileData, opts);
             File.WriteAllText(saveFile, saveFileDataJson);
+
+            currentlyActiveProjectFile = saveFile;
 
 
         }

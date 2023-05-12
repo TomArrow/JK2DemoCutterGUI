@@ -191,6 +191,19 @@ namespace DemoCutterGUI
 			}
         }
 
+		public void Clear()
+		{
+			lock (linePoints)
+			{
+				DemoLinePoint[] currentPoints = linePoints.ToArray();
+				foreach (DemoLinePoint point in currentPoints)
+				{
+					this.removePoint(point);
+				}
+				currentPoints = null;
+			}
+		}
+
 		ICollectionView cv = null;
 
 		public void bindListView(ListView view)

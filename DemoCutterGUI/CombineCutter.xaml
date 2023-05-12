@@ -36,6 +36,7 @@
             <CheckBox x:Name="speedSlidersCheck" IsChecked="False" >Speed sliders</CheckBox>
         </WrapPanel>
         <WrapPanel Grid.Row="0" Grid.Column="3">
+            <Button x:Name="btnNew" Click="btnNew_Click">New</Button>
             <Button x:Name="btnLoad" Click="btnLoad_Click">Open...</Button>
             <Button x:Name="btnSave" Click="btnSave_Click">Save</Button>
             <Button x:Name="btnSaveAs" Click="btnSaveAs_Click">Save as...</Button>
@@ -94,7 +95,7 @@
                                     <ListView.ItemTemplate>
                                         <DataTemplate>
                                             <WrapPanel>
-                                                <talex:NumericUpDown Value="{Binding time}"  Margin="0 2 0 2" Padding="2" FontSize="10"  Maximum="99999999999999999" ></talex:NumericUpDown>
+                                                <talex:NumericUpDown Value="{Binding time,Mode=TwoWay}"  Margin="0 2 0 2" Padding="2" FontSize="10"  Maximum="99999999999999999" ></talex:NumericUpDown>
                                                 <Button  Margin="0" Height="14" FontSize="10" Padding="2 0 2 0" Click="RemoveSecondaryDemoHighlightOffset_Click">-</Button>
                                             </WrapPanel>
                                         </DataTemplate>

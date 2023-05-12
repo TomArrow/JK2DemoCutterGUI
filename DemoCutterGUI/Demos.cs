@@ -52,7 +52,11 @@ namespace DemoCutterGUI
         public string name { get; set; } = "";
         public int highlightDemoTime { get; set; } = 0;
         public int highlightOffset { get; set; } = 10000;
-        public AdditionalHighlights additionalHighlights { get; private set; } = null;
+        private AdditionalHighlights _additionalHighlights = null;
+        public AdditionalHighlights additionalHighlights { 
+            get { return _additionalHighlights; } 
+            init { _additionalHighlights = value; _additionalHighlights.SetOwner(this); } 
+        }
 
         [JsonIgnore]
         internal Demo wishAfter = null;
@@ -64,6 +68,11 @@ namespace DemoCutterGUI
         public Demo(AdditionalHighlights additionalHighlightsA = null)
         {
             additionalHighlights = additionalHighlightsA == null? new AdditionalHighlights() : additionalHighlightsA;
+            additionalHighlights.SetOwner(this);
+        }
+        public Demo()
+        {
+            additionalHighlights = new AdditionalHighlights();
             additionalHighlights.SetOwner(this);
         }
 
@@ -205,6 +214,18 @@ namespace DemoCutterGUI
                 demos.Remove(demo);
                 demosObservable.Remove(demo);
                 callOnUpdate();
+            }
+        }
+        public void Clear()
+        {
+            lock (demos)
+            {
+                Demo[] currentDemos = demos.ToArray();
+                foreach(Demo demo in currentDemos)
+                {
+                    this.Remove(demo);
+                }
+                currentDemos = null;
             }
         }
 
