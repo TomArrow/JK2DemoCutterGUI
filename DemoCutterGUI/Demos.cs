@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -13,6 +14,7 @@ namespace DemoCutterGUI
 
     public class AdditionalHighlights : ObservableCollection<AdditionalHighlight>
     {
+        [JsonIgnore]
         private Demo _owner = null;
         public void Add(int time)
         {
@@ -38,6 +40,7 @@ namespace DemoCutterGUI
     public class AdditionalHighlight : INotifyPropertyChanged
     {
         public int time { get; set; } = 0;
+        [JsonIgnore]
         public Demo associatedDemo { get; internal set; } = null;
         //public AdditionalHighlight(int timeA) { time = timeA; }
         //public static implicit operator AdditionalHighlight(int timeA) => new AdditionalHighlight(timeA);
@@ -46,14 +49,14 @@ namespace DemoCutterGUI
     }
     public class Demo : INotifyPropertyChanged
     {
-
         public string name { get; set; } = "";
-        public int order { get; set; } = 0;
         public int highlightDemoTime { get; set; } = 0;
         public int highlightOffset { get; set; } = 10000;
         public AdditionalHighlights additionalHighlights { get; private set; } = null;
 
+        [JsonIgnore]
         internal Demo wishAfter = null;
+        [JsonIgnore]
         internal Demo wishBefore = null;
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -64,6 +67,7 @@ namespace DemoCutterGUI
             additionalHighlights.SetOwner(this);
         }
 
+        [JsonIgnore]
         public int sortIndex { get; internal set; } = 0;
     }
 

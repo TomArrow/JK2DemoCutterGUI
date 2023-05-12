@@ -1,25 +1,15 @@
 ﻿using BitmapFontLibrary;
-using BitmapFontLibrary.Model;
 using Ninject;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Wpf;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Drawing.Text;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using System.Text.Json;
 
 namespace DemoCutterGUI
 {
@@ -64,6 +54,8 @@ namespace DemoCutterGUI
     /// </summary>
     public partial class CombineCutter : Window
     {
+
+
 
         ScrubControl scrubControl = new ScrubControl();
 
@@ -289,5 +281,6 @@ namespace DemoCutterGUI
             AdditionalHighlight highlight = (AdditionalHighlight)((Button)sender).DataContext;
             highlight.associatedDemo.additionalHighlights.Remove(highlight);
         }
+
     }
 }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -17,12 +18,16 @@ namespace DemoCutterGUI
 
 	public class DemoLinePoint : INotifyPropertyChanged
 	{
+		[JsonIgnore]
 		public DemoLinePoint next { get; set; }
+		[JsonIgnore]
 		public DemoLinePoint prev { get; set; }
+		[JsonIgnore]
 		public JommeTimePoints pointsCollection = null;
 		public int time { get; set; }
 		public int demoTime {get;set;}
 
+		[JsonIgnore]
 		[DependsOn("time", "demoTime", "next","prev")]
 		public double effectiveSpeed
         {

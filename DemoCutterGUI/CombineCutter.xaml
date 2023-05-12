@@ -35,6 +35,11 @@
             <CheckBox x:Name="speedChangeDemoTimeModeCheck" ToolTip="When changing by speed, should we change demoTime instead of time?" Checked="UpdateSettingsFromGUI" Unchecked="UpdateSettingsFromGUI" IsEnabled="{Binding ElementName=speedPreserveCheck,Path=IsChecked}" IsChecked="True">DemoTime mode</CheckBox>
             <CheckBox x:Name="speedSlidersCheck" IsChecked="False" >Speed sliders</CheckBox>
         </WrapPanel>
+        <WrapPanel Grid.Row="0" Grid.Column="3">
+            <Button x:Name="btnLoad" Click="btnLoad_Click">Open...</Button>
+            <Button x:Name="btnSave" Click="btnSave_Click">Save</Button>
+            <Button x:Name="btnSaveAs" Click="btnSaveAs_Click">Save as...</Button>
+        </WrapPanel>
         <ListView Grid.Row="1" Grid.Column="2" x:Name="demoLinePointsView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=DemoLinePoints}" SelectionChanged="demoLinePointsView_SelectionChanged">
             <ListView.ItemTemplate>
                 <DataTemplate>
