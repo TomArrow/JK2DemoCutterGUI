@@ -189,6 +189,22 @@ namespace DemoCutterGUI
                 GL.Vertex3(xHighlight, yBottom, 0);
                 GL.End();
 
+                // Additional highlight points
+                foreach(AdditionalHighlight ah in demo.demo.additionalHighlights)
+                {
+                    float demoSpeed = 0;
+                    float aHDemoTime = points.lineAtSimple(demo.demo.highlightDemoTime, ref demoSpeed) - demo.demo.highlightOffset + ah.time;
+                    double aHTimelineTime = points.lineAtInverse(aHDemoTime);
+
+                    double xAHighlight = 2.0 * ((aHTimelineTime - from) / (to - from)) - 1.0;
+                    GL.Color4(0, 0, 1, 1);
+                    GL.LineWidth(1);
+                    GL.Begin(PrimitiveType.Lines);
+                    GL.Vertex3(xAHighlight, yTop, 0);
+                    GL.Vertex3(xAHighlight, yBottom, 0);
+                    GL.End();
+                }
+
 
                 // Text
                 GL.Enable(EnableCap.Blend);
