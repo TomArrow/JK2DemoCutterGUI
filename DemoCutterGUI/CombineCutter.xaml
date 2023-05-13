@@ -40,6 +40,7 @@
             <Button x:Name="btnLoad" Click="btnLoad_Click">Open...</Button>
             <Button x:Name="btnSave" Click="btnSave_Click">Save</Button>
             <Button x:Name="btnSaveAs" Click="btnSaveAs_Click">Save as...</Button>
+            <Button x:Name="btnExport" Click="btnExport_Click">Export</Button>
         </WrapPanel>
         <ListView Grid.Row="1" Grid.Column="2" x:Name="demoLinePointsView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=DemoLinePoints}" SelectionChanged="demoLinePointsView_SelectionChanged">
             <ListView.ItemTemplate>

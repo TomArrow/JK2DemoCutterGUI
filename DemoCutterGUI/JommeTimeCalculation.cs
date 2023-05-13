@@ -428,6 +428,11 @@ namespace DemoCutterGUI
 
 		}
 
+		public float lineAtSimple(float playTime)
+        {
+			float demoSpeed = 0;
+			return lineAtSimple(playTime, ref demoSpeed);
+        }
 		public float lineAtSimple(float playTime, ref float demoSpeed)
         {
 			int playTimeInt = (int)playTime;
