@@ -245,5 +245,20 @@ namespace DemoCutterGUI
             File.WriteAllText(combineBatchFile, combinerBatch);
             File.WriteAllText(combinerProjectFile, combinerProject);
         }
+
+
+
+        private void loadMetaForDemo_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.DefaultExt = "json";
+            ofd.Filter = "Supported demo files (*.dm_14;*.dm_15;*.dm_16;*.dm_25;*.dm_26;*.dm_66;*.dm_67;*.dm_68)|*.dm_14;*.dm_15;*.dm_16;*.dm_25;*.dm_26;*.dm_66;*.dm_67;*.dm_68|All files (*.*)|*.*";
+            if (ofd.ShowDialog() != true)
+            {
+                return;
+            }
+            string jsonMetaData = HiddenMetaStuff.getMetaDataFromDemoFile(ofd.FileName);
+            MessageBox.Show(jsonMetaData);
+        }
     }
 }

@@ -70,6 +70,7 @@
         <WrapPanel Grid.Row="2" Grid.Column="3" Grid.RowSpan="2">
             <Button x:Name="newDemoBtn" Click="newDemoBtn_Click">New demo</Button>
             <Button x:Name="removeDemoBtn" Click="removeDemoBtn_Click" IsEnabled="False">Remove demo</Button>
+            <Button x:Name="loadMetaForDemo" Click="loadMetaForDemo_Click" IsEnabled="False">Load Meta</Button>
         </WrapPanel>
         <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSliderVert" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="4" Minimum="{Binding absoluteMinVert}" Maximum="{Binding absoluteMaxVert}" LowerValue="{Binding currentMinVert,Mode=TwoWay}" UpperValue="{Binding currentMaxVert,Mode=TwoWay}" Orientation="Vertical"></mah:RangeSlider>
         <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="4" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>

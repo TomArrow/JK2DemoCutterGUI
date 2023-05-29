@@ -178,6 +178,16 @@ namespace DemoCutterGUI
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+            /* // This just makes the lines fat and ugly?
+            GL.ClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+            GL.LineWidth(1);
+            GL.Enable(EnableCap.LineSmooth); 
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
+            GL.DepthMask(false); 
+            */
+
             double actualWidth = OpenTkControl.ActualWidth;
             double from = scrubControl.currentMin;
             double to = scrubControl.currentMax;
@@ -268,6 +278,7 @@ namespace DemoCutterGUI
         private void demosView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             removeDemoBtn.IsEnabled = demosView.SelectedItems.Count > 0;
+            loadMetaForDemo.IsEnabled = demosView.SelectedItems.Count == 1;
         }
 
         private void AddSecondaryDemoHighlightOffset_Click(object sender, RoutedEventArgs e)
