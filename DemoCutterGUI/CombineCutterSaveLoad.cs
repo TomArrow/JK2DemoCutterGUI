@@ -250,6 +250,12 @@ namespace DemoCutterGUI
 
         private void loadMetaForDemo_Click(object sender, RoutedEventArgs e)
         {
+            List<Demo> selectedDemos = demosView.SelectedItems.Cast<Demo>().ToList();
+            if(selectedDemos.Count != 1)
+            {
+                MessageBox.Show("Metadata loading requires exactly one demo to be selected.");
+            }
+
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.DefaultExt = "json";
             ofd.Filter = "Supported demo files (*.dm_14;*.dm_15;*.dm_16;*.dm_25;*.dm_26;*.dm_66;*.dm_67;*.dm_68)|*.dm_14;*.dm_15;*.dm_16;*.dm_25;*.dm_26;*.dm_66;*.dm_67;*.dm_68|All files (*.*)|*.*";
@@ -258,7 +264,25 @@ namespace DemoCutterGUI
                 return;
             }
             string jsonMetaData = HiddenMetaStuff.getMetaDataFromDemoFile(ofd.FileName);
-            MessageBox.Show(jsonMetaData);
+
+            if (jsonMetaData == null)
+            {
+                MessageBox.Show("No metadata found.");
+                return;
+            }
+            JsonSerializerOptions opts = new JsonSerializerOptions();
+            opts.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals | System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
+            try
+            {
+
+                DemoJSONMeta deSerialized = JsonSerializer.Deserialize<DemoJSONMeta>(jsonMetaData, opts);
+                selectedDemos[0].loadDataFromMeta(deSerialized);
+                selectedDemos[0].name = Path.GetFileName(ofd.FileName);
+                //MessageBox.Show(jsonMetaData);
+            } catch(Exception ex)
+            {
+                MessageBox.Show($"Error parsing JSON metadata of demo: {ex.ToString()}");
+            }
         }
     }
 }

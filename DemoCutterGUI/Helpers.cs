@@ -5,11 +5,48 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace DemoCutterGUI
 {
-        // This class is from: https://stackoverflow.com/questions/1427471/observablecollection-not-noticing-when-item-in-it-changes-even-with-inotifyprop
+
+    class UnixEpochDateTimeOffsetConverter : JsonConverter<DateTime?>
+    {
+        public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if(0 < (options.NumberHandling & JsonNumberHandling.AllowReadingFromString) && reader.TokenType == JsonTokenType.String)
+            {
+                Int64 numberTry;
+                string numberString = reader.GetString();
+                if (Int64.TryParse(numberString, out numberTry))
+                {
+                    return DateTime.UnixEpoch.AddSeconds(numberTry);
+                }
+                else
+                {
+                    return null;
+                }
+            } else
+            {
+                return DateTime.UnixEpoch.AddSeconds(reader.GetInt64());
+            }
+        }
+
+        public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options)
+        {
+            writer.WriteNumberValue(((DateTimeOffset)value).ToUnixTimeSeconds());
+        }
+    }
+
+
+
+
+
+
+
+    // This class is from: https://stackoverflow.com/questions/1427471/observablecollection-not-noticing-when-item-in-it-changes-even-with-inotifyprop
     public class FullyObservableCollection<T> : ObservableCollection<T>
         where T : INotifyPropertyChanged
     {

@@ -24,7 +24,7 @@ namespace DemoCutterGUI
                             new DemoLinePoint() {time=606,demoTime=405 },
                             new DemoLinePoint() {time=608,demoTime=407 } };
             Demos = new ObservableCollection<Demo>() {new Demo() { highlightDemoTime = 5000, highlightOffset = 10000 },
-                new Demo(new AdditionalHighlights(){ 5000,7000, 12000}) { highlightDemoTime = 7000, highlightOffset = 10000, name="demo1", },
+                new Demo(new AdditionalHighlights(){ 5000,7000, 12000, 12500, 14000, 15000}) { highlightDemoTime = 7000, highlightOffset = 10000, name="demo1", },
                 new Demo() { highlightDemoTime = 7500, highlightOffset = 10000, name="demo2" },
                 new Demo() { highlightDemoTime = 8000, highlightOffset = 10000, name="demo3" },
                 new Demo() { highlightDemoTime = 12000, highlightOffset = 10000, name="demo4" },

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -12,15 +13,78 @@ using System.Windows.Data;
 namespace DemoCutterGUI
 {
 
+    // Object to deserialize to
+    public class DemoJSONMeta
+    {
+        [JsonPropertyName("hl")]
+        public int? highlightOffset { get; set; }
+        [JsonPropertyName("me")]
+        public string metaEventsString { get; set; }
+        [JsonPropertyName("cso")]
+        public Int64? cutStartOffset { get; set; }
+        [JsonPropertyName("odm")]
+        [JsonConverter(typeof(UnixEpochDateTimeOffsetConverter))]
+        public DateTime? originalDateModified { get; set; }
+        [JsonPropertyName("oip")]
+        public string originalIP { get; set; }
+        [JsonPropertyName("ost")]
+        [JsonConverter(typeof(UnixEpochDateTimeOffsetConverter))]
+        public DateTime? originalStartTime { get; set; }
+        [JsonPropertyName("wr")]
+        public string writer { get; set; }
+        [JsonPropertyName("of")]
+        public string originalFilename { get; set; }
+
+    }
+
+
+
     public class AdditionalHighlights : ObservableCollection<AdditionalHighlight>
     {
         [JsonIgnore]
         private Demo _owner = null;
-        public void Add(int time)
+        public void Add(int time, AdditionalHighlight.Type type = AdditionalHighlight.Type.METAEVENT_NONE, bool bypassExistsCheck = false)
         {
             lock (this)
             {
-                this.Add(new AdditionalHighlight() { time = time, associatedDemo = _owner });
+                if (bypassExistsCheck || !alreadyExists(time,type) )
+                {
+                    this.Add(new AdditionalHighlight() { time = time, associatedDemo = _owner, type = type });
+                }
+            }
+        }
+
+        private bool alreadyExists(int time, AdditionalHighlight.Type type)
+        {
+            foreach (AdditionalHighlight ah in this)
+            {
+                if (ah.type == type && ah.time == time)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        public void AddFromMetaString(string metaString, Int64 cutStartOffset)
+        {
+            string[] metaEventElements = metaString.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            lock (this)
+            {
+                for(int i = 0; i < metaEventElements.Length; i++)
+                {
+                    AdditionalHighlight.Type type;
+                    int timeOffset;
+                    if(AdditionalHighlight.TryParseMetaStringElement(metaEventElements[i], out type, out timeOffset))
+                    {
+                        timeOffset -= (int)cutStartOffset;
+                        if (!alreadyExists(timeOffset, type))
+                        {
+                            this.Add(new AdditionalHighlight() { time = timeOffset, associatedDemo = _owner, type = type });
+                        }
+                        
+                    }
+                }
             }
         }
 
@@ -37,9 +101,71 @@ namespace DemoCutterGUI
         }
     }
 
+
+
     public class AdditionalHighlight : INotifyPropertyChanged
     {
+        static Regex metaStringRegex = new Regex(@"([A-Za-z]+)?([\d-]+)", RegexOptions.Compiled|RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
+
+        public enum Type {
+            METAEVENT_NONE,
+            METAEVENT_TEAMCAPTURE,
+            METAEVENT_ENEMYTEAMCAPTURE,
+            METAEVENT_CAPTURE,
+            METAEVENT_RETURN,
+            METAEVENT_KILL,
+            METAEVENT_DEATH,
+            METAEVENT_JUMP,
+            METAEVENT_SABERHIT, // any kind of saber hit, regardless of who is hit or who is ttacking
+            METAEVENT_SABERBLOCK, // any saber block, no matter by who or to who
+            METAEVENT_EFFECT, // effect event of any sort
+            METAEVENT_COUNT
+        }
+        private static readonly Dictionary<string, Type> shortCutToType = new Dictionary<string, Type>()
+        {
+            {"tc",Type.METAEVENT_TEAMCAPTURE },
+            {"ec",Type.METAEVENT_ENEMYTEAMCAPTURE },
+            {"c",Type.METAEVENT_CAPTURE },
+            {"r",Type.METAEVENT_RETURN },
+            {"k",Type.METAEVENT_KILL },
+            {"d",Type.METAEVENT_DEATH },
+            {"j",Type.METAEVENT_JUMP },
+            {"sh",Type.METAEVENT_SABERHIT },
+            {"sb",Type.METAEVENT_SABERBLOCK },
+            {"ef",Type.METAEVENT_EFFECT },
+        };
+
+        public static bool TryParseMetaStringElement(string metaString, out Type type, out int timeOffset)
+        {
+            Match match = metaStringRegex.Match(metaString);
+            if (match.Success)
+            {
+                string key = match.Groups[1].Success ? match.Groups[1].Value : "";
+                string timeOffsetString = match.Groups[2].Value;
+                type = shortCutToType.ContainsKey(key) ? shortCutToType[key] : Type.METAEVENT_NONE;
+                if(int.TryParse(timeOffsetString, out timeOffset))
+                {
+                    return true;
+                } 
+            }
+            type = Type.METAEVENT_NONE;
+            timeOffset = 0;
+            return false;
+        }
+
+        [JsonIgnore]
+        public string typeShortcut { set
+            {
+                if (shortCutToType.ContainsKey(value))
+                {
+                    type = shortCutToType[value];
+                }
+            } }
+
         public int time { get; set; } = 0;
+        
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public Type type { get; set; } = Type.METAEVENT_NONE;
         [JsonIgnore]
         public Demo associatedDemo { get; internal set; } = null;
         //public AdditionalHighlight(int timeA) { time = timeA; }
@@ -74,6 +200,20 @@ namespace DemoCutterGUI
         {
             additionalHighlights = new AdditionalHighlights();
             additionalHighlights.SetOwner(this);
+        }
+
+        public void loadDataFromMeta(DemoJSONMeta meta)
+        {
+            Int64 cutStartOffsetMeta = meta.cutStartOffset != null ? meta.cutStartOffset.Value : 0;
+            if(meta.highlightOffset != null)
+            {
+                highlightOffset = (int)(meta.highlightOffset.Value - cutStartOffsetMeta);
+            }
+            if(meta.metaEventsString != null)
+            {
+                additionalHighlights.AddFromMetaString(meta.metaEventsString,cutStartOffsetMeta);
+            }
+
         }
 
         [JsonIgnore]

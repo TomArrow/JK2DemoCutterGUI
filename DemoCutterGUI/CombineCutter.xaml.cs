@@ -284,7 +284,7 @@ namespace DemoCutterGUI
         private void AddSecondaryDemoHighlightOffset_Click(object sender, RoutedEventArgs e)
         {
             Demo demo = (Demo)((Button)sender).DataContext;
-            demo.additionalHighlights.Add(10000);
+            demo.additionalHighlights.Add(10000,AdditionalHighlight.Type.METAEVENT_NONE,true);
         }
 
         private void RemoveSecondaryDemoHighlightOffset_Click(object sender, RoutedEventArgs e)
