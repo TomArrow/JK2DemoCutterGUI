@@ -188,12 +188,21 @@ namespace DemoCutterGUI
         public string name { get; set; } = "";
         public int highlightDemoTime { get; set; } = 0;
         public int highlightOffset { get; set; } = 10000;
-        /*private AdditionalHighlights _additionalHighlights = null;
+        private AdditionalHighlights _additionalHighlights = null;
         public AdditionalHighlights additionalHighlights { 
             get { return _additionalHighlights; } 
-            init { _additionalHighlights = value; _additionalHighlights.SetOwner(this); } 
-        }*/
-        public AdditionalHighlights additionalHighlights { get; set; } = null;
+            init { 
+                if(_additionalHighlights != null && _additionalHighlights != value)
+                {
+                    _additionalHighlights.CollectionChanged -= AdditionalHighlights_CollectionChanged;
+                    _additionalHighlights.ItemPropertyChanged -= AdditionalHighlights_ItemPropertyChanged;
+                }
+                _additionalHighlights = value;
+                /*_additionalHighlights.SetOwner(this);*/
+                additionalHighlights.CollectionChanged += AdditionalHighlights_CollectionChanged;
+                additionalHighlights.ItemPropertyChanged += AdditionalHighlights_ItemPropertyChanged;
+            } 
+        }
 
         [JsonIgnore]
         internal Demo wishAfter = null;
@@ -206,8 +215,6 @@ namespace DemoCutterGUI
         {
             additionalHighlights = additionalHighlightsA == null? new AdditionalHighlights() : additionalHighlightsA;
             //additionalHighlights.SetOwner(this);
-            additionalHighlights.CollectionChanged += AdditionalHighlights_CollectionChanged;
-            additionalHighlights.ItemPropertyChanged += AdditionalHighlights_ItemPropertyChanged;
         }
 
         private void AdditionalHighlights_ItemPropertyChanged(object sender, ItemPropertyChangedEventArgs e)
@@ -224,14 +231,14 @@ namespace DemoCutterGUI
         {
             additionalHighlights = new AdditionalHighlights();
             //additionalHighlights.SetOwner(this);
-            additionalHighlights.CollectionChanged += AdditionalHighlights_CollectionChanged;
-            additionalHighlights.ItemPropertyChanged += AdditionalHighlights_ItemPropertyChanged;
         }
 
         ~Demo()
         {
-            additionalHighlights.CollectionChanged -= AdditionalHighlights_CollectionChanged;
-            additionalHighlights.ItemPropertyChanged -= AdditionalHighlights_ItemPropertyChanged;
+            if(additionalHighlights != null){
+                additionalHighlights.CollectionChanged -= AdditionalHighlights_CollectionChanged;
+                additionalHighlights.ItemPropertyChanged -= AdditionalHighlights_ItemPropertyChanged;
+            }
         }
 
         public void loadDataFromMeta(DemoJSONMeta meta)

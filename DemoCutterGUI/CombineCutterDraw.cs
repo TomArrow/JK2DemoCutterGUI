@@ -109,6 +109,12 @@ namespace DemoCutterGUI
             public float timelineTimeEnd = 0;
         }
 
+        static readonly double goldenRatio = (1.0 + Math.Sqrt(5.0)) / 2.0;
+        static readonly float goldenRatioF = (float)goldenRatio;
+        static readonly double goldenRatioMultiplier = goldenRatio / (goldenRatio+1.0);
+        static readonly float goldenRatioMultiplierF = (float)goldenRatioMultiplier;
+        static readonly double goldenRatioMultiplierInverse = 1.0- goldenRatioMultiplier;
+        static readonly float goldenRatioMultiplierInverseF = (float)goldenRatioMultiplierInverse;
 
         public void DrawDemos(double actualWidth, double to, double from)
         {
@@ -182,7 +188,7 @@ namespace DemoCutterGUI
 
 
                 // Highlight point
-                GL.Color4(0, 0, 1, 1);
+                GL.Color4(0f, 0f, 1f, 1f);
                 GL.LineWidth(3);
                 GL.Begin(PrimitiveType.Lines);
                 GL.Vertex3(xHighlight, yTop, 0);
@@ -190,19 +196,154 @@ namespace DemoCutterGUI
                 GL.End();
 
                 // Additional highlight points
-                foreach(AdditionalHighlight ah in demo.demo.additionalHighlights)
+                double sizeMultiplierVert = 2.0 / actualHeight;
+                double sizeMultiplierHorz = 2.0  / actualWidth;
+                double iconSize = 7.0;
+                foreach (AdditionalHighlight ah in demo.demo.additionalHighlights)
                 {
                     float demoSpeed = 0;
                     float aHDemoTime = points.lineAtSimple(demo.demo.highlightDemoTime, ref demoSpeed) - demo.demo.highlightOffset + ah.time;
                     double aHTimelineTime = points.lineAtInverse(aHDemoTime);
 
                     double xAHighlight = 2.0 * ((aHTimelineTime - from) / (to - from)) - 1.0;
-                    GL.Color4(0, 0, 1, 1);
-                    GL.LineWidth(1);
-                    GL.Begin(PrimitiveType.Lines);
-                    GL.Vertex3(xAHighlight, yTop, 0);
-                    GL.Vertex3(xAHighlight, yBottom, 0);
-                    GL.End();
+                    if(ah.type == AdditionalHighlight.Type.METAEVENT_CAPTURE || ah.type == AdditionalHighlight.Type.METAEVENT_TEAMCAPTURE || ah.type == AdditionalHighlight.Type.METAEVENT_ENEMYTEAMCAPTURE)
+                    {
+                        // Draw a shitty little "flag"
+
+                        GL.LineWidth(1);
+                        double yCenter = (yTop - yBottom) * goldenRatioMultiplier + yBottom;
+                        double yFlagBottom = yCenter - iconSize * sizeMultiplierVert;
+                        double yFlagTop = yCenter + iconSize * sizeMultiplierVert;
+                        double xFlagLeft = xAHighlight - iconSize * sizeMultiplierHorz;
+                        for (int i = 0; i < 2; i++)
+                        {
+                            // Two passes. Fill, then lines
+                            if (i == 0)
+                            {
+                                switch (ah.type)
+                                {
+                                    case AdditionalHighlight.Type.METAEVENT_CAPTURE:
+                                        GL.Color4(0f, 1f, 0f, 1f);
+                                        break;
+                                    case AdditionalHighlight.Type.METAEVENT_TEAMCAPTURE:
+                                        GL.Color4(0f, 0f, 1f, 1f);
+                                        break;
+                                    case AdditionalHighlight.Type.METAEVENT_ENEMYTEAMCAPTURE:
+                                        GL.Color4(1f, 0f, 0f, 1f);
+                                        break;
+                                    default:
+                                        GL.Color4(1f, 1f, 1f, 1f); // Shouldn't really happen but this will show me if there's a bug here
+                                        break;
+                                }
+                                GL.Begin(PrimitiveType.Quads);
+                            } else
+                            {
+                                GL.Color4(0f, 0f, 0f, 1f); // Line color
+                                GL.Begin(PrimitiveType.LineStrip);
+                            }
+                            GL.Vertex3(xAHighlight, i==0 ? yCenter: yFlagBottom, 0);
+                            GL.Vertex3(xAHighlight, yFlagTop, 0);
+                            GL.Vertex3(xFlagLeft, yFlagTop, 0);
+                            GL.Vertex3(xFlagLeft, yCenter, 0);
+                            if (i == 1)
+                            {
+                                GL.Vertex3(xAHighlight, yCenter, 0);
+                            }
+                            GL.End();
+                        }
+                        
+                    } else if(ah.type == AdditionalHighlight.Type.METAEVENT_JUMP)
+                    {
+                        // Draw a little "arrow" pointing down
+
+                        GL.LineWidth(1);
+                        double yJumpBottom = yBottom + 2.0 * sizeMultiplierVert;
+                        double yJumpTop = yJumpBottom + iconSize * sizeMultiplierVert;
+                        double xJumpOffset = iconSize * sizeMultiplierHorz;
+                         
+                        GL.Color4(0.2f, 0.2f, 0f, 1f); // Line color
+                        GL.Begin(PrimitiveType.LineStrip);
+                        
+                        GL.Vertex3(xAHighlight + xJumpOffset, yJumpTop, 0);
+                        GL.Vertex3(xAHighlight, yJumpBottom, 0);
+                        GL.Vertex3(xAHighlight - xJumpOffset, yJumpTop, 0);
+                        GL.End();
+                        
+                    } else if(ah.type == AdditionalHighlight.Type.METAEVENT_SABERBLOCK || ah.type == AdditionalHighlight.Type.METAEVENT_SABERHIT || ah.type == AdditionalHighlight.Type.METAEVENT_EFFECT || ah.type == AdditionalHighlight.Type.METAEVENT_DEATH)
+                    {
+
+
+                        // Draw a cross
+                        int passes = 1; // bright colors need second pass of darker underneath to become visible.
+                        Color4 color = new Color4();
+                        switch (ah.type)
+                        {
+                            default:
+                            case AdditionalHighlight.Type.METAEVENT_SABERBLOCK:
+                                color = new Color4(1f, 1f, 0f, 1f);
+                                break;
+                            case AdditionalHighlight.Type.METAEVENT_SABERHIT:
+                                color = new Color4(1f, 0.75f, 0f, 1f);
+                                passes = 2;
+                                break;
+                            case AdditionalHighlight.Type.METAEVENT_EFFECT:
+                                color = new Color4(1f, 0f, 1f, 1f);
+                                break;
+                            case AdditionalHighlight.Type.METAEVENT_DEATH:
+                                color = new Color4(1f, 0f, 0f, 1f);
+                                break;
+                        }
+
+                        double yCrossCenter = (yTop - yBottom) * goldenRatioMultiplierInverse + yBottom;
+                        double yCrossOffset = iconSize * sizeMultiplierVert;
+                        double xCrossOffset = iconSize * sizeMultiplierHorz;
+                        double passOffset = 1.0 * sizeMultiplierHorz;
+
+                        for (int i = 0; i < passes; i++)
+                        {
+                            double actualPassOffset = 0;
+                            GL.LineWidth(2);
+
+                            if (passes > 1 && i == 0)
+                            {
+                                GL.Color4(color.R / 1.3,color.G / 1.3, color.B / 1.3, color.A);
+                                actualPassOffset = passOffset;
+                                GL.LineWidth(4);
+                            } else
+                            {
+                                GL.Color4(color);
+                            }
+                            GL.Begin(PrimitiveType.Lines);
+
+                            GL.Vertex3(xAHighlight + xCrossOffset + actualPassOffset, yCrossCenter + yCrossOffset - actualPassOffset, 0);
+                            GL.Vertex3(xAHighlight - xCrossOffset + actualPassOffset, yCrossCenter - yCrossOffset - actualPassOffset, 0);
+                            GL.Vertex3(xAHighlight - xCrossOffset + actualPassOffset, yCrossCenter + yCrossOffset - actualPassOffset, 0);
+                            GL.Vertex3(xAHighlight + xCrossOffset + actualPassOffset, yCrossCenter - yCrossOffset - actualPassOffset, 0);
+                            GL.End();
+                        }
+                        
+                    } else
+                    {
+                        GL.LineWidth(1);
+                        switch (ah.type)
+                        {
+                            default:
+                            case AdditionalHighlight.Type.METAEVENT_NONE:
+                                GL.Color4(0f, 0f, 1f, 1f);
+                                break;
+                            case AdditionalHighlight.Type.METAEVENT_KILL:
+                                GL.Color4(1f, 0f, 0f, 1f);
+                                break;
+                            case AdditionalHighlight.Type.METAEVENT_RETURN:
+                                GL.Color4(0f, 0f, 0f, 1f);
+                                GL.LineWidth(2);
+                                break;
+                        }
+                        GL.Begin(PrimitiveType.Lines);
+                        GL.Vertex3(xAHighlight, yTop, 0);
+                        GL.Vertex3(xAHighlight, yBottom, 0);
+                        GL.End();
+                    }
                 }
 
 
