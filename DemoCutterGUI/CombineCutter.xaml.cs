@@ -280,7 +280,7 @@ namespace DemoCutterGUI
             removeDemoBtn.IsEnabled = demosView.SelectedItems.Count > 0;
             loadMetaForDemo.IsEnabled = demosView.SelectedItems.Count == 1;
         }
-
+        /*
         private void AddSecondaryDemoHighlightOffset_Click(object sender, RoutedEventArgs e)
         {
             Demo demo = (Demo)((Button)sender).DataContext;
@@ -291,7 +291,54 @@ namespace DemoCutterGUI
         {
             AdditionalHighlight highlight = (AdditionalHighlight)((Button)sender).DataContext;
             highlight.associatedDemo.additionalHighlights.Remove(highlight);
+        }*/
+
+        private void additionalHighlightsDataGrid_InitializingNewItem(object sender, InitializingNewItemEventArgs e)
+        {
+            /*
+            DataGrid dg = (sender as DataGrid);
+            if (dg == null) return;
+            Demo demo = (dg.DataContext as Demo);
+            if (demo == null) return;
+            AdditionalHighlight ah = e.NewItem as AdditionalHighlight;
+            if (ah == null) return;
+
+            ah.associatedDemo = demo;
+            Console.WriteLine(sender);*/
         }
 
+        private void additionalHighlightsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if(removeAdditionalHighlight != null && additionalHighlightsDataGrid != null) // safety in case it fires early during window load?
+            {
+                foreach(var obj in additionalHighlightsDataGrid.SelectedItems)
+                {
+                    if(obj is AdditionalHighlight)
+                    {
+                        removeAdditionalHighlight.IsEnabled = true;
+                        return;
+                    }
+                }
+                removeAdditionalHighlight.IsEnabled = false;
+            }
+        }
+
+        private void removeAdditionalHighlight_Click(object sender, RoutedEventArgs e)
+        {
+            Demo demo = additionalHighlightsDataGrid.DataContext as Demo;
+            if (demo == null) return;
+            List<AdditionalHighlight> itemsToRemove = new List<AdditionalHighlight>();
+            foreach (var obj in additionalHighlightsDataGrid.SelectedItems)
+            {
+                if (obj is AdditionalHighlight) // We have to do it stupid like this because we allow the DataGrid to create new items and if we select that "new item row" it has the type Microsoft.Internal.Something idk I forgot. So cassting to a list like usual won't work.
+                {
+                    itemsToRemove.Add(obj as AdditionalHighlight);
+                }
+            }
+            foreach(AdditionalHighlight ah in itemsToRemove)
+            {
+                demo.additionalHighlights.Remove(ah);
+            }
+        }
     }
 }

@@ -7,10 +7,16 @@
         xmlns:local="clr-namespace:DemoCutterGUI"
         xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+        xmlns:core="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         d:DataContext="{StaticResource ResourceKey=ExampleData}"
-        Title="CombineCutter" Height="450" Width="1000">
+        Title="CombineCutter" Height="450" Width="1300">
     <Window.Resources>
+        <ObjectDataProvider x:Key="additionalHighlightTypeEnum" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="local:AdditionalHighlight+Type"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
         <BooleanToVisibilityConverter x:Key="checkedToVisibe" />
     </Window.Resources>
     <Grid>
@@ -24,6 +30,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="20"></ColumnDefinition>
             <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="290"></ColumnDefinition>
             <ColumnDefinition Width="290"></ColumnDefinition>
             <ColumnDefinition Width="290"></ColumnDefinition>
         </Grid.ColumnDefinitions>
@@ -73,8 +80,8 @@
             <Button x:Name="loadMetaForDemo" Click="loadMetaForDemo_Click" IsEnabled="False">Load Meta</Button>
         </WrapPanel>
         <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSliderVert" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="4" Minimum="{Binding absoluteMinVert}" Maximum="{Binding absoluteMaxVert}" LowerValue="{Binding currentMinVert,Mode=TwoWay}" UpperValue="{Binding currentMaxVert,Mode=TwoWay}" Orientation="Vertical"></mah:RangeSlider>
-        <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="4" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>
-        <TabControl Grid.Column="4" Grid.Row="1">
+        <mah:RangeSlider Grid.Column="0" LowerValueChanged="rangeSlider_ValueChanged" UpperValueChanged="rangeSlider_ValueChanged" x:Name="rangeSlider" Grid.Row="4" Grid.ColumnSpan="5" Minimum="{Binding absoluteMin}" Maximum="{Binding absoluteMax}" LowerValue="{Binding currentMin,Mode=TwoWay}" UpperValue="{Binding currentMax,Mode=TwoWay}" Orientation="Horizontal"></mah:RangeSlider>
+        <TabControl Grid.Column="3" Grid.Row="1">
             <TabItem Header="Demos">
                 <ListView Grid.Row="1" BorderThickness="0" Grid.Column="2" x:Name="demosView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=Demos}" SelectionChanged="demosView_SelectionChanged">
                     <ListView.ItemTemplate>
@@ -86,9 +93,10 @@
                                     <talex:NumericUpDown  Value="{Binding highlightDemoTime,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"  FontSize="10"></talex:NumericUpDown>
                                     <Label Margin="2" Padding="2" FontSize="10">HLOffset</Label>
                                     <talex:NumericUpDown  Value="{Binding highlightOffset,Mode=TwoWay}" Maximum="99999999999999999" Margin="2" Padding="2" Width="60"   FontSize="10"></talex:NumericUpDown>
-                                    <Button Click="AddSecondaryDemoHighlightOffset_Click">+</Button>
+                                        <TextBox IsReadOnly="True" Text="{Binding additionalHighlights.Count,Mode=OneWay}" Width="20"></TextBox>
+                                    <!--<Button Click="AddSecondaryDemoHighlightOffset_Click">+</Button>-->
                                 </WrapPanel>
-                                <ListView Grid.Row="1" Grid.Column="2" ItemsSource="{Binding additionalHighlights}" BorderThickness="0">
+                                <!--<ListView Grid.Row="1" Grid.Column="2" ItemsSource="{Binding additionalHighlights}" BorderThickness="0">
                                     <ListView.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <WrapPanel></WrapPanel>
@@ -102,7 +110,7 @@
                                             </WrapPanel>
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
-                                </ListView>
+                                </ListView>-->
                                 <TextBox Text="{Binding name,Mode=TwoWay}" HorizontalAlignment="Stretch" MaxWidth="{Binding ElementName=demosStackPanel, Path=ActualWidth}"></TextBox>
                                 </StackPanel>
                             </GroupBox>
@@ -121,6 +129,99 @@
 
                     </WrapPanel>
                 </StackPanel>
+            </TabItem>
+        </TabControl>
+        <TabControl Grid.Row="1" Grid.Column="4">
+            <TabItem Header="A.Hl." ToolTip="Additional Highlights">
+                <DockPanel>
+                    <WrapPanel DockPanel.Dock="Top">
+                        <Button x:Name="removeAdditionalHighlight" IsEnabled="False" Click="removeAdditionalHighlight_Click">Delete</Button>
+                    </WrapPanel>
+                <DataGrid  IsReadOnly="False" CanUserAddRows="True" InitializingNewItem="additionalHighlightsDataGrid_InitializingNewItem" DockPanel.Dock="Bottom" DataContext="{Binding ElementName=demosView,Path=SelectedItem}" ItemsSource="{Binding additionalHighlights}" x:Name="additionalHighlightsDataGrid" AutoGenerateColumns="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" SelectionChanged="additionalHighlightsDataGrid_SelectionChanged">
+
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_CAPTURE}">
+                                        <Setter Property="Background" Value="Green"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_TEAMCAPTURE}">
+                                        <Setter Property="Background" Value="LightGreen"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_ENEMYTEAMCAPTURE}">
+                                        <Setter Property="Background" Value="PaleVioletRed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_JUMP}">
+                                        <Setter Property="Background" Value="LightYellow"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_SABERHIT}">
+                                        <Setter Property="Background" Value="Yellow"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_EFFECT}">
+                                        <Setter Property="Background" Value="Orange"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_SABERBLOCK}">
+                                        <Setter Property="Background" Value="Yellow"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_DEATH}">
+                                        <Setter Property="Background" Value="Red"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_RETURN}">
+                                        <Setter Property="Background" Value="Black"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding type}" Value="{x:Static local:AdditionalHighlight+Type.METAEVENT_KILL}">
+                                        <Setter Property="Background" Value="DarkRed"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <!--<DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding team}">
+                                    <DataTrigger.Value>
+                                        <jkclient:Team>Free</jkclient:Team>
+                                    </DataTrigger.Value>
+                                    <Setter Property="Background" Value="LightGreen"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding team}">
+                                    <DataTrigger.Value>
+                                        <jkclient:Team>Red</jkclient:Team>
+                                    </DataTrigger.Value>
+                                    <Setter Property="Background" Value="PaleVioletRed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding team}">
+                                    <DataTrigger.Value>
+                                        <jkclient:Team>Blue</jkclient:Team>
+                                    </DataTrigger.Value>
+                                    <Setter Property="Background" Value="LightBlue"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding team}">
+                                    <DataTrigger.Value>
+                                        <jkclient:Team>Spectator</jkclient:Team>
+                                    </DataTrigger.Value>
+                                    <Setter Property="Background" Value="LightYellow"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding infoValid}" Value="False">
+                                    <Setter Property="Background" Value="White"/>
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding infoValid}" Value="True">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>-->
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Time" Binding="{Binding time}"></DataGridTextColumn>
+                        <DataGridComboBoxColumn Header="Type" SelectedItemBinding="{Binding type}" ItemsSource="{Binding Source={StaticResource additionalHighlightTypeEnum}}"></DataGridComboBoxColumn>
+                    </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
             </TabItem>
         </TabControl>
     </Grid>

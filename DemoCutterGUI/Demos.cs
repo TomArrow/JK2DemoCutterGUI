@@ -39,17 +39,27 @@ namespace DemoCutterGUI
 
 
 
-    public class AdditionalHighlights : ObservableCollection<AdditionalHighlight>
+    public class AdditionalHighlights : FullyObservableCollection<AdditionalHighlight>
     {
-        [JsonIgnore]
-        private Demo _owner = null;
+        /*public AdditionalHighlights()
+        {
+            this.CollectionChanged += AdditionalHighlights_CollectionChanged;
+        }
+
+        private void AdditionalHighlights_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            e.NewItems
+        }*/
+
+        //[JsonIgnore]
+        //private Demo _owner = null;
         public void Add(int time, AdditionalHighlight.Type type = AdditionalHighlight.Type.METAEVENT_NONE, bool bypassExistsCheck = false)
         {
             lock (this)
             {
                 if (bypassExistsCheck || !alreadyExists(time,type) )
                 {
-                    this.Add(new AdditionalHighlight() { time = time, associatedDemo = _owner, type = type });
+                    this.Add(new AdditionalHighlight() { time = time, /*associatedDemo = _owner,*/ type = type });
                 }
             }
         }
@@ -80,14 +90,14 @@ namespace DemoCutterGUI
                         timeOffset -= (int)cutStartOffset;
                         if (!alreadyExists(timeOffset, type))
                         {
-                            this.Add(new AdditionalHighlight() { time = timeOffset, associatedDemo = _owner, type = type });
+                            this.Add(new AdditionalHighlight() { time = timeOffset/*, associatedDemo = _owner*/, type = type });
                         }
                         
                     }
                 }
             }
         }
-
+        /*
         public void SetOwner(Demo owner)
         {
             lock (this)
@@ -98,7 +108,7 @@ namespace DemoCutterGUI
                     item.associatedDemo = _owner;
                 }
             }
-        }
+        }*/
     }
 
 
@@ -166,8 +176,8 @@ namespace DemoCutterGUI
         
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public Type type { get; set; } = Type.METAEVENT_NONE;
-        [JsonIgnore]
-        public Demo associatedDemo { get; internal set; } = null;
+        //[JsonIgnore]
+        //public Demo associatedDemo { get; internal set; } = null;
         //public AdditionalHighlight(int timeA) { time = timeA; }
         //public static implicit operator AdditionalHighlight(int timeA) => new AdditionalHighlight(timeA);
 
@@ -178,11 +188,12 @@ namespace DemoCutterGUI
         public string name { get; set; } = "";
         public int highlightDemoTime { get; set; } = 0;
         public int highlightOffset { get; set; } = 10000;
-        private AdditionalHighlights _additionalHighlights = null;
+        /*private AdditionalHighlights _additionalHighlights = null;
         public AdditionalHighlights additionalHighlights { 
             get { return _additionalHighlights; } 
             init { _additionalHighlights = value; _additionalHighlights.SetOwner(this); } 
-        }
+        }*/
+        public AdditionalHighlights additionalHighlights { get; set; } = null;
 
         [JsonIgnore]
         internal Demo wishAfter = null;
@@ -194,12 +205,33 @@ namespace DemoCutterGUI
         public Demo(AdditionalHighlights additionalHighlightsA = null)
         {
             additionalHighlights = additionalHighlightsA == null? new AdditionalHighlights() : additionalHighlightsA;
-            additionalHighlights.SetOwner(this);
+            //additionalHighlights.SetOwner(this);
+            additionalHighlights.CollectionChanged += AdditionalHighlights_CollectionChanged;
+            additionalHighlights.ItemPropertyChanged += AdditionalHighlights_ItemPropertyChanged;
         }
+
+        private void AdditionalHighlights_ItemPropertyChanged(object sender, ItemPropertyChangedEventArgs e)
+        {
+            OnPropertyChanged(new PropertyChangedEventArgs("additionalHighlights"));
+        }
+
+        private void AdditionalHighlights_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            OnPropertyChanged(new PropertyChangedEventArgs("additionalHighlights"));
+        }
+
         public Demo()
         {
             additionalHighlights = new AdditionalHighlights();
-            additionalHighlights.SetOwner(this);
+            //additionalHighlights.SetOwner(this);
+            additionalHighlights.CollectionChanged += AdditionalHighlights_CollectionChanged;
+            additionalHighlights.ItemPropertyChanged += AdditionalHighlights_ItemPropertyChanged;
+        }
+
+        ~Demo()
+        {
+            additionalHighlights.CollectionChanged -= AdditionalHighlights_CollectionChanged;
+            additionalHighlights.ItemPropertyChanged -= AdditionalHighlights_ItemPropertyChanged;
         }
 
         public void loadDataFromMeta(DemoJSONMeta meta)
@@ -214,6 +246,10 @@ namespace DemoCutterGUI
                 additionalHighlights.AddFromMetaString(meta.metaEventsString,cutStartOffsetMeta);
             }
 
+        }
+        protected void OnPropertyChanged(PropertyChangedEventArgs eventArgs)
+        {
+            PropertyChanged?.Invoke(this, eventArgs);
         }
 
         [JsonIgnore]
