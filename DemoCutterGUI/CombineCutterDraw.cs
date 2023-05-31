@@ -297,17 +297,20 @@ namespace DemoCutterGUI
                         double yCrossCenter = (yTop - yBottom) * goldenRatioMultiplierInverse + yBottom;
                         double yCrossOffset = iconSize * sizeMultiplierVert;
                         double xCrossOffset = iconSize * sizeMultiplierHorz;
-                        double passOffset = 1.0 * sizeMultiplierHorz;
+                        double passOffseHorz = 1.0 * sizeMultiplierHorz;
+                        double passOffseVert = 1.0 * sizeMultiplierVert;
 
                         for (int i = 0; i < passes; i++)
                         {
-                            double actualPassOffset = 0;
+                            double actualPassOffsetHorz = 0;
+                            double actualPassOffsetVert = 0;
                             GL.LineWidth(2);
 
                             if (passes > 1 && i == 0)
                             {
                                 GL.Color4(color.R / 1.3,color.G / 1.3, color.B / 1.3, color.A);
-                                actualPassOffset = passOffset;
+                                actualPassOffsetHorz = passOffseHorz;
+                                actualPassOffsetVert = passOffseVert;
                                 GL.LineWidth(4);
                             } else
                             {
@@ -315,10 +318,10 @@ namespace DemoCutterGUI
                             }
                             GL.Begin(PrimitiveType.Lines);
 
-                            GL.Vertex3(xAHighlight + xCrossOffset + actualPassOffset, yCrossCenter + yCrossOffset - actualPassOffset, 0);
-                            GL.Vertex3(xAHighlight - xCrossOffset + actualPassOffset, yCrossCenter - yCrossOffset - actualPassOffset, 0);
-                            GL.Vertex3(xAHighlight - xCrossOffset + actualPassOffset, yCrossCenter + yCrossOffset - actualPassOffset, 0);
-                            GL.Vertex3(xAHighlight + xCrossOffset + actualPassOffset, yCrossCenter - yCrossOffset - actualPassOffset, 0);
+                            GL.Vertex3(xAHighlight + xCrossOffset + actualPassOffsetHorz, yCrossCenter + yCrossOffset - actualPassOffsetVert, 0);
+                            GL.Vertex3(xAHighlight - xCrossOffset + actualPassOffsetHorz, yCrossCenter - yCrossOffset - actualPassOffsetVert, 0);
+                            GL.Vertex3(xAHighlight - xCrossOffset + actualPassOffsetHorz, yCrossCenter + yCrossOffset - actualPassOffsetVert, 0);
+                            GL.Vertex3(xAHighlight + xCrossOffset + actualPassOffsetHorz, yCrossCenter - yCrossOffset - actualPassOffsetVert, 0);
                             GL.End();
                         }
                         
