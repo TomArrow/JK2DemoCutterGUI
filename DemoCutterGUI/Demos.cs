@@ -22,6 +22,9 @@ namespace DemoCutterGUI
         public string metaEventsString { get; set; }
         [JsonPropertyName("cso")]
         public Int64? cutStartOffset { get; set; }
+        [JsonPropertyName("oco")]
+        // original cut offset. aka absolute offset from start of the once ancestral original demo before any cutting was done. this value is read back by subsequent cutting into originalFileAbsoluteCutOffset and then added to the new offset.
+        public Int64? originalCutOffset { get; set; }
         [JsonPropertyName("odm")]
         [JsonConverter(typeof(UnixEpochDateTimeOffsetConverter))]
         public DateTime? originalDateModified { get; set; }
