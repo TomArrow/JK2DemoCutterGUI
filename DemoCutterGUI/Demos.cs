@@ -22,6 +22,9 @@ namespace DemoCutterGUI
         public string metaEventsString { get; set; }
         [JsonPropertyName("cso")]
         public Int64? cutStartOffset { get; set; }
+        [JsonPropertyName("prso")]
+        // Pre-recording demos. Time from start of demo to the point where recording was actually started
+        public Int64? preRecordStartOffset { get; set; }
         [JsonPropertyName("oco")]
         // original cut offset. aka absolute offset from start of the once ancestral original demo before any cutting was done. this value is read back by subsequent cutting into originalFileAbsoluteCutOffset and then added to the new offset.
         public Int64? originalCutOffset { get; set; }
