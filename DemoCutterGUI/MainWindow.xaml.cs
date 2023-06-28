@@ -21,10 +21,12 @@ namespace DemoCutterGUI
     public partial class MainWindow : Window
     {
         CombineCutter combineCutter = new CombineCutter();
+        DemoDatabaseExplorer demoDatabaseExplorer = new DemoDatabaseExplorer();
         public MainWindow()
         {
             InitializeComponent();
-            combineCutter.Show();
+            //combineCutter.Show();
+            demoDatabaseExplorer.Show();
             this.WindowState = WindowState.Minimized;
             this.Close();
         }
