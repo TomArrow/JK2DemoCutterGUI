@@ -33,6 +33,41 @@ namespace DemoCutterGUI
                 new Demo() { highlightDemoTime = 15700, highlightOffset = 10000, name="demo7" },
                 new Demo() { highlightDemoTime = 17000, highlightOffset = 10000, name="demo8" },
             };
+
+            InitKillDatabaseFields();
+        }
+
+
+
+        public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillNames { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
+        public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillKill { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
+        public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillPosition { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
+        public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillRest { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
+        void InitKillDatabaseFields()
+        {
+            var allFields = DatabaseFieldInfo.GetDatabaseFieldInfos();
+            foreach (var field in allFields)
+            {
+                if((field.Category=="Kills" || field.Category == "KillAngles"))
+                {
+                    switch (field.SubCategory)
+                    {
+                        case "Names":
+                            KillDatabaseFieldsKillNames.Add(field);
+                            break;
+                        case "Kill":
+                            KillDatabaseFieldsKillKill.Add(field);
+                            break;
+                        case "Position":
+                            KillDatabaseFieldsKillPosition.Add(field);
+                            break;
+                        default:
+                            KillDatabaseFieldsKillRest.Add(field);
+                            break;
+                    }
+                }
+            }
+
         }
     }
 }

@@ -5,9 +5,28 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DemoCutterGUI"
         mc:Ignorable="d"
-        Title="DemoDatabaseExplorer" Height="450" Width="800">
+        d:DataContext="{StaticResource ResourceKey=ExampleData}"
+        Title="DemoDatabaseExplorer" Height="450" Width="1200">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="checkedToVisibe" />
+        <DataTemplate x:Key="searchFieldTemplate">
+            <StackPanel Margin="0">
+                <WrapPanel Margin="0">
+                    <TextBlock  Margin="0" Padding="0" Text="{Binding Path=FieldName}" FontSize="10"></TextBlock>
+                </WrapPanel>
+                <WrapPanel Margin="0">
+                    <CheckBox  Margin="0" Padding="0" IsChecked="{Binding Path=Active}"></CheckBox>
+                    <CheckBox Margin="0" Padding="0" IsChecked="{Binding Path=BoolContent}" Visibility="{Binding Path=Bool, Converter={StaticResource checkedToVisibe}}"></CheckBox>
+                    <TextBox Margin="0" Padding="0"  Text="{Binding Path=Content}" Width="80" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10"></TextBox>
+                    <CheckBox Margin="0" Padding="0"  IsChecked="{Binding Path=IsNull}" Visibility="{Binding Path=Nullable, Converter={StaticResource checkedToVisibe}}"></CheckBox>
+                </WrapPanel>
+
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300"></ColumnDefinition>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="200"></ColumnDefinition>
         </Grid.ColumnDefinitions>
@@ -18,7 +37,7 @@
         <WrapPanel Grid.Row="1" Grid.ColumnSpan="2">
             <TextBlock x:Name="statusTxt"></TextBlock>
         </WrapPanel>
-        <StackPanel Grid.Column="1">
+        <StackPanel Grid.Column="2">
             <Button Click="Button_Click">Load .db</Button>
             <WrapPanel>
                 <Label Margin="1" Padding=" 1">Current DB:</Label>
@@ -30,32 +49,46 @@
             </StackPanel>
         </StackPanel>
 
+        <TabControl Grid.Column="1">
+            <TabItem Header="Kills">
 
-        <DockPanel>
-            <Grid DockPanel.Dock="Top">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition></ColumnDefinition>
-                    <ColumnDefinition></ColumnDefinition>
-                    <ColumnDefinition></ColumnDefinition>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition></RowDefinition>
-                    <RowDefinition></RowDefinition>
-                </Grid.RowDefinitions>
-                <GroupBox Header="Names">
-                    
-                </GroupBox>
-                <GroupBox Header="Kill" Grid.Column="1">
-                    
-                </GroupBox>
-                <GroupBox Header="Position" Grid.Column="2">
-                    
-                </GroupBox>
-            </Grid>
-            <DataGrid DockPanel.Dock="Bottom">
-                
-            </DataGrid>
-        </DockPanel>
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition></RowDefinition>
+                            <RowDefinition></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <GroupBox Header="Names">
+                            <ListView Grid.Row="1" Grid.Column="2" x:Name="listKillsNames" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillNames}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                            </ListView>
+                        </GroupBox>
+                        <GroupBox Header="Kill" Grid.Column="1">
+                            <ListView Grid.Row="1" Grid.Column="2" x:Name="listKillsKill" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillKill}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                            </ListView>
+                        </GroupBox>
+                        <GroupBox Header="Position" Grid.Column="2">
+
+                            <ListView Grid.Row="1" Grid.Column="2" x:Name="listKillsPosition" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillPosition}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                            </ListView>
+                        </GroupBox>
+                        <GroupBox Header="Various" Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1">
+
+                            <ListView Grid.Row="1" Grid.Column="2" x:Name="listKillsRest" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillRest}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                            </ListView>
+                        </GroupBox>
+                    </Grid>
+                    <DataGrid DockPanel.Dock="Bottom">
+
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+        
         
     </Grid>
 </Window>

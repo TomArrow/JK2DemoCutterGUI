@@ -16,9 +16,14 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using DemoCutterGUI.TableMappings;
+using System.ComponentModel;
 
 namespace DemoCutterGUI
 {
+
+    
+
+    
     /// <summary>
     /// Interaction logic for DemoDatabaseExplorer.xaml
     /// </summary>
