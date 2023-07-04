@@ -6,23 +6,41 @@
         xmlns:local="clr-namespace:DemoCutterGUI"
         mc:Ignorable="d"
         d:DataContext="{StaticResource ResourceKey=ExampleData}"
-        Title="DemoDatabaseExplorer" Height="450" Width="1200">
+        Title="DemoDatabaseExplorer" Height="800" Width="1540">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="checkedToVisibe" />
+        <Style TargetType="ListViewItem" x:Key="searchFieldItemContainerStyle">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
         <DataTemplate x:Key="searchFieldTemplate">
-            <StackPanel Margin="0">
+            <StackPanel Margin="0" Width="104">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Active}" Value="False">
+                                <Setter Property="Background" Value="LightGray"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                
                 <WrapPanel Margin="0">
-                    <TextBlock  Margin="0" Padding="0" Text="{Binding Path=FieldName}" FontSize="10"></TextBlock>
+                    <TextBlock  Margin="0" Padding="0" Text="{Binding Path=FieldName}" FontSize="9" ToolTip="{Binding Path=FieldName}"></TextBlock>
                 </WrapPanel>
                 <WrapPanel Margin="0">
-                    <CheckBox  Margin="0" Padding="0" IsChecked="{Binding Path=Active}"></CheckBox>
-                    <CheckBox Margin="0" Padding="0" IsChecked="{Binding Path=BoolContent}" Visibility="{Binding Path=Bool, Converter={StaticResource checkedToVisibe}}"></CheckBox>
-                    <TextBox Margin="0" Padding="0"  Text="{Binding Path=Content}" Width="80" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10"></TextBox>
-                    <CheckBox Margin="0" Padding="0"  IsChecked="{Binding Path=IsNull}" Visibility="{Binding Path=Nullable, Converter={StaticResource checkedToVisibe}}"></CheckBox>
+                    <CheckBox  Margin="0" Padding="0" IsChecked="{Binding Path=Active,Mode=TwoWay}"></CheckBox>
+                    <CheckBox Margin="0" Padding="0" IsChecked="{Binding Path=BoolContent,Mode=TwoWay}" Visibility="{Binding Path=Bool, Converter={StaticResource checkedToVisibe}}"></CheckBox>
+                    <TextBox Margin="0" Padding="0"  Text="{Binding Path=Content,Mode=TwoWay}" Width="70" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10" ></TextBox>
+                    <CheckBox Margin="0" Padding="0"  IsChecked="{Binding Path=IsNull,Mode=TwoWay}" Visibility="{Binding Path=Nullable, Converter={StaticResource checkedToVisibe}}" ></CheckBox>
                 </WrapPanel>
 
             </StackPanel>
-        </DataTemplate>
+        </DataTemplate> 
+        <ItemsPanelTemplate x:Key="searchFieldContainerTemplate">
+            <WrapPanel Orientation="Horizontal" ScrollViewer.CanContentScroll="False" MaxWidth="{Binding RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Path=ActualWidth }" />
+        </ItemsPanelTemplate>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -53,7 +71,7 @@
             <TabItem Header="Kills">
 
                 <DockPanel>
-                    <Grid DockPanel.Dock="Top">
+                    <Grid DockPanel.Dock="Top" MaxHeight="700">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition></ColumnDefinition>
                             <ColumnDefinition></ColumnDefinition>
@@ -63,22 +81,23 @@
                             <RowDefinition></RowDefinition>
                             <RowDefinition></RowDefinition>
                         </Grid.RowDefinitions>
-                        <GroupBox Header="Names">
-                            <ListView Grid.Row="1" Grid.Column="2" x:Name="listKillsNames" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillNames}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                        <GroupBox Header="Meta">
+                            <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}" Grid.Row="1" Grid.Column="2" x:Name="listKillsNames" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillNames}" ItemTemplate="{StaticResource searchFieldTemplate}">
                             </ListView>
                         </GroupBox>
                         <GroupBox Header="Kill" Grid.Column="1">
-                            <ListView Grid.Row="1" Grid.Column="2" x:Name="listKillsKill" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillKill}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                            <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}" Grid.Row="1" Grid.Column="2" x:Name="listKillsKill" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillKill}" ItemTemplate="{StaticResource searchFieldTemplate}">
                             </ListView>
                         </GroupBox>
-                        <GroupBox Header="Position" Grid.Column="2">
+                        <GroupBox Header="Movement" Grid.Column="2">
 
-                            <ListView Grid.Row="1" Grid.Column="2" x:Name="listKillsPosition" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillPosition}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                            <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}" Grid.Row="1" Grid.Column="2" x:Name="listKillsPosition" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillPosition}" ItemTemplate="{StaticResource searchFieldTemplate}">
                             </ListView>
                         </GroupBox>
                         <GroupBox Header="Various" Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1">
-
-                            <ListView Grid.Row="1" Grid.Column="2" x:Name="listKillsRest" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillRest}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                            <!--.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto"-->
+                            <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}" Grid.Row="1" Grid.Column="2" x:Name="listKillsRest" ScrollViewer.CanContentScroll="False" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillRest}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                                
                             </ListView>
                         </GroupBox>
                     </Grid>
