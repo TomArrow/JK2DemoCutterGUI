@@ -1,9 +1,12 @@
-﻿using System;
+﻿using DemoCutterGUI.TableMappings;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace DemoCutterGUI
 {
@@ -43,11 +46,14 @@ namespace DemoCutterGUI
         public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillKill { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
         public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillPosition { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
         public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillRest { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
+        //public ObservableCollection<DataGridTextColumn> KillDatabaseFieldsGrid { get; set; } = new ObservableCollection<DataGridTextColumn>();
+        public ObservableCollection<Ret> KillDatabaseExampleKills { get; set; } = new ObservableCollection<Ret>();
         void InitKillDatabaseFields()
         {
             var allFields = DatabaseFieldInfo.GetDatabaseFieldInfos();
             foreach (var field in allFields)
             {
+                //KillDatabaseFieldsGrid.Add(new DataGridTextColumn() { Header=field.FieldName, Binding=new Binding(field.FieldName) });
                 if((field.Category=="Kills" || field.Category == "KillAngles"))
                 {
                     switch (field.SubCategory)
@@ -67,6 +73,15 @@ namespace DemoCutterGUI
                     }
                 }
             }
+
+            KillDatabaseExampleKills = new ObservableCollection<Ret>()
+            {
+                new Ret(){ hash="abc", killerName="James",victimName="Peter" },
+                new Ret(){ hash="def",killerName="Jeffrey",victimName="Boink" },
+                new Ret(){ hash="ghi",killerName="Dingold",victimName="Porp" },
+                new Ret(){ hash="jkl",killerName="Master",victimName="Slave" },
+                new Ret(){ hash="mno",killerName="Jeremiah",victimName="Horndrung" },
+            };
 
         }
     }

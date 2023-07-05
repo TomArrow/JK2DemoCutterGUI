@@ -13,7 +13,7 @@ using TIMESTAMP = System.Int64;
 
 namespace DemoCutterGUI.TableMappings
 {
-    class Ret
+    public class Ret
     {
         // KillAngle
         public TEXT? hash { get; set; } = null;

@@ -68,6 +68,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="BFF.DataVirtualizingCollection" Version="3.3.5" />
     <PackageReference Include="MahApps.Metro" Version="2.4.9" />
     <PackageReference Include="Ninject" Version="3.3.6" />
     <PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />

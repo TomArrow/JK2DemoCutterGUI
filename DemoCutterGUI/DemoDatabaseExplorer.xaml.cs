@@ -48,6 +48,7 @@ namespace DemoCutterGUI
                     dbConn = null;
                     dbNameTxt.Text = "[none]";
                 }
+                layoutIsInitialized = false;
             }
             SetStatusSafe(null);
             UpdateGUI();
@@ -74,21 +75,7 @@ namespace DemoCutterGUI
 
             if (!noDbLock)
             {
-                lock (dbMutex)
-                {
-                    bool dbConnExists = dbConn != null;
-                    requiresOpenDbWrap.IsEnabled = dbConnExists;
-
-                    if (dbConnExists)
-                    {
-                        if (connIsPrepared())
-                        {
-                            Object[] obj = new Object[] { };
-                            List<Ret> res = dbConn.Query<Ret>("SELECT * FROM rets WHERE boostCountTotal>0 LIMIT 0,100") as List<Ret>;
-                            Console.WriteLine(res);
-                        }
-                    }
-                }
+                UpdateLayout();
             }
         }
         void UpdateGUI(bool noDbLock = false)
@@ -183,5 +170,6 @@ namespace DemoCutterGUI
 
             
         }
+
     }
 }

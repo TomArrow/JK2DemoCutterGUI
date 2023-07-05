@@ -91,17 +91,17 @@
                         </GroupBox>
                         <GroupBox Header="Movement" Grid.Column="2">
 
-                            <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}" Grid.Row="1" Grid.Column="2" x:Name="listKillsPosition" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillPosition}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                            <ListView  ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}" Grid.Row="1" Grid.Column="2" x:Name="listKillsPosition" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillPosition}" ItemTemplate="{StaticResource searchFieldTemplate}">
                             </ListView>
                         </GroupBox>
                         <GroupBox Header="Various" Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1">
                             <!--.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto"-->
-                            <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}" Grid.Row="1" Grid.Column="2" x:Name="listKillsRest" ScrollViewer.CanContentScroll="False" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillRest}" ItemTemplate="{StaticResource searchFieldTemplate}">
+                            <ListView  ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}" Grid.Row="1" Grid.Column="2" x:Name="listKillsRest" ScrollViewer.CanContentScroll="False" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillRest}" ItemTemplate="{StaticResource searchFieldTemplate}">
                                 
                             </ListView>
                         </GroupBox>
                     </Grid>
-                    <DataGrid DockPanel.Dock="Bottom">
+                    <DataGrid EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" x:Name="retsGrid" AlternationCount="2" AlternatingRowBackground="#f3f3f3" FontSize="11" VerticalGridLinesBrush="LightGray" HorizontalGridLinesBrush="LightGray" DockPanel.Dock="Bottom" d:ItemsSource="{Binding KillDatabaseExampleKills}" d:AutoGenerateColumns="True" AllowDrop="False" CanUserAddRows="False" IsReadOnly="True" Sorting="retsGrid_Sorting" CanUserResizeColumns="True"> <!-- This is just to see some columns in the designer. We generate columns more dynamically for live. -->
 
                     </DataGrid>
                 </DockPanel>
