@@ -33,6 +33,16 @@ namespace DemoCutterGUI
 
                     fieldInfoForSearch = DatabaseFieldInfo.GetDatabaseFieldInfos();
 
+
+                    Dictionary<string, Dictionary<string, GroupBox>> groupBoxes = new Dictionary<string, Dictionary<string, GroupBox>>()
+                    {
+                        { "Rets", new Dictionary<string, GroupBox>(){ 
+                            { "Names", new GroupBox(){ Header="Meta",Content=new StackPanel() } },
+                            { "Kill", new GroupBox(){ Header="Kill",Content=new StackPanel() } },
+                            { "Position", new GroupBox(){ Header="Movement",Content=new StackPanel() } } 
+                        } },
+                    };
+
                     // Kills first.
                     var retColumns = dbConn.GetTableInfo("rets");
                     Dictionary<Tuple<string,string>, List<DatabaseFieldInfo>> categorizedFieldInfos = new Dictionary<Tuple<string, string>, List<DatabaseFieldInfo>>()
@@ -47,9 +57,12 @@ namespace DemoCutterGUI
                     //    {"Rets",new List<DataGridTextColumn>() }
                     //};
 
+
+                    displayKill.Children.Clear();
                     retsGrid.Columns.Clear();
                     foreach(var retColumn in retColumns)
                     {
+
                         // Find corresponding search field
                         foreach (DatabaseFieldInfo fieldInfo in fieldInfoForSearch)
                         {
@@ -67,11 +80,24 @@ namespace DemoCutterGUI
                                         break;
                                 }
                                 retsGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName) });
+
+                                if (!groupBoxes["Rets"].ContainsKey(fieldInfo.SubCategory))
+                                {
+                                    groupBoxes["Rets"][fieldInfo.SubCategory] = new GroupBox() { Header=fieldInfo.SubCategory, Content = new StackPanel() };
+                                }
+                                var newTextBox = new TextBox();
+                                newTextBox.SetBinding(TextBox.TextProperty,new Binding(fieldInfo.FieldName));
+                                (groupBoxes["Rets"][fieldInfo.SubCategory].Content as StackPanel).Children.Add(newTextBox);
                                 break;
                             }
+
                         }
                     }
 
+                    foreach(var box in groupBoxes["Rets"])
+                    {
+                        displayKill.Children.Add(box.Value);
+                    }
 
                     // Apply search fields
                     listKillsNames.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();

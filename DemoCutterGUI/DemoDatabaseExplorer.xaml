@@ -52,6 +52,13 @@
             <RowDefinition></RowDefinition>
             <RowDefinition Height="15"></RowDefinition>
         </Grid.RowDefinitions>
+        <StackPanel>
+            <TabControl>
+                <TabItem Header="Kill">
+                    <StackPanel x:Name="displayKill" DataContext="{Binding ElementName=retsGrid,Path=SelectedItem}"></StackPanel>
+                </TabItem>
+            </TabControl>
+        </StackPanel>
         <WrapPanel Grid.Row="1" Grid.ColumnSpan="2">
             <TextBlock x:Name="statusTxt"></TextBlock>
         </WrapPanel>
