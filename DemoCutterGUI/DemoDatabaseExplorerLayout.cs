@@ -25,7 +25,26 @@ namespace DemoCutterGUI
             }
             var property = value[0].GetType().GetProperty((string)value[1]);
             var retVal= property.GetValue(value[0], null);
-            retVal = System.Convert.ChangeType(retVal, targetType);
+            if(targetType == typeof(bool?))
+            {
+
+                if (retVal is string)
+                {
+                    return null;
+                } else if (retVal is bool)
+                {
+                    return (bool?)(bool)retVal;
+                } else if (retVal is Int64 || retVal is int )
+                {
+                    bool? retBool = (bool?)((Int64)retVal != 0.0);
+                    return retBool;
+                } else if (retVal is float || retVal is double)
+                {
+                    bool? retBool = (bool?)((double)retVal != 0);
+                    return retBool;
+                }
+            }
+            retVal = retVal == null ? null : System.Convert.ChangeType(retVal, targetType);
             return retVal;
         }
 
@@ -79,7 +98,7 @@ namespace DemoCutterGUI
                     //};
 
 
-                    displayKill.Children.Clear();
+                    //displayKill.Children.Clear();
                     retsGrid.Columns.Clear();
                     foreach(var retColumn in retColumns)
                     {
@@ -101,24 +120,25 @@ namespace DemoCutterGUI
                                         break;
                                 }
                                 retsGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName) });
-
+                                /*
                                 if (!groupBoxes["Rets"].ContainsKey(fieldInfo.SubCategory))
                                 {
                                     groupBoxes["Rets"][fieldInfo.SubCategory] = new GroupBox() { Header=fieldInfo.SubCategory, Content = new StackPanel() };
                                 }
+                                
                                 var newTextBox = new TextBox();
                                 newTextBox.SetBinding(TextBox.TextProperty,new Binding(fieldInfo.FieldName));
-                                (groupBoxes["Rets"][fieldInfo.SubCategory].Content as StackPanel).Children.Add(newTextBox);
+                                (groupBoxes["Rets"][fieldInfo.SubCategory].Content as StackPanel).Children.Add(newTextBox);*/
                                 break;
                             }
 
                         }
                     }
 
-                    foreach(var box in groupBoxes["Rets"])
+                    /*foreach(var box in groupBoxes["Rets"])
                     {
                         displayKill.Children.Add(box.Value);
-                    }
+                    }*/
 
                     // Apply search fields
                     listKillsNames.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
