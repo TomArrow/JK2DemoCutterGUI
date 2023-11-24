@@ -2,6 +2,7 @@
 using DemoCutterGUI.TableMappings;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Text;
@@ -14,6 +15,26 @@ using System.Windows.Threading;
 
 namespace DemoCutterGUI
 {
+    public class PropertyPathOnObjectToValueConverter : IMultiValueConverter
+    {
+        public object Convert(object[] value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if(value == null || value[0] == null || value[1] == null)
+            {
+                return null;
+            }
+            var property = value[0].GetType().GetProperty((string)value[1]);
+            var retVal= property.GetValue(value[0], null);
+            retVal = System.Convert.ChangeType(retVal, targetType);
+            return retVal;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public partial class DemoDatabaseExplorer
     {
 
@@ -101,6 +122,7 @@ namespace DemoCutterGUI
 
                     // Apply search fields
                     listKillsNames.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
+                    listKillsNamesDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
                     listKillsKill.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
                     listKillsPosition.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
                     listKillsRest.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();

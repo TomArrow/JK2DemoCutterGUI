@@ -9,6 +9,7 @@
         Title="DemoDatabaseExplorer" Height="800" Width="1540">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="checkedToVisibe" />
+        <local:PropertyPathOnObjectToValueConverter x:Key="objectToPropertyPath" />
         <Style TargetType="ListViewItem" x:Key="searchFieldItemContainerStyle">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
@@ -38,6 +39,39 @@
 
             </StackPanel>
         </DataTemplate> 
+        <DataTemplate x:Key="viewFieldTemplate">
+            <StackPanel Margin="0" Width="104">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Active}" Value="False">
+                                <Setter Property="Background" Value="LightGray"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                
+                <WrapPanel Margin="0">
+                    <TextBlock  Margin="0" Padding="0" Text="{Binding Path=FieldName}" FontSize="9" ToolTip="{Binding Path=FieldName}"></TextBlock>
+                </WrapPanel>
+                <WrapPanel Margin="0">
+                    <CheckBox  Margin="0" Padding="0" IsChecked="{Binding Path=Active,Mode=TwoWay}"></CheckBox>
+                    <CheckBox Margin="0" Padding="0" IsChecked="{Binding Path=BoolContent,Mode=TwoWay}" Visibility="{Binding Path=Bool, Converter={StaticResource checkedToVisibe}}"></CheckBox>
+                    <!--="{Binding Path=Content,Mode=TwoWay}"-->
+                    <!--<TextBox Margin="0" Padding="0"  Text="{Binding ElementName=retsGrid,Mode=OneWay,Path=SelectedItem,Converter={StaticResource objectToPropertyPath},ConverterParameter={Binding Content}}" Width="70" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10" ></TextBox>-->
+                    <TextBox Margin="0" Padding="0"  Width="70" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10" >
+                        <TextBox.Text>
+                            <MultiBinding Converter="{StaticResource objectToPropertyPath}">
+                                <Binding ElementName="retsGrid" Path="SelectedItem" Mode="OneWay"></Binding>
+                                <Binding Path="FieldName" Mode="OneWay"></Binding>
+                            </MultiBinding>
+                        </TextBox.Text>
+                    </TextBox>
+                    <CheckBox Margin="0" Padding="0"  IsChecked="{Binding Path=IsNull,Mode=TwoWay}" Visibility="{Binding Path=Nullable, Converter={StaticResource checkedToVisibe}}" ></CheckBox>
+                </WrapPanel>
+
+            </StackPanel>
+        </DataTemplate> 
         <ItemsPanelTemplate x:Key="searchFieldContainerTemplate">
             <WrapPanel Orientation="Horizontal" ScrollViewer.CanContentScroll="False" MaxWidth="{Binding RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Path=ActualWidth }" />
         </ItemsPanelTemplate>
@@ -55,7 +89,16 @@
         <StackPanel>
             <TabControl>
                 <TabItem Header="Kill">
-                    <StackPanel x:Name="displayKill" DataContext="{Binding ElementName=retsGrid,Path=SelectedItem}"></StackPanel>
+                    <StackPanel x:Name="displayKill" DataContext="{Binding ElementName=retsGrid,Path=SelectedItem}">
+                    </StackPanel>
+                </TabItem>
+                <TabItem Header="KillTry2">
+                    <Grid>
+                        <DockPanel>
+                            <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}"  x:Name="listKillsNamesDataView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillNames}" ItemTemplate="{StaticResource viewFieldTemplate}">
+                            </ListView>
+                        </DockPanel>
+                    </Grid>
                 </TabItem>
             </TabControl>
         </StackPanel>
