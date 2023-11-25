@@ -88,6 +88,10 @@ namespace DemoCutterGUI
 
         public DemoDatabaseExplorer()
         {
+            /*CopyFieldCommand = new DoSomethingCommand(() => {
+                this.CopyField();
+            });*/
+            this.DataContext = this;
             InitializeComponent();
         }
 
@@ -171,5 +175,49 @@ namespace DemoCutterGUI
             
         }
 
+        private void killTextCopyBtn_Click(object sender, RoutedEventArgs e)
+        {
+            CopyField();
+        }
+
+        public void CopyField()
+        {
+            if (killFieldText == null) return;
+            string text = killFieldText.Text;
+            if (text == null) return;
+            Clipboard.SetText(text);
+        }
+
+        private ICommand copyFieldCommand = null;
+        public ICommand CopyFieldCommand { get {
+                return copyFieldCommand ?? (copyFieldCommand = new DoSomethingCommand(()=> { this.CopyField(); }));
+            } 
+        }
+    }
+
+    public class DoSomethingCommand : ICommand
+    {
+        public event EventHandler CanExecuteChanged;
+
+        private Action stuffToDo = null;
+
+        public DoSomethingCommand(Action stuffToDoA)
+        {
+            if(stuffToDoA == null)
+            {
+                throw new InvalidOperationException("DoSomethingCommand must be passed a non-null Action");
+            }
+            stuffToDo = stuffToDoA;
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return true;
+        }
+
+        public void Execute(object parameter)
+        {
+            stuffToDo();
+        }
     }
 }

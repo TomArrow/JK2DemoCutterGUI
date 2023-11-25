@@ -46,6 +46,7 @@ namespace DemoCutterGUI
         public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillKill { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
         public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillPosition { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
         public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillRest { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
+        public ObservableCollection<DatabaseFieldInfo> KillDatabaseFieldsKillAll { get; set; } = new ObservableCollection<DatabaseFieldInfo>();
         //public ObservableCollection<DataGridTextColumn> KillDatabaseFieldsGrid { get; set; } = new ObservableCollection<DataGridTextColumn>();
         public ObservableCollection<Ret> KillDatabaseExampleKills { get; set; } = new ObservableCollection<Ret>();
         void InitKillDatabaseFields()
@@ -71,6 +72,7 @@ namespace DemoCutterGUI
                             KillDatabaseFieldsKillRest.Add(field);
                             break;
                     }
+                    KillDatabaseFieldsKillAll.Add(field);
                 }
             }
 

@@ -2,6 +2,7 @@
 using DemoCutterGUI.TableMappings;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reactive.Concurrency;
@@ -19,11 +20,19 @@ namespace DemoCutterGUI
     {
         public object Convert(object[] value, Type targetType, object parameter, CultureInfo culture)
         {
-            if(value == null || value[0] == null || value[1] == null)
+            if(value == null)
             {
                 return null;
             }
-            var property = value[0].GetType().GetProperty((string)value[1]);
+            if (value.Length == 2 && (value[0] == null || value[0] == DependencyProperty.UnsetValue || value[1] == null || value[1] == DependencyProperty.UnsetValue))
+            {
+                return null;
+            }
+            if(value.Length == 3 && (value[0] == null || value[0] == DependencyProperty.UnsetValue || ((value[2] == null || value[2] == DependencyProperty.UnsetValue) && (value[1] == null || value[1] == DependencyProperty.UnsetValue))))
+            {
+                return null;
+            }
+            var property = value[0].GetType().GetProperty((value.Length == 3 && value[2] != null && value[2] != DependencyProperty.UnsetValue) ? (string)value[2] : (string)value[1]);
             var retVal= property.GetValue(value[0], null);
             if(targetType == typeof(bool?))
             {
@@ -87,6 +96,7 @@ namespace DemoCutterGUI
                     var retColumns = dbConn.GetTableInfo("rets");
                     Dictionary<Tuple<string,string>, List<DatabaseFieldInfo>> categorizedFieldInfos = new Dictionary<Tuple<string, string>, List<DatabaseFieldInfo>>()
                     {
+                        { new Tuple<string,string>("Rets","_all_"),new List<DatabaseFieldInfo>() },
                         { new Tuple<string,string>("Rets","Names"),new List<DatabaseFieldInfo>() },
                         { new Tuple<string,string>("Rets","Kill"),new List<DatabaseFieldInfo>() },
                         { new Tuple<string,string>("Rets","Position"),new List<DatabaseFieldInfo>() },
@@ -119,6 +129,7 @@ namespace DemoCutterGUI
                                         categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].Add(fieldInfo);
                                         break;
                                 }
+                                categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].Add(fieldInfo);
                                 retsGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName) });
                                 /*
                                 if (!groupBoxes["Rets"].ContainsKey(fieldInfo.SubCategory))
@@ -142,11 +153,18 @@ namespace DemoCutterGUI
 
                     // Apply search fields
                     listKillsNames.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
-                    listKillsNamesDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
                     listKillsKill.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
                     listKillsPosition.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
                     listKillsRest.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();
 
+                    listKillsNamesDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].ToArray();
+                    CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(listKillsNamesDataView.ItemsSource);
+                    PropertyGroupDescription pgd = new PropertyGroupDescription("SubCategory");
+                    view.GroupDescriptions.Add(pgd);
+                    //listKillsNamesDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
+                    //listKillsKillDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
+                    //listKillsMovementDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
+                    //listKillsRest.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();
                 }
                 layoutIsInitialized = true;
             }

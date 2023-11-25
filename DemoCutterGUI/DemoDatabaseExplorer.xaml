@@ -6,7 +6,10 @@
         xmlns:local="clr-namespace:DemoCutterGUI"
         mc:Ignorable="d"
         d:DataContext="{StaticResource ResourceKey=ExampleData}"
-        Title="DemoDatabaseExplorer" Height="800" Width="1540">
+        Title="DemoDatabaseExplorer" Height="820" Width="1540">
+    <Window.InputBindings>
+        <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding CopyFieldCommand}"></KeyBinding>
+    </Window.InputBindings>
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="checkedToVisibe" />
         <local:PropertyPathOnObjectToValueConverter x:Key="objectToPropertyPath" />
@@ -40,7 +43,7 @@
             </StackPanel>
         </DataTemplate> 
         <DataTemplate x:Key="viewFieldTemplate">
-            <StackPanel Margin="0" Width="140">
+            <StackPanel Margin="0" Width="135">
                 <StackPanel.Style>
                     <Style TargetType="StackPanel">
                         <Style.Triggers>
@@ -64,7 +67,7 @@
                             </MultiBinding>
                         </CheckBox.IsChecked>
                     </CheckBox>
-                    <TextBox Margin="0" Padding="0"  Width="120" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10" >
+                    <TextBox Margin="0" Padding="0"  Width="115" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10" >
                         <TextBox.Text>
                             <MultiBinding Converter="{StaticResource objectToPropertyPath}">
                                 <Binding ElementName="retsGrid" Path="SelectedItem" Mode="OneWay"></Binding>
@@ -83,7 +86,7 @@
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300"></ColumnDefinition>
+            <ColumnDefinition Width="320"></ColumnDefinition>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="200"></ColumnDefinition>
         </Grid.ColumnDefinitions>
@@ -91,23 +94,59 @@
             <RowDefinition></RowDefinition>
             <RowDefinition Height="15"></RowDefinition>
         </Grid.RowDefinitions>
-        <StackPanel>
+        <DockPanel>
             <TabControl>
-                <!--
-                <TabItem Header="Kill">
-                    <StackPanel x:Name="displayKill" DataContext="{Binding ElementName=retsGrid,Path=SelectedItem}">
-                    </StackPanel>
-                </TabItem>-->
-                <TabItem Header="Kill">
-                    <Grid>
-                        <DockPanel>
-                            <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}"  x:Name="listKillsNamesDataView" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillNames}" ItemTemplate="{StaticResource viewFieldTemplate}">
-                            </ListView>
-                        </DockPanel>
-                    </Grid>
+                <TabItem Header="Kill" >
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" >
+                            <TextBox x:Name="killFieldText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Height="100" FontSize="14" d:Text="test">
+                                <TextBox.Text>
+                                    <MultiBinding Converter="{StaticResource objectToPropertyPath}">
+                                        <Binding ElementName="retsGrid" Path="SelectedItem" Mode="OneWay"></Binding>
+                                        <Binding ElementName="listKillsNamesDataView" Path="SelectedItem.FieldName" Mode="OneWay"></Binding>
+                                        <Binding ElementName="retsGrid" Path="CurrentColumn.SortMemberPath" Mode="OneWay"></Binding>
+                                    </MultiBinding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <Button x:Name="killTextCopyBtn" Click="killTextCopyBtn_Click">Copy (Ctrl + D)</Button>
+                        </StackPanel>
+                        <ScrollViewer DockPanel.Dock="Bottom">
+                            <StackPanel DockPanel.Dock="Bottom">
+                                <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}"  x:Name="listKillsNamesDataView" ScrollViewer.CanContentScroll="False" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillAll}" ItemTemplate="{StaticResource viewFieldTemplate}">
+                                    <ListView.GroupStyle>
+                                        <GroupStyle>
+                                            <!--<GroupStyle.HeaderTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}"></TextBlock>
+                                                </DataTemplate>
+                                            </GroupStyle.HeaderTemplate>-->
+                                            <GroupStyle.ContainerStyle>
+                                                <Style TargetType="GroupItem">
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate>
+                                                                <Expander IsExpanded="True">
+                                                                    <Expander.Header>
+                                                                        <WrapPanel>
+                                                                            <TextBlock Text="{Binding Name}"></TextBlock>
+                                                                        </WrapPanel>
+                                                                    </Expander.Header>
+                                                                    <ItemsPresenter />
+                                                                </Expander>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </GroupStyle.ContainerStyle>
+                                        </GroupStyle>
+                                    </ListView.GroupStyle>
+                                </ListView>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
                 </TabItem>
             </TabControl>
-        </StackPanel>
+        </DockPanel>
         <WrapPanel Grid.Row="1" Grid.ColumnSpan="2">
             <TextBlock x:Name="statusTxt"></TextBlock>
         </WrapPanel>
