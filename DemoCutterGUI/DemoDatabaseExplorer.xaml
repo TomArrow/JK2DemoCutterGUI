@@ -179,6 +179,7 @@
                     <Button x:Name="visibleRetsColumnsSaveBtn" Click="visibleRetsColumnsSaveBtn_Click">Save</Button>
                 </WrapPanel>
             </StackPanel>
+            <Button x:Name="bspToMinimapBtn" Click="bspToMinimapBtn_Click">BSP to Minimap</Button>
         </StackPanel>
 
         <TabControl Grid.Column="1">

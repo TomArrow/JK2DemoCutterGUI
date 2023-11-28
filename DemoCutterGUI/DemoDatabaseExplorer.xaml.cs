@@ -194,6 +194,22 @@ namespace DemoCutterGUI
             } 
         }
 
+        private void bspToMinimapBtn_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "BSP maps (*.bsp)|*.bsp";
+            if(ofd.ShowDialog() == true)
+            {
+                try
+                {
+
+                    Tools.BSPToMiniMap.MakeMiniMap(ofd.FileName);
+                } catch(Exception ex)
+                {
+                    MessageBox.Show($"Error making minimap: {ex.ToString()}");
+                }
+            }
+        }
     }
 
     public class DoSomethingCommand : ICommand
