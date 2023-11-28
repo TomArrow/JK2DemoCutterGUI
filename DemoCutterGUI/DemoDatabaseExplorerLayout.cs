@@ -1,9 +1,11 @@
 ﻿using BFF.DataVirtualizingCollection.DataVirtualizingCollection;
 using DemoCutterGUI.TableMappings;
+using Salaros.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Text;
@@ -16,6 +18,19 @@ using System.Windows.Threading;
 
 namespace DemoCutterGUI
 {
+    public class VisibilityToBooleanConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (Visibility)value == Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (bool)value ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
     public class PropertyPathOnObjectToValueConverter : IMultiValueConverter
     {
         public object Convert(object[] value, Type targetType, object parameter, CultureInfo culture)
@@ -70,6 +85,14 @@ namespace DemoCutterGUI
         bool layoutIsInitialized = false;
         DatabaseFieldInfo[] fieldInfoForSearch = null;
 
+        static string gridfieldsConfigPath = "configs/gridFields.ini";
+        static object gridFieldsConfigLock = new object();
+
+
+
+
+
+
 
         IDataVirtualizingCollection<Ret> retsItemSource = null;
         private void InitializeLayoutDispatcher()
@@ -78,7 +101,34 @@ namespace DemoCutterGUI
             {
                 if (!layoutIsInitialized)
                 {
+                    List<string> visibleGridColumnsConfig = new List<string>();
+                    HashSet<string> visibleGridColumns = new HashSet<string>();
+                    bool defaultVisibleGridColumnsFound = false;
+                    lock (gridFieldsConfigLock)
+                    {
+                        if (File.Exists(gridfieldsConfigPath))
+                        {
 
+                            ConfigParser cfg = new ConfigParser(gridfieldsConfigPath);
+                            foreach(ConfigSection section in cfg.Sections)
+                            {
+                                visibleGridColumnsConfig.Add(section.SectionName);
+                            }
+                            string fields = cfg.GetValue("default","visibleGridFieldsRet");
+                            if(fields != null)
+                            {
+                                defaultVisibleGridColumnsFound = true;
+                                string[] fieldsArr = fields.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                foreach (string field in fieldsArr)
+                                {
+                                    visibleGridColumns.Add(field);
+                                }
+                            }
+                        }
+                    }
+
+                    visibleRetsColumnsComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
+                    visibleRetsColumnsComboBox.SelectedValue = "default";
 
                     fieldInfoForSearch = DatabaseFieldInfo.GetDatabaseFieldInfos();
 
@@ -130,7 +180,7 @@ namespace DemoCutterGUI
                                         break;
                                 }
                                 categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].Add(fieldInfo);
-                                retsGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName) });
+                                retsGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName), Visibility= (!defaultVisibleGridColumnsFound || visibleGridColumns.Contains( fieldInfo.FieldName ))? Visibility.Visible : Visibility.Collapsed });
                                 /*
                                 if (!groupBoxes["Rets"].ContainsKey(fieldInfo.SubCategory))
                                 {
@@ -235,6 +285,116 @@ namespace DemoCutterGUI
             retsItemSource.Reset();
             e.Column.SortDirection = System.ComponentModel.ListSortDirection.Ascending;
             e.Handled = true;
+        }
+
+
+        private void visibleRetsColumnsLoadBtn_Click(object sender, RoutedEventArgs e)
+        {
+            List<string> visibleGridColumnsConfig = new List<string>();
+            HashSet<string> visibleGridColumns = new HashSet<string>();
+            bool visibleGridColumnsFound = false;
+            lock (gridFieldsConfigLock)
+            {
+                if (File.Exists(gridfieldsConfigPath))
+                {
+
+                    ConfigParser cfg = new ConfigParser(gridfieldsConfigPath);
+                    foreach (ConfigSection section in cfg.Sections)
+                    {
+                        visibleGridColumnsConfig.Add(section.SectionName);
+                    }
+                    string fields = cfg.GetValue(visibleRetsColumnsComboBox.Text, "visibleGridFieldsRet");
+                    if (fields != null)
+                    {
+                        visibleGridColumnsFound = true;
+                        string[] fieldsArr = fields.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        foreach (string field in fieldsArr)
+                        {
+                            visibleGridColumns.Add(field);
+                        }
+                    }
+                }
+            }
+
+            if (visibleGridColumnsFound)
+            {
+                foreach(var col in retsGrid.Columns)
+                {
+                    col.Visibility = visibleGridColumns.Contains(col.Header) ? Visibility.Visible : Visibility.Collapsed;
+                }
+            } else
+            {
+                MessageBox.Show("Specified preset not found.");
+            }
+
+            visibleRetsColumnsComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
+            visibleRetsColumnsComboBox.SelectedValue = "default";
+        }
+
+        private void visibleRetsColumnsSaveBtn_Click(object sender, RoutedEventArgs e)
+        {
+            HashSet<string> visibleGridColumns = new HashSet<string>();
+
+            bool visibleGridColumnsFound = false;
+
+            ConfigParser cfg = null;
+
+            string targetConfigName = visibleRetsColumnsComboBox.Text;
+
+
+            lock (gridFieldsConfigLock)
+            {
+                if (File.Exists(gridfieldsConfigPath))
+                {
+                    cfg = new ConfigParser(gridfieldsConfigPath);
+                }
+            }
+
+            if(cfg == null)
+            {
+                cfg = new ConfigParser();
+            }
+
+            // Load existing cfg by this name if it exists, so we will only change visibility of columns that exist in the current db but not affect ones that might be relevant only for other dbs
+            string fields = cfg.GetValue(targetConfigName, "visibleGridFieldsRet");
+            if (fields != null)
+            {
+                visibleGridColumnsFound = true;
+                string[] fieldsArr = fields.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (string field in fieldsArr)
+                {
+                    visibleGridColumns.Add(field);
+                }
+            }
+
+            foreach (var col in retsGrid.Columns)
+            {
+                if (col.Visibility == Visibility.Visible)
+                {
+                    visibleGridColumns.Add(col.Header.ToString());
+                } else
+                {
+                    visibleGridColumns.Remove(col.Header.ToString());
+                }
+            }
+
+            string columnsStringToSaveBack = string.Join(',', visibleGridColumns);
+            cfg.SetValue(targetConfigName, "visibleGridFieldsRet",columnsStringToSaveBack);
+
+            lock (gridFieldsConfigLock)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(gridfieldsConfigPath));
+                cfg.Save(gridfieldsConfigPath);
+            }
+
+            List<string> visibleGridColumnsConfig = new List<string>();
+            foreach (ConfigSection section in cfg.Sections)
+            {
+                visibleGridColumnsConfig.Add(section.SectionName);
+            }
+
+            visibleRetsColumnsComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
+            visibleRetsColumnsComboBox.SelectedValue = "default";
         }
     }
 

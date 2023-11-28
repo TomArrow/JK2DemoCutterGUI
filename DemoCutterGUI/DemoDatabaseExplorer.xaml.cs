@@ -193,6 +193,7 @@ namespace DemoCutterGUI
                 return copyFieldCommand ?? (copyFieldCommand = new DoSomethingCommand(()=> { this.CopyField(); }));
             } 
         }
+
     }
 
     public class DoSomethingCommand : ICommand

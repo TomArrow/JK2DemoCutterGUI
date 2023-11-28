@@ -13,6 +13,7 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="checkedToVisibe" />
         <local:PropertyPathOnObjectToValueConverter x:Key="objectToPropertyPath" />
+        <local:VisibilityToBooleanConverter x:Key="visibleToChecked" />
         <Style TargetType="ListViewItem" x:Key="searchFieldItemContainerStyle">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
@@ -160,6 +161,24 @@
 
                 <Button x:Name="prepareBtn" Click="prepareBtn_Click">Prepare (clean, merge, index)</Button>
             </StackPanel>
+            <StackPanel>
+                <ScrollViewer Height="200">
+                    <ItemsControl ItemsSource="{Binding ElementName=retsGrid,Path=Columns}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <WrapPanel>
+                                    <CheckBox IsChecked="{Binding Visibility,Converter={StaticResource visibleToChecked}}" Content="{Binding Header}"></CheckBox>
+                                </WrapPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <WrapPanel>
+                    <ComboBox x:Name="visibleRetsColumnsComboBox" IsEditable="True" SelectedValue="default" MinWidth="100"></ComboBox>
+                    <Button x:Name="visibleRetsColumnsLoadBtn" Click="visibleRetsColumnsLoadBtn_Click">Load</Button>
+                    <Button x:Name="visibleRetsColumnsSaveBtn" Click="visibleRetsColumnsSaveBtn_Click">Save</Button>
+                </WrapPanel>
+            </StackPanel>
         </StackPanel>
 
         <TabControl Grid.Column="1">
@@ -196,7 +215,7 @@
                             </ListView>
                         </GroupBox>
                     </Grid>
-                    <DataGrid EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" x:Name="retsGrid" AlternationCount="2" AlternatingRowBackground="#f3f3f3" FontSize="11" VerticalGridLinesBrush="LightGray" HorizontalGridLinesBrush="LightGray" DockPanel.Dock="Bottom" d:ItemsSource="{Binding KillDatabaseExampleKills}" d:AutoGenerateColumns="True" AllowDrop="False" CanUserAddRows="False" IsReadOnly="True" Sorting="retsGrid_Sorting" CanUserResizeColumns="True"> <!-- This is just to see some columns in the designer. We generate columns more dynamically for live. -->
+                    <DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" x:Name="retsGrid" AlternationCount="2" AlternatingRowBackground="#f3f3f3" FontSize="11" VerticalGridLinesBrush="LightGray" HorizontalGridLinesBrush="LightGray" DockPanel.Dock="Bottom" d:ItemsSource="{Binding KillDatabaseExampleKills}" d:AutoGenerateColumns="True" AllowDrop="False" CanUserAddRows="False" IsReadOnly="True" Sorting="retsGrid_Sorting" CanUserResizeColumns="True"> <!-- This is just to see some columns in the designer. We generate columns more dynamically for live. -->
 
                     </DataGrid>
                 </DockPanel>
