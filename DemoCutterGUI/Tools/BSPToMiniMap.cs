@@ -113,6 +113,7 @@ namespace DemoCutterGUI.Tools
         struct EzAccessTriangle
         {
             public Vector3[] points;
+            public float minX, maxX, minY, maxY;
         }
 
 
@@ -221,12 +222,16 @@ namespace DemoCutterGUI.Tools
                                 mapVert_t vert3 = verts[surf.firstVert + indices[surf.firstIndex + index+2]];
 
                                 EzAccessTriangle triangle = new EzAccessTriangle()
-                                    {
-                                        points = new Vector3[] {
-                                        new Vector3() {X=vert1.xyz[0],Y=vert1.xyz[1],Z=vert1.xyz[2] },
-                                        new Vector3() {X=vert2.xyz[0],Y=vert2.xyz[1],Z=vert2.xyz[2] },
-                                        new Vector3() {X=vert3.xyz[0],Y=vert3.xyz[1],Z=vert3.xyz[2] },
-                                    }
+                                {
+                                    points = new Vector3[] {
+                                        new Vector3() { X = vert1.xyz[0], Y = vert1.xyz[1], Z = vert1.xyz[2] },
+                                        new Vector3() { X = vert2.xyz[0], Y = vert2.xyz[1], Z = vert2.xyz[2] },
+                                        new Vector3() { X = vert3.xyz[0], Y = vert3.xyz[1], Z = vert3.xyz[2] },
+                                    },
+                                    minX = Math.Min(vert1.xyz[0], Math.Min(vert2.xyz[0], vert3.xyz[0])),
+                                    minY = Math.Min(vert1.xyz[1], Math.Min(vert2.xyz[1], vert3.xyz[1])),
+                                    maxX = Math.Max(vert1.xyz[0], Math.Max(vert2.xyz[0], vert3.xyz[0])),
+                                    maxY = Math.Max(vert1.xyz[1], Math.Max(vert2.xyz[1], vert3.xyz[1])),
                                 };
 
                                 // Calculate normal
@@ -269,14 +274,21 @@ namespace DemoCutterGUI.Tools
                     float zValueScale = 1.0f / (maxZ-minZ);
                     float zValueOffset = -minZ;
 
-                    for(int y = 0; y < yRes; y++)
+                    Parallel.For(0, yRes, new ParallelOptions() {MaxDegreeOfParallelism= Environment.ProcessorCount/2 }, (y) =>
                     {
+                    //for(int y = 0; y < yRes; y++)
+                    //{
                         for(int x = 0; x < xRes; x++)
                         {
                             Vector3 pixelWorldCoordinate = new Vector3() { X = (float)(xRes-x-1)/(float)xRes*xRange+minX, Y= (float)y / (float)yRes * yRange + minY };
                             for(int t = 0; t < triangles.Count; t++)
                             {
-
+                                if (pixelWorldCoordinate.X < triangles[t].minX || pixelWorldCoordinate.Y < triangles[t].minY
+                                    || pixelWorldCoordinate.X > triangles[t].maxX || pixelWorldCoordinate.Y > triangles[t].maxY
+                                    )
+                                {
+                                    continue; // Quick skip triangles that obviously don't apply.
+                                }
                                 if(Helpers.pointInTriangle2D(ref pixelWorldCoordinate,ref triangles[t].points[0],ref triangles[t].points[1],ref triangles[t].points[2]))
                                 {
                                     float Z = zValueScale*(zValueOffset + (triangles[t].points[0].Z+ triangles[t].points[1].Z+ triangles[t].points[2].Z)/3f);// dumb but should work good enough
@@ -285,7 +297,8 @@ namespace DemoCutterGUI.Tools
                                 }
                             }
                         }
-                    }
+                    //}
+                    });
 
                     //float[] pixelDiffData = new float[xRes * yRes];
 
