@@ -83,16 +83,28 @@ namespace DemoCutterGUI
 
 
         bool layoutIsInitialized = false;
-        DatabaseFieldInfo[] fieldInfoForSearch = null;
+        DatabaseFieldInfo[] fieldInfoForSearch = DatabaseFieldInfo.GetDatabaseFieldInfos();
 
         static string gridfieldsConfigPath = "configs/gridFields.ini";
         static object gridFieldsConfigLock = new object();
 
 
 
+        partial void Constructor()
+        {
+            // Register fields for monitoring whether they are active.
+            foreach(DatabaseFieldInfo fieldInfo in fieldInfoForSearch)
+            {
+                fieldMan.RegisterFieldInfo(fieldInfo);
+            }
+            fieldMan.fieldInfoChanged += FieldMan_fieldInfoChanged;
+        }
 
-
-
+        private void FieldMan_fieldInfoChanged(object sender, DatabaseFieldInfo e)
+        {
+            //UpdateLayout();
+            retsItemSource?.Reset();
+        }
 
         IDataVirtualizingCollection<Ret> retsItemSource = null;
         private void InitializeLayoutDispatcher()
@@ -130,7 +142,7 @@ namespace DemoCutterGUI
                     visibleRetsColumnsComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
                     visibleRetsColumnsComboBox.SelectedValue = "default";
 
-                    fieldInfoForSearch = DatabaseFieldInfo.GetDatabaseFieldInfos();
+                    //fieldInfoForSearch = DatabaseFieldInfo.GetDatabaseFieldInfos();
 
 
                     Dictionary<string, Dictionary<string, GroupBox>> groupBoxes = new Dictionary<string, Dictionary<string, GroupBox>>()
@@ -242,6 +254,73 @@ namespace DemoCutterGUI
             }
         }
 
+        private string sortField = null;
+        private bool sortDescending = false;
+
+        private string MakeSelectQuery(bool countQuery = false)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if (countQuery)
+            {
+                sb.Append("SELECT COUNT(*) FROM rets");
+            }
+            else
+            {
+                sb.Append("SELECT * FROM rets");
+            }
+
+            DatabaseFieldInfo[] activeFields = fieldMan.getActiveFields();
+
+            bool oneWhereDone = false;
+            foreach (DatabaseFieldInfo field in activeFields)
+            {
+                if (field.Active)
+                {
+                    sb.Append(oneWhereDone ? " AND " : " WHERE ");
+                    oneWhereDone = true;
+                    if (field.IsNull)
+                    {
+                        sb.Append($"{field.FieldName} ");
+                        sb.Append("IS NULL");
+                    }
+                    else if (field.Bool)
+                    {
+                        sb.Append(field.BoolContent ? "" : "NOT ");
+                        sb.Append($"{field.FieldName} ");
+                    }
+                    else if (string.IsNullOrEmpty(field.Content))
+                    {
+                        sb.Append($"{field.FieldName} ");
+                        sb.Append("IS NOT NULL");
+                    }
+                    else
+                    {
+                        sb.Append($"{field.FieldName} ");
+                        //sb.Append($"='");
+                        sb.Append($"LIKE '%");
+                        sb.Append(field.Content.Replace("'","''"));
+                        sb.Append($"%'");
+                    }
+                }
+            }
+            string sortFieldLocal = sortField;
+            if(sortFieldLocal != null)
+            {
+                sb.Append(" ORDER BY ");
+                sb.Append(sortFieldLocal);
+                if (sortDescending)
+                {
+                    sb.Append(" DESC");
+                } else
+                {
+                    sb.Append(" ASC");
+                }
+            }
+
+            return sb.ToString();
+        }
+
         private void UpdateLayoutDispatcher()
         {
             lock (dbMutex)
@@ -259,12 +338,14 @@ namespace DemoCutterGUI
                         .NonTaskBasedFetchers(
                             pageFetcher: (offset, pageSize, ct) =>
                             {
-                                List<Ret> res = dbConn.Query<Ret>($"SELECT * FROM rets LIMIT {offset},{pageSize}") as List<Ret>;
+                                //List<Ret> res = dbConn.Query<Ret>($"SELECT * FROM rets LIMIT {offset},{pageSize}") as List<Ret>;
+                                List<Ret> res = dbConn.Query<Ret>($"{MakeSelectQuery(false)} LIMIT {offset},{pageSize}") as List<Ret>;
                                 return res.ToArray();
                             },
                             countFetcher: (ct) =>
                             {
-                                int res = dbConn.ExecuteScalar<int>($"SELECT COUNT(*) FROM rets");
+                                //int res = dbConn.ExecuteScalar<int>($"SELECT COUNT(*) FROM rets");
+                                int res = dbConn.ExecuteScalar<int>($"{MakeSelectQuery(true)}");
                                 return res;
                             })
                         .ThrottledLifoPageRequests().AsyncIndexAccess((a,b)=> {
@@ -282,8 +363,10 @@ namespace DemoCutterGUI
 
         private void retsGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
+            sortField = e.Column.SortMemberPath; 
+            e.Column.SortDirection = e.Column.SortDirection == System.ComponentModel.ListSortDirection.Ascending ? System.ComponentModel.ListSortDirection.Descending : System.ComponentModel.ListSortDirection.Ascending;
+            sortDescending = e.Column.SortDirection == System.ComponentModel.ListSortDirection.Ascending;
             retsItemSource.Reset();
-            e.Column.SortDirection = System.ComponentModel.ListSortDirection.Ascending;
             e.Handled = true;
         }
 

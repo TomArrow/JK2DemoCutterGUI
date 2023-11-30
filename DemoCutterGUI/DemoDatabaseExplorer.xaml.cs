@@ -29,11 +29,14 @@ namespace DemoCutterGUI
     /// </summary>
     public partial class DemoDatabaseExplorer : Window
     {
+        partial void Constructor();
 
         SQLiteConnection dbConn = null;
         Mutex dbMutex = new Mutex();
 
         string currentStatus = "Idle";
+
+        DataBaseFieldInfoManager fieldMan = new DataBaseFieldInfoManager();
 
 
         // Anything needed if closing
@@ -93,6 +96,7 @@ namespace DemoCutterGUI
             });*/
             this.DataContext = this;
             InitializeComponent();
+            Constructor();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

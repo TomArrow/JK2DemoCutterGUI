@@ -8,6 +8,93 @@ using System.Threading.Tasks;
 
 namespace DemoCutterGUI
 {
+    public class DataBaseFieldInfoManager
+    {
+        static HashSet<DatabaseFieldInfo> fieldInfos = new HashSet<DatabaseFieldInfo>();
+        static HashSet<DatabaseFieldInfo> activeFields = new HashSet<DatabaseFieldInfo>();
+
+        public event EventHandler<DatabaseFieldInfo> fieldInfoChanged;
+
+        private void OnFieldInfoChanged(DatabaseFieldInfo fi)
+        {
+            fieldInfoChanged?.Invoke(this,fi);
+        }
+
+        public void RegisterFieldInfo(DatabaseFieldInfo fi)
+        {
+            lock (fieldInfos)
+            {
+                fieldInfos.Add(fi);
+                fi.PropertyChanged += Fi_PropertyChanged;
+                if (fi.Active)
+                {
+                    activeFields.Add(fi);
+                }
+                else
+                {
+                    activeFields.Remove(fi);
+                }
+            }
+        }
+
+        public bool? IsFieldActive(DatabaseFieldInfo fi)
+        {
+            lock (fieldInfos) {
+                if (fieldInfos.Contains(fi))
+                {
+                    return activeFields.Contains(fi);
+                } else
+                {
+                    return null;
+                }
+            }
+        }
+
+        public DatabaseFieldInfo[] getActiveFields()
+        {
+            lock (fieldInfos)
+            {
+                return activeFields.ToArray();
+            }
+        }
+
+        private void Fi_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            DatabaseFieldInfo fi = sender as DatabaseFieldInfo;
+            lock (fieldInfos) { 
+
+                if (fi.Active)
+                {
+                    activeFields.Add(fi);
+                } else
+                {
+                    activeFields.Remove(fi);
+                }
+            }
+            OnFieldInfoChanged(fi);
+        }
+
+        ~DataBaseFieldInfoManager()
+        {
+            Clear();
+        }
+
+        public void Clear()
+        {
+            lock (fieldInfos)
+            {
+                foreach (DatabaseFieldInfo fi in fieldInfos)
+                {
+                    fi.PropertyChanged += Fi_PropertyChanged;
+                }
+                fieldInfos.Clear();
+                activeFields.Clear();
+            }
+        }
+
+
+    }
+
     public class DatabaseFieldInfo : INotifyPropertyChanged // Used for search
     {
 
