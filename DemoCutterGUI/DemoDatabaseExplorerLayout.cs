@@ -219,10 +219,8 @@ namespace DemoCutterGUI
                     listKillsPosition.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
                     listKillsRest.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();
 
-                    listKillsNamesDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].ToArray();
-                    CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(listKillsNamesDataView.ItemsSource);
-                    PropertyGroupDescription pgd = new PropertyGroupDescription("SubCategory");
-                    view.GroupDescriptions.Add(pgd);
+                    retsSidePanel.Fields = categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].ToArray();
+
                     //listKillsNamesDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
                     //listKillsKillDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
                     //listKillsMovementDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();

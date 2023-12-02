@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DemoCutterGUI"
+        xmlns:dee="clr-namespace:DemoCutterGUI.DatabaseExplorerElements"
         mc:Ignorable="d"
         d:DataContext="{StaticResource ResourceKey=ExampleData}"
         Title="DemoDatabaseExplorer" Height="820" Width="1540">
@@ -11,14 +12,7 @@
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding CopyFieldCommand}"></KeyBinding>
     </Window.InputBindings>
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="checkedToVisibe" />
-        <local:PropertyPathOnObjectToValueConverter x:Key="objectToPropertyPath" />
-        <local:VisibilityToBooleanConverter x:Key="visibleToChecked" />
-        <Style TargetType="ListViewItem" x:Key="searchFieldItemContainerStyle">
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0"/>
-            <Setter Property="BorderThickness" Value="1"/>
-        </Style>
+        
         <DataTemplate x:Key="searchFieldTemplate">
             <StackPanel Margin="0" Width="104">
                 <StackPanel.Style>
@@ -43,44 +37,7 @@
 
             </StackPanel>
         </DataTemplate> 
-        <DataTemplate x:Key="viewFieldTemplate">
-            <StackPanel Margin="0" Width="135">
-                <StackPanel.Style>
-                    <Style TargetType="StackPanel">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Active}" Value="False">
-                                <Setter Property="Background" Value="LightGray"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </StackPanel.Style>
-                
-                <WrapPanel Margin="0">
-                    <TextBlock  Margin="0" Padding="0" Text="{Binding Path=FieldName}" FontSize="12" ToolTip="{Binding Path=FieldName}"></TextBlock>
-                </WrapPanel>
-                <WrapPanel Margin="0">
-                    <!-- <CheckBox  Margin="0" Padding="0" IsChecked="{Binding Path=Active,Mode=TwoWay}"></CheckBox>-->
-                    <CheckBox Margin="0" Padding="0"  Visibility="{Binding Path=Bool, Converter={StaticResource checkedToVisibe}}">
-                        <CheckBox.IsChecked>
-                            <MultiBinding Converter="{StaticResource objectToPropertyPath}">
-                                <Binding ElementName="retsGrid" Path="SelectedItem" Mode="OneWay"></Binding>
-                                <Binding Path="FieldName" Mode="OneWay"></Binding>
-                            </MultiBinding>
-                        </CheckBox.IsChecked>
-                    </CheckBox>
-                    <TextBox Margin="0" Padding="0"  Width="115" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10" >
-                        <TextBox.Text>
-                            <MultiBinding Converter="{StaticResource objectToPropertyPath}">
-                                <Binding ElementName="retsGrid" Path="SelectedItem" Mode="OneWay"></Binding>
-                                <Binding Path="FieldName" Mode="OneWay"></Binding>
-                            </MultiBinding>
-                        </TextBox.Text>
-                    </TextBox>
-                    <CheckBox Margin="0" Padding="0"  IsChecked="{Binding Path=IsNull,Mode=TwoWay}" Visibility="{Binding Path=Nullable, Converter={StaticResource checkedToVisibe}}" ></CheckBox>
-                </WrapPanel>
-
-            </StackPanel>
-        </DataTemplate> 
+        
         <ItemsPanelTemplate x:Key="searchFieldContainerTemplate">
             <WrapPanel Orientation="Horizontal" ScrollViewer.CanContentScroll="False" MaxWidth="{Binding RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Path=ActualWidth }" />
         </ItemsPanelTemplate>
@@ -94,22 +51,7 @@
                 
             </GroupStyle.ContainerStyle>
         </GroupStyle>-->
-        <Style TargetType="GroupItem" x:Key="fieldsListViewGroupStyle">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate>
-                        <Expander IsExpanded="True">
-                            <Expander.Header>
-                                <WrapPanel>
-                                    <TextBlock Text="{Binding Name}"></TextBlock>
-                                </WrapPanel>
-                            </Expander.Header>
-                            <ItemsPresenter />
-                        </Expander>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -122,9 +64,10 @@
             <RowDefinition Height="15"></RowDefinition>
         </Grid.RowDefinitions>
         <DockPanel>
-            <TabControl>
+            <TabControl x:Name="sidePanelTabs">
                 <TabItem Header="Kill" >
-                    <DockPanel>
+                    <dee:SidePanel x:Name="retsSidePanel" ReferenceGrid="{Binding ElementName=retsGrid}"></dee:SidePanel>
+                    <!--<DockPanel>
                         <StackPanel DockPanel.Dock="Top">
                             <TextBox x:Name="killFieldText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Height="100" FontSize="14" d:Text="test">
                                 <TextBox.Text>
@@ -147,7 +90,7 @@
                                 </ListView>
                             </StackPanel>
                         </ScrollViewer>
-                    </DockPanel>
+                    </DockPanel>-->
                 </TabItem>
             </TabControl>
         </DockPanel>

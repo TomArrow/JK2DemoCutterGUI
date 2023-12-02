@@ -17,6 +17,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using DemoCutterGUI.TableMappings;
 using System.ComponentModel;
+using DemoCutterGUI.DatabaseExplorerElements;
 
 namespace DemoCutterGUI
 {
@@ -179,17 +180,18 @@ namespace DemoCutterGUI
             
         }
 
-        private void killTextCopyBtn_Click(object sender, RoutedEventArgs e)
-        {
-            CopyField();
-        }
+        //private void killTextCopyBtn_Click(object sender, RoutedEventArgs e)
+        //{
+        //    CopyField();
+        //}
 
         public void CopyField()
         {
-            if (killFieldText == null) return;
-            string text = killFieldText.Text;
-            if (text == null) return;
-            Clipboard.SetText(text);
+            TabItem tab = (TabItem)sidePanelTabs.SelectedItem;
+            if (tab == null) return;
+            SidePanel currentSidePanel = (SidePanel)tab.Content;
+            if (currentSidePanel == null) return;
+            currentSidePanel.CopyField();
         }
 
         private ICommand copyFieldCommand = null;

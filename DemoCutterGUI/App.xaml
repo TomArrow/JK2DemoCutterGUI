@@ -5,5 +5,13 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <local:ExampleData x:Key="ExampleData"/>
+        <Style TargetType="ListViewItem" x:Key="searchFieldItemContainerStyle">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <BooleanToVisibilityConverter x:Key="checkedToVisibe" />
+        <local:PropertyPathOnObjectToValueConverter x:Key="objectToPropertyPath" />
+        <local:VisibilityToBooleanConverter x:Key="visibleToChecked" />
     </Application.Resources>
 </Application>

@@ -1,0 +1,94 @@
+﻿<UserControl x:Class="DemoCutterGUI.DatabaseExplorerElements.SidePanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DemoCutterGUI.DatabaseExplorerElements"
+             mc:Ignorable="d" 
+             d:DataContext="{StaticResource ResourceKey=ExampleData}"
+             x:Name="sidePanel"
+             d:DesignHeight="450" d:DesignWidth="320">
+    <UserControl.Resources>
+
+        <ItemsPanelTemplate x:Key="searchFieldContainerTemplateSidePanel">
+            <WrapPanel Orientation="Horizontal" ScrollViewer.CanContentScroll="False" />
+        </ItemsPanelTemplate>
+        <Style TargetType="GroupItem" x:Key="fieldsListViewGroupStyle">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Expander IsExpanded="True">
+                            <Expander.Header>
+                                <WrapPanel>
+                                    <TextBlock Text="{Binding Name}"></TextBlock>
+                                </WrapPanel>
+                            </Expander.Header>
+                            <ItemsPresenter />
+                        </Expander>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <DataTemplate x:Key="viewFieldTemplate">
+            <StackPanel Margin="0" Width="135">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Active}" Value="False">
+                                <Setter Property="Background" Value="LightGray"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+
+                <WrapPanel Margin="0">
+                    <TextBlock  Margin="0" Padding="0" Text="{Binding Path=FieldName}" FontSize="12" ToolTip="{Binding Path=FieldName}"></TextBlock>
+                </WrapPanel>
+                <WrapPanel Margin="0">
+                    <CheckBox Margin="0" Padding="0"  Visibility="{Binding Path=Bool, Converter={StaticResource checkedToVisibe}}">
+                        <CheckBox.IsChecked>
+                            <MultiBinding Converter="{StaticResource objectToPropertyPath}">
+                                <Binding ElementName="sidePanel" Path="ReferenceGrid.SelectedItem" Mode="OneWay"></Binding>
+                                <Binding Path="FieldName" Mode="OneWay"></Binding>
+                            </MultiBinding>
+                        </CheckBox.IsChecked>
+                    </CheckBox>
+                    <TextBox Margin="0" Padding="0"  Width="115" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10" >
+                        <TextBox.Text>
+                            <MultiBinding Converter="{StaticResource objectToPropertyPath}">
+                                <Binding ElementName="sidePanel" Path="ReferenceGrid.SelectedItem" Mode="OneWay"></Binding>
+                                <Binding Path="FieldName" Mode="OneWay"></Binding>
+                            </MultiBinding>
+                        </TextBox.Text>
+                    </TextBox>
+                    <CheckBox Margin="0" Padding="0"  IsChecked="{Binding Path=IsNull,Mode=TwoWay}" Visibility="{Binding Path=Nullable, Converter={StaticResource checkedToVisibe}}" ></CheckBox>
+                </WrapPanel>
+
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top">
+            <TextBox x:Name="killFieldText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Height="100" FontSize="14" d:Text="test">
+                <TextBox.Text>
+                    <MultiBinding Converter="{StaticResource objectToPropertyPath}">
+                        <Binding ElementName="sidePanel" Path="ReferenceGrid.SelectedItem" Mode="OneWay"></Binding>
+                        <Binding ElementName="listKillsNamesDataView" Path="SelectedItem.FieldName" Mode="OneWay"></Binding>
+                        <Binding ElementName="sidePanel" Path="ReferenceGrid.CurrentColumn.SortMemberPath" Mode="OneWay"></Binding>
+                    </MultiBinding>
+                </TextBox.Text>
+            </TextBox>
+            <Button x:Name="killTextCopyBtn" Click="killTextCopyBtn_Click">Copy (Ctrl + D)</Button>
+        </StackPanel>
+        <ScrollViewer DockPanel.Dock="Bottom">
+            <StackPanel DockPanel.Dock="Bottom">
+                <ListView ItemsPanel="{StaticResource searchFieldContainerTemplateSidePanel}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}"  x:Name="listKillsNamesDataView" ScrollViewer.CanContentScroll="False" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillAll}" ItemsSource="{Binding ElementName=sidePanel,Path=Fields}" ItemTemplate="{StaticResource viewFieldTemplate}">
+                    <ListView.GroupStyle>
+                        <GroupStyle ContainerStyle="{StaticResource fieldsListViewGroupStyle}">
+                        </GroupStyle>
+                    </ListView.GroupStyle>
+                </ListView>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>
