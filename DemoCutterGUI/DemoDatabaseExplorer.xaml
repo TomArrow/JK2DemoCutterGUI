@@ -84,6 +84,32 @@
         <ItemsPanelTemplate x:Key="searchFieldContainerTemplate">
             <WrapPanel Orientation="Horizontal" ScrollViewer.CanContentScroll="False" MaxWidth="{Binding RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Path=ActualWidth }" />
         </ItemsPanelTemplate>
+        <!--<GroupStyle x:Key="fieldsListViewGroupStyle">
+            <GroupStyle.HeaderTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}"></TextBlock>
+                                                </DataTemplate>
+                                            </GroupStyle.HeaderTemplate>
+            <GroupStyle.ContainerStyle>
+                
+            </GroupStyle.ContainerStyle>
+        </GroupStyle>-->
+        <Style TargetType="GroupItem" x:Key="fieldsListViewGroupStyle">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Expander IsExpanded="True">
+                            <Expander.Header>
+                                <WrapPanel>
+                                    <TextBlock Text="{Binding Name}"></TextBlock>
+                                </WrapPanel>
+                            </Expander.Header>
+                            <ItemsPresenter />
+                        </Expander>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -99,7 +125,7 @@
             <TabControl>
                 <TabItem Header="Kill" >
                     <DockPanel>
-                        <StackPanel DockPanel.Dock="Top" >
+                        <StackPanel DockPanel.Dock="Top">
                             <TextBox x:Name="killFieldText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Height="100" FontSize="14" d:Text="test">
                                 <TextBox.Text>
                                     <MultiBinding Converter="{StaticResource objectToPropertyPath}">
@@ -115,30 +141,7 @@
                             <StackPanel DockPanel.Dock="Bottom">
                                 <ListView ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}"  x:Name="listKillsNamesDataView" ScrollViewer.CanContentScroll="False" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillAll}" ItemTemplate="{StaticResource viewFieldTemplate}">
                                     <ListView.GroupStyle>
-                                        <GroupStyle>
-                                            <!--<GroupStyle.HeaderTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock Text="{Binding Name}"></TextBlock>
-                                                </DataTemplate>
-                                            </GroupStyle.HeaderTemplate>-->
-                                            <GroupStyle.ContainerStyle>
-                                                <Style TargetType="GroupItem">
-                                                    <Setter Property="Template">
-                                                        <Setter.Value>
-                                                            <ControlTemplate>
-                                                                <Expander IsExpanded="True">
-                                                                    <Expander.Header>
-                                                                        <WrapPanel>
-                                                                            <TextBlock Text="{Binding Name}"></TextBlock>
-                                                                        </WrapPanel>
-                                                                    </Expander.Header>
-                                                                    <ItemsPresenter />
-                                                                </Expander>
-                                                            </ControlTemplate>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </Style>
-                                            </GroupStyle.ContainerStyle>
+                                        <GroupStyle ContainerStyle="{StaticResource fieldsListViewGroupStyle}">
                                         </GroupStyle>
                                     </ListView.GroupStyle>
                                 </ListView>
