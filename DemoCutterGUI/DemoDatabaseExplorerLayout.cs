@@ -98,7 +98,9 @@ namespace DemoCutterGUI
                 fieldMan.RegisterFieldInfo(fieldInfo);
             }
             fieldMan.fieldInfoChanged += FieldMan_fieldInfoChanged;
+            retsMidPanel.sortingChanged += RetsMidPanel_sortingChanged;
         }
+
 
         private void FieldMan_fieldInfoChanged(object sender, DatabaseFieldInfo e)
         {
@@ -171,7 +173,7 @@ namespace DemoCutterGUI
 
 
                     //displayKill.Children.Clear();
-                    retsGrid.Columns.Clear();
+                    retsMidPanel.TheGrid.Columns.Clear();
                     foreach(var retColumn in retColumns)
                     {
 
@@ -192,7 +194,7 @@ namespace DemoCutterGUI
                                         break;
                                 }
                                 categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].Add(fieldInfo);
-                                retsGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName), Visibility= (!defaultVisibleGridColumnsFound || visibleGridColumns.Contains( fieldInfo.FieldName ))? Visibility.Visible : Visibility.Collapsed });
+                                retsMidPanel.TheGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName), Visibility= (!defaultVisibleGridColumnsFound || visibleGridColumns.Contains( fieldInfo.FieldName ))? Visibility.Visible : Visibility.Collapsed });
                                 /*
                                 if (!groupBoxes["Rets"].ContainsKey(fieldInfo.SubCategory))
                                 {
@@ -214,10 +216,14 @@ namespace DemoCutterGUI
                     }*/
 
                     // Apply search fields
-                    listKillsNames.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
-                    listKillsKill.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
-                    listKillsPosition.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
-                    listKillsRest.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();
+                    //listKillsNames.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
+                    //listKillsKill.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
+                    //listKillsPosition.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
+                    //listKillsRest.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();
+                    retsMidPanel.Items1 = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
+                    retsMidPanel.Items2 = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
+                    retsMidPanel.Items3 = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
+                    retsMidPanel.Items4 = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();
 
                     retsSidePanel.Fields = categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].ToArray();
 
@@ -302,17 +308,22 @@ namespace DemoCutterGUI
                     }
                 }
             }
-            string sortFieldLocal = sortField;
-            if(sortFieldLocal != null)
+
+            if (!countQuery)
             {
-                sb.Append(" ORDER BY ");
-                sb.Append(sortFieldLocal);
-                if (sortDescending)
+                string sortFieldLocal = sortField;
+                if (sortFieldLocal != null)
                 {
-                    sb.Append(" DESC");
-                } else
-                {
-                    sb.Append(" ASC");
+                    sb.Append(" ORDER BY ");
+                    sb.Append(sortFieldLocal);
+                    if (sortDescending)
+                    {
+                        sb.Append(" DESC");
+                    }
+                    else
+                    {
+                        sb.Append(" ASC");
+                    }
                 }
             }
 
@@ -349,24 +360,30 @@ namespace DemoCutterGUI
                         .ThrottledLifoPageRequests().AsyncIndexAccess((a,b)=> {
                             return new Ret() { hash="Loading, please wait."};
                         });
-                        //.SyncIndexAccess();
-                
-                retsGrid.ItemsSource = retsItemSource;
+                //.SyncIndexAccess();
+
+                retsMidPanel.TheGrid.ItemsSource = retsItemSource;
 
             }
         }
 
 
 
+        private void RetsMidPanel_sortingChanged(object sender, DatabaseExplorerElements.SortingInfo e)
+        {
+            sortField = e.fieldName;
+            sortDescending = e.descending;
+            retsItemSource.Reset();
+        }
 
-        private void retsGrid_Sorting(object sender, DataGridSortingEventArgs e)
+        /*private void retsGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
             sortField = e.Column.SortMemberPath; 
             e.Column.SortDirection = e.Column.SortDirection == System.ComponentModel.ListSortDirection.Ascending ? System.ComponentModel.ListSortDirection.Descending : System.ComponentModel.ListSortDirection.Ascending;
             sortDescending = e.Column.SortDirection == System.ComponentModel.ListSortDirection.Ascending;
             retsItemSource.Reset();
             e.Handled = true;
-        }
+        }*/
 
 
         private void visibleRetsColumnsLoadBtn_Click(object sender, RoutedEventArgs e)
@@ -399,7 +416,7 @@ namespace DemoCutterGUI
 
             if (visibleGridColumnsFound)
             {
-                foreach(var col in retsGrid.Columns)
+                foreach(var col in retsMidPanel.TheGrid.Columns)
                 {
                     col.Visibility = visibleGridColumns.Contains(col.Header) ? Visibility.Visible : Visibility.Collapsed;
                 }
@@ -448,7 +465,7 @@ namespace DemoCutterGUI
                 }
             }
 
-            foreach (var col in retsGrid.Columns)
+            foreach (var col in retsMidPanel.TheGrid.Columns)
             {
                 if (col.Visibility == Visibility.Visible)
                 {

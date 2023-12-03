@@ -66,7 +66,7 @@
         <DockPanel>
             <TabControl x:Name="sidePanelTabs">
                 <TabItem Header="Kill" >
-                    <dee:SidePanel x:Name="retsSidePanel" ReferenceGrid="{Binding ElementName=retsGrid}"></dee:SidePanel>
+                    <dee:SidePanel x:Name="retsSidePanel" ReferenceGrid="{Binding ElementName=retsMidPanel,Path=TheGrid}"></dee:SidePanel>
                     <!--<DockPanel>
                         <StackPanel DockPanel.Dock="Top">
                             <TextBox x:Name="killFieldText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Height="100" FontSize="14" d:Text="test">
@@ -109,7 +109,7 @@
             </StackPanel>
             <StackPanel>
                 <ScrollViewer Height="200">
-                    <ItemsControl ItemsSource="{Binding ElementName=retsGrid,Path=Columns}">
+                    <ItemsControl ItemsSource="{Binding ElementName=retsMidPanel,Path=TheGrid.Columns}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <WrapPanel>
@@ -130,8 +130,8 @@
 
         <TabControl Grid.Column="1">
             <TabItem Header="Kills">
-
-                <DockPanel>
+                <dee:MidPanel x:Name="retsMidPanel" Items1Name="Meta" Items2Name="Kill" Items3Name="Movement"></dee:MidPanel>
+                <!--<DockPanel>
                     <Grid DockPanel.Dock="Top" MaxHeight="700">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition></ColumnDefinition>
@@ -156,16 +156,15 @@
                             </ListView>
                         </GroupBox>
                         <GroupBox Header="Various" Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1">
-                            <!--.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto"-->
                             <ListView  ItemsPanel="{StaticResource searchFieldContainerTemplate}" ItemContainerStyle="{StaticResource searchFieldItemContainerStyle}" Grid.Row="1" Grid.Column="2" x:Name="listKillsRest" ScrollViewer.CanContentScroll="False" d:ItemsSource="{Binding Path=KillDatabaseFieldsKillRest}" ItemTemplate="{StaticResource searchFieldTemplate}">
                                 
                             </ListView>
                         </GroupBox>
                     </Grid>
-                    <DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" x:Name="retsGrid" AlternationCount="2" AlternatingRowBackground="#f3f3f3" FontSize="11" VerticalGridLinesBrush="LightGray" HorizontalGridLinesBrush="LightGray" DockPanel.Dock="Bottom" d:ItemsSource="{Binding KillDatabaseExampleKills}" d:AutoGenerateColumns="True" AllowDrop="False" CanUserAddRows="False" IsReadOnly="True" Sorting="retsGrid_Sorting" CanUserResizeColumns="True"> <!-- This is just to see some columns in the designer. We generate columns more dynamically for live. -->
+                    <DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" x:Name="retsGrid" AlternationCount="2" AlternatingRowBackground="#f3f3f3" FontSize="11" VerticalGridLinesBrush="LightGray" HorizontalGridLinesBrush="LightGray" DockPanel.Dock="Bottom" d:ItemsSource="{Binding KillDatabaseExampleKills}" d:AutoGenerateColumns="True" AllowDrop="False" CanUserAddRows="False" IsReadOnly="True" Sorting="retsGrid_Sorting" CanUserResizeColumns="True">
 
                     </DataGrid>
-                </DockPanel>
+                </DockPanel>-->
             </TabItem>
         </TabControl>
         
