@@ -108,6 +108,12 @@ namespace DemoCutterGUI
             retsItemSource?.Reset();
         }
 
+
+        struct CategoryInfoCollection {
+            public DatabaseExplorerElements.MidPanel midPanel;
+            public DatabaseExplorerElements.SidePanel sidePanel;
+        }
+
         IDataVirtualizingCollection<Ret> retsItemSource = null;
         private void InitializeLayoutDispatcher()
         {
@@ -144,93 +150,99 @@ namespace DemoCutterGUI
                     visibleRetsColumnsComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
                     visibleRetsColumnsComboBox.SelectedValue = "default";
 
-                    //fieldInfoForSearch = DatabaseFieldInfo.GetDatabaseFieldInfos();
 
-
-                    Dictionary<string, Dictionary<string, GroupBox>> groupBoxes = new Dictionary<string, Dictionary<string, GroupBox>>()
-                    {
-                        { "Rets", new Dictionary<string, GroupBox>(){ 
-                            { "Names", new GroupBox(){ Header="Meta",Content=new StackPanel() } },
-                            { "Kill", new GroupBox(){ Header="Kill",Content=new StackPanel() } },
-                            { "Position", new GroupBox(){ Header="Movement",Content=new StackPanel() } } 
-                        } },
-                    };
 
                     // Kills first.
                     var retColumns = dbConn.GetTableInfo("rets");
-                    Dictionary<Tuple<string,string>, List<DatabaseFieldInfo>> categorizedFieldInfos = new Dictionary<Tuple<string, string>, List<DatabaseFieldInfo>>()
+
+                    Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
                     {
-                        { new Tuple<string,string>("Rets","_all_"),new List<DatabaseFieldInfo>() },
-                        { new Tuple<string,string>("Rets","Names"),new List<DatabaseFieldInfo>() },
-                        { new Tuple<string,string>("Rets","Kill"),new List<DatabaseFieldInfo>() },
-                        { new Tuple<string,string>("Rets","Position"),new List<DatabaseFieldInfo>() },
-                        { new Tuple<string,string>("Rets","Rest"),new List<DatabaseFieldInfo>() },
+                        { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel} }
                     };
-                    //Dictionary<string, List<DataGridTextColumn>> dataGridCategorizedFieldInfos = new Dictionary<string, List<DataGridTextColumn>>()
-                    //{
-                    //    {"Rets",new List<DataGridTextColumn>() }
-                    //};
+
+                    Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>> categorizedFieldInfos = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>>();
 
 
-                    //displayKill.Children.Clear();
-                    retsMidPanel.TheGrid.Columns.Clear();
+                    foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanel in associatedPanels)
+                    {
+                        associatedPanel.Value.midPanel.TheGrid.Columns.Clear();
+                    }
+
                     foreach(var retColumn in retColumns)
                     {
 
                         // Find corresponding search field
                         foreach (DatabaseFieldInfo fieldInfo in fieldInfoForSearch)
                         {
-                            if (retColumn.Name.Equals(fieldInfo.FieldName, StringComparison.OrdinalIgnoreCase) && (fieldInfo.Category == "Kills" || fieldInfo.Category == "KillAngles"))
+
+                            if (!categorizedFieldInfos.ContainsKey(fieldInfo.Category))
                             {
-                                switch (fieldInfo.SubCategory)
-                                {
-                                    case "Names":
-                                    case "Kill":
-                                    case "Position":
-                                        categorizedFieldInfos[new Tuple<string, string>("Rets", fieldInfo.SubCategory)].Add(fieldInfo);
-                                        break;
-                                    default:
-                                        categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].Add(fieldInfo);
-                                        break;
-                                }
-                                categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].Add(fieldInfo);
-                                retsMidPanel.TheGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName), Visibility= (!defaultVisibleGridColumnsFound || visibleGridColumns.Contains( fieldInfo.FieldName ))? Visibility.Visible : Visibility.Collapsed });
-                                /*
-                                if (!groupBoxes["Rets"].ContainsKey(fieldInfo.SubCategory))
-                                {
-                                    groupBoxes["Rets"][fieldInfo.SubCategory] = new GroupBox() { Header=fieldInfo.SubCategory, Content = new StackPanel() };
-                                }
+                                categorizedFieldInfos[fieldInfo.Category] = new Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>();
+                            }
+                            if (!categorizedFieldInfos[fieldInfo.Category].ContainsKey(fieldInfo.SubCategory))
+                            {
+                                categorizedFieldInfos[fieldInfo.Category][fieldInfo.SubCategory] = new List<DatabaseFieldInfo>();
+                            }
+                            if (!categorizedFieldInfos[fieldInfo.Category].ContainsKey(DatabaseFieldInfo.FieldSubCategory.All))
+                            {
+                                categorizedFieldInfos[fieldInfo.Category][DatabaseFieldInfo.FieldSubCategory.All] = new List<DatabaseFieldInfo>();
+                            }
+
+                            if (retColumn.Name.Equals(fieldInfo.FieldName, StringComparison.OrdinalIgnoreCase) /*&& (fieldInfo.Category == "Kills" || fieldInfo.Category == "KillAngles")*/)
+                            {
+                                categorizedFieldInfos[fieldInfo.Category][fieldInfo.SubCategory].Add(fieldInfo);
+                                categorizedFieldInfos[fieldInfo.Category][DatabaseFieldInfo.FieldSubCategory.All].Add(fieldInfo);
                                 
-                                var newTextBox = new TextBox();
-                                newTextBox.SetBinding(TextBox.TextProperty,new Binding(fieldInfo.FieldName));
-                                (groupBoxes["Rets"][fieldInfo.SubCategory].Content as StackPanel).Children.Add(newTextBox);*/
                                 break;
                             }
 
                         }
                     }
 
-                    /*foreach(var box in groupBoxes["Rets"])
+                    foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>> kvp in categorizedFieldInfos)
                     {
-                        displayKill.Children.Add(box.Value);
-                    }*/
+                        if (associatedPanels.ContainsKey(kvp.Key))
+                        {
+                            foreach (KeyValuePair<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>> subcategory in kvp.Value)
+                            {
+                                if (subcategory.Key == DatabaseFieldInfo.FieldSubCategory.All)
+                                {
+                                    continue;
+                                }
+                                foreach(DatabaseFieldInfo fieldInfo in subcategory.Value)
+                                {
+                                    associatedPanels[kvp.Key].midPanel.TheGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName), Visibility = (!defaultVisibleGridColumnsFound || visibleGridColumns.Contains(fieldInfo.FieldName)) ? Visibility.Visible : Visibility.Collapsed });
+                                }
+                            }
 
-                    // Apply search fields
-                    //listKillsNames.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
-                    //listKillsKill.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
-                    //listKillsPosition.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
-                    //listKillsRest.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();
-                    retsMidPanel.Items1 = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
-                    retsMidPanel.Items2 = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
-                    retsMidPanel.Items3 = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
-                    retsMidPanel.Items4 = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();
+                            if (kvp.Value.ContainsKey(DatabaseFieldInfo.FieldSubCategory.Column1))
+                            {
+                                associatedPanels[kvp.Key].midPanel.Items1 = kvp.Value[DatabaseFieldInfo.FieldSubCategory.Column1];
+                            }
+                            if (kvp.Value.ContainsKey(DatabaseFieldInfo.FieldSubCategory.Column2))
+                            {
+                                associatedPanels[kvp.Key].midPanel.Items2 = kvp.Value[DatabaseFieldInfo.FieldSubCategory.Column2];
+                            }
+                            if (kvp.Value.ContainsKey(DatabaseFieldInfo.FieldSubCategory.Column3))
+                            {
+                                associatedPanels[kvp.Key].midPanel.Items3= kvp.Value[DatabaseFieldInfo.FieldSubCategory.Column3];
+                            }
+                            if (kvp.Value.ContainsKey(DatabaseFieldInfo.FieldSubCategory.None))
+                            {
+                                associatedPanels[kvp.Key].midPanel.Items4= kvp.Value[DatabaseFieldInfo.FieldSubCategory.None];
+                            }
+                            associatedPanels[kvp.Key].sidePanel.Fields = kvp.Value[DatabaseFieldInfo.FieldSubCategory.All].ToArray();
+                        }
+                    }
 
-                    retsSidePanel.Fields = categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].ToArray();
 
-                    //listKillsNamesDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Names")].ToArray();
-                    //listKillsKillDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Kill")].ToArray();
-                    //listKillsMovementDataView.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Position")].ToArray();
-                    //listKillsRest.ItemsSource = categorizedFieldInfos[new Tuple<string, string>("Rets", "Rest")].ToArray();
+                    //retsMidPanel.Items1 = categorizedFieldInfos[DatabaseFieldInfo.FieldCategory.Rets]["Names"].ToArray();
+                    //retsMidPanel.Items2 = categorizedFieldInfos[DatabaseFieldInfo.FieldCategory.Rets]["Kill"].ToArray();
+                    //retsMidPanel.Items3 = categorizedFieldInfos[DatabaseFieldInfo.FieldCategory.Rets]["Position"].ToArray();
+                    //retsMidPanel.Items4 = categorizedFieldInfos[DatabaseFieldInfo.FieldCategory.Rets]["Rest"].ToArray();
+
+                    //retsSidePanel.Fields = categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].ToArray();
+                    //retsSidePanel.Fields = categorizedFieldInfos[DatabaseFieldInfo.FieldCategory.Rets][DatabaseFieldInfo.FieldSubCategory.All].ToArray();
                 }
                 layoutIsInitialized = true;
             }

@@ -55,17 +55,17 @@ namespace DemoCutterGUI
             foreach (var field in allFields)
             {
                 //KillDatabaseFieldsGrid.Add(new DataGridTextColumn() { Header=field.FieldName, Binding=new Binding(field.FieldName) });
-                if((field.Category=="Kills" || field.Category == "KillAngles"))
+                if((field.Category== DatabaseFieldInfo.FieldCategory.Rets))
                 {
                     switch (field.SubCategory)
                     {
-                        case "Names":
+                        case DatabaseFieldInfo.FieldSubCategory.Rets_Names:
                             KillDatabaseFieldsKillNames.Add(field);
                             break;
-                        case "Kill":
+                        case DatabaseFieldInfo.FieldSubCategory.Rets_Kill:
                             KillDatabaseFieldsKillKill.Add(field);
                             break;
-                        case "Position":
+                        case DatabaseFieldInfo.FieldSubCategory.Rets_Position:
                             KillDatabaseFieldsKillPosition.Add(field);
                             break;
                         default:
