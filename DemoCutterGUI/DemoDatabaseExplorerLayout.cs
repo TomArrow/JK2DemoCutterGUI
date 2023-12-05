@@ -78,27 +78,158 @@ namespace DemoCutterGUI
         }
     }
 
-    public partial class DemoDatabaseExplorer
+    static class VisibleFieldsManager
     {
-
-
-        bool layoutIsInitialized = false;
-        DatabaseFieldInfo[] fieldInfoForSearch = DatabaseFieldInfo.GetDatabaseFieldInfos();
 
         static string gridfieldsConfigPath = "configs/gridFields.ini";
         static object gridFieldsConfigLock = new object();
 
+        public static (Dictionary<DatabaseFieldInfo.FieldCategory,HashSet<string>>, List<string>) GetVisibleGridColumnsAndPresets(string presetName = "default")
+        {
+            List<string> visibleGridColumnsConfig = new List<string>();
+            Dictionary<DatabaseFieldInfo.FieldCategory, HashSet<string>> visibleGridColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, HashSet<string>>();
+            bool visibleGridColumnsFound = false;
+            lock (gridFieldsConfigLock)
+            {
+                if (File.Exists(gridfieldsConfigPath))
+                {
 
+                    ConfigParser cfg = new ConfigParser(gridfieldsConfigPath);
+                    foreach (ConfigSection section in cfg.Sections)
+                    {
+                        visibleGridColumnsConfig.Add(section.SectionName);
+                    }
+                    DatabaseFieldInfo.FieldCategory[] categories = (DatabaseFieldInfo.FieldCategory[])Enum.GetValues(typeof(DatabaseFieldInfo.FieldCategory));
+                    foreach(DatabaseFieldInfo.FieldCategory category in categories)
+                    {
+                        string fields = cfg.GetValue(presetName, $"visibleGridFields{category.ToString()}");
+                        visibleGridColumns[category] = new HashSet<string>();
+                        if (fields != null)
+                        {
+                            visibleGridColumnsFound = true;
+                            string[] fieldsArr = fields.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                            foreach (string field in fieldsArr)
+                            {
+                                visibleGridColumns[category].Add(field);
+                            }
+                        }
+                    }
+                }
+            }
+            return (visibleGridColumnsFound ? visibleGridColumns : null, visibleGridColumnsConfig);
+        }
+        public static (Dictionary<DatabaseFieldInfo.FieldCategory,HashSet<string>>, List<string>) SetVisibleGridColumnsAndPresets(string presetName, Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string, bool>> columnVisibility)
+        {
+            Dictionary<DatabaseFieldInfo.FieldCategory, HashSet<string>> visibleGridColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, HashSet<string>>();
+
+            bool visibleGridColumnsFound = false;
+
+            ConfigParser cfg = null;
+
+            string targetConfigName = presetName;
+
+
+            lock (gridFieldsConfigLock)
+            {
+                if (File.Exists(gridfieldsConfigPath))
+                {
+                    cfg = new ConfigParser(gridfieldsConfigPath);
+                }
+            }
+
+            if (cfg == null)
+            {
+                cfg = new ConfigParser();
+            }
+
+            // Load existing cfg by this name if it exists, so we will only change visibility of columns that exist in the current db but not affect ones that might be relevant only for other dbs
+            DatabaseFieldInfo.FieldCategory[] categories = (DatabaseFieldInfo.FieldCategory[])Enum.GetValues(typeof(DatabaseFieldInfo.FieldCategory));
+            foreach (DatabaseFieldInfo.FieldCategory category in categories)
+            {
+                visibleGridColumns[category] = new HashSet<string>();
+                if (columnVisibility.ContainsKey(category))
+                {
+                    string fields = cfg.GetValue(presetName, $"visibleGridFields{category.ToString()}");
+                    if (fields != null)
+                    {
+                        visibleGridColumnsFound = true;
+                        string[] fieldsArr = fields.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        foreach (string field in fieldsArr)
+                        {
+                            visibleGridColumns[category].Add(field);
+                        }
+                    }
+
+                    foreach (KeyValuePair<string, bool> col in columnVisibility[category])
+                    {
+                        if (col.Value)
+                        {
+                            visibleGridColumns[category].Add(col.Key);
+                        }
+                        else
+                        {
+                            visibleGridColumns[category].Remove(col.Key);
+                        }
+                    }
+
+                    string columnsStringToSaveBack = string.Join(',', visibleGridColumns[category]);
+                    cfg.SetValue(targetConfigName, $"visibleGridFields{category.ToString()}", columnsStringToSaveBack);
+                }
+            }
+
+            lock (gridFieldsConfigLock)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(gridfieldsConfigPath));
+                cfg.Save(gridfieldsConfigPath);
+            }
+
+            List<string> visibleGridColumnsConfig = new List<string>();
+            foreach (ConfigSection section in cfg.Sections)
+            {
+                visibleGridColumnsConfig.Add(section.SectionName);
+            }
+
+            return (visibleGridColumnsFound ? visibleGridColumns : null, visibleGridColumnsConfig);
+        }
+    }
+
+
+    public partial class DemoDatabaseExplorer
+    {
+
+        bool layoutIsInitialized = false;
+        DatabaseFieldInfo[] fieldInfoForSearch = DatabaseFieldInfo.GetDatabaseFieldInfos();
+
+
+        Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> categoryPanels = null;
 
         partial void Constructor()
         {
+            categoryPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
+            {
+                { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel} }
+            };
+
             // Register fields for monitoring whether they are active.
-            foreach(DatabaseFieldInfo fieldInfo in fieldInfoForSearch)
+            foreach (DatabaseFieldInfo fieldInfo in fieldInfoForSearch)
             {
                 fieldMan.RegisterFieldInfo(fieldInfo);
             }
             fieldMan.fieldInfoChanged += FieldMan_fieldInfoChanged;
-            retsMidPanel.sortingChanged += RetsMidPanel_sortingChanged;
+
+            foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> panelSet in categoryPanels)
+            {
+                panelSet.Value.midPanel.sortingChanged += RetsMidPanel_sortingChanged;
+            }
+        }
+        partial void Destructor()
+        {
+            fieldMan.fieldInfoChanged -= FieldMan_fieldInfoChanged;
+
+            foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> panelSet in categoryPanels)
+            {
+                panelSet.Value.midPanel.sortingChanged -= RetsMidPanel_sortingChanged;
+            }
         }
 
 
@@ -121,49 +252,25 @@ namespace DemoCutterGUI
             {
                 if (!layoutIsInitialized)
                 {
-                    List<string> visibleGridColumnsConfig = new List<string>();
-                    HashSet<string> visibleGridColumns = new HashSet<string>();
-                    bool defaultVisibleGridColumnsFound = false;
-                    lock (gridFieldsConfigLock)
-                    {
-                        if (File.Exists(gridfieldsConfigPath))
-                        {
 
-                            ConfigParser cfg = new ConfigParser(gridfieldsConfigPath);
-                            foreach(ConfigSection section in cfg.Sections)
-                            {
-                                visibleGridColumnsConfig.Add(section.SectionName);
-                            }
-                            string fields = cfg.GetValue("default","visibleGridFieldsRet");
-                            if(fields != null)
-                            {
-                                defaultVisibleGridColumnsFound = true;
-                                string[] fieldsArr = fields.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                                foreach (string field in fieldsArr)
-                                {
-                                    visibleGridColumns.Add(field);
-                                }
-                            }
-                        }
-                    }
+                    (Dictionary<DatabaseFieldInfo.FieldCategory, HashSet<string>> visibleGridColumns, List<string> visibleGridColumnsConfig) = VisibleFieldsManager.GetVisibleGridColumnsAndPresets("default");
 
-                    visibleRetsColumnsComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
-                    visibleRetsColumnsComboBox.SelectedValue = "default";
+                    bool defaultVisibleGridColumnsFound = visibleGridColumns != null;
+
+                    visibleColumnsPresetComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
+                    visibleColumnsPresetComboBox.SelectedValue = "default";
 
 
 
                     // Kills first.
                     var retColumns = dbConn.GetTableInfo("rets");
 
-                    Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
-                    {
-                        { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel} }
-                    };
+                    
 
                     Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>> categorizedFieldInfos = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>>();
 
 
-                    foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanel in associatedPanels)
+                    foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanel in categoryPanels)
                     {
                         associatedPanel.Value.midPanel.TheGrid.Columns.Clear();
                     }
@@ -201,7 +308,7 @@ namespace DemoCutterGUI
 
                     foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>> kvp in categorizedFieldInfos)
                     {
-                        if (associatedPanels.ContainsKey(kvp.Key))
+                        if (categoryPanels.ContainsKey(kvp.Key))
                         {
                             foreach (KeyValuePair<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>> subcategory in kvp.Value)
                             {
@@ -211,27 +318,28 @@ namespace DemoCutterGUI
                                 }
                                 foreach(DatabaseFieldInfo fieldInfo in subcategory.Value)
                                 {
-                                    associatedPanels[kvp.Key].midPanel.TheGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName), Visibility = (!defaultVisibleGridColumnsFound || visibleGridColumns.Contains(fieldInfo.FieldName)) ? Visibility.Visible : Visibility.Collapsed });
+                                    categoryPanels[kvp.Key].midPanel.TheGrid.Columns.Add(new DataGridTextColumn() { Header = fieldInfo.FieldName, Binding = new Binding(fieldInfo.FieldName), Visibility = (!defaultVisibleGridColumnsFound || visibleGridColumns[kvp.Key].Contains(fieldInfo.FieldName)) ? Visibility.Visible : Visibility.Collapsed });
                                 }
                             }
 
                             if (kvp.Value.ContainsKey(DatabaseFieldInfo.FieldSubCategory.Column1))
                             {
-                                associatedPanels[kvp.Key].midPanel.Items1 = kvp.Value[DatabaseFieldInfo.FieldSubCategory.Column1];
+                                categoryPanels[kvp.Key].midPanel.Items1 = kvp.Value[DatabaseFieldInfo.FieldSubCategory.Column1];
                             }
                             if (kvp.Value.ContainsKey(DatabaseFieldInfo.FieldSubCategory.Column2))
                             {
-                                associatedPanels[kvp.Key].midPanel.Items2 = kvp.Value[DatabaseFieldInfo.FieldSubCategory.Column2];
+                                categoryPanels[kvp.Key].midPanel.Items2 = kvp.Value[DatabaseFieldInfo.FieldSubCategory.Column2];
                             }
                             if (kvp.Value.ContainsKey(DatabaseFieldInfo.FieldSubCategory.Column3))
                             {
-                                associatedPanels[kvp.Key].midPanel.Items3= kvp.Value[DatabaseFieldInfo.FieldSubCategory.Column3];
+                                categoryPanels[kvp.Key].midPanel.Items3= kvp.Value[DatabaseFieldInfo.FieldSubCategory.Column3];
                             }
                             if (kvp.Value.ContainsKey(DatabaseFieldInfo.FieldSubCategory.None))
                             {
-                                associatedPanels[kvp.Key].midPanel.Items4= kvp.Value[DatabaseFieldInfo.FieldSubCategory.None];
+                                categoryPanels[kvp.Key].midPanel.Items4= kvp.Value[DatabaseFieldInfo.FieldSubCategory.None];
                             }
-                            associatedPanels[kvp.Key].sidePanel.Fields = kvp.Value[DatabaseFieldInfo.FieldSubCategory.All].ToArray();
+                            // TODO Something to fix the names of the categories in sidepanel, now that we're using enums
+                            categoryPanels[kvp.Key].sidePanel.Fields = kvp.Value[DatabaseFieldInfo.FieldSubCategory.All].ToArray();
                         }
                     }
 
@@ -398,9 +506,14 @@ namespace DemoCutterGUI
         }*/
 
 
-        private void visibleRetsColumnsLoadBtn_Click(object sender, RoutedEventArgs e)
+        private void visibleColumnsPresetLoadBtn_Click(object sender, RoutedEventArgs e)
         {
-            List<string> visibleGridColumnsConfig = new List<string>();
+            (Dictionary<DatabaseFieldInfo.FieldCategory, HashSet<string>> visibleGridColumns, List<string> visibleGridColumnsConfig) = VisibleFieldsManager.GetVisibleGridColumnsAndPresets(visibleColumnsPresetComboBox.Text);
+
+            bool visibleGridColumnsFound = visibleGridColumns != null;
+
+
+            /*List<string> visibleGridColumnsConfig = new List<string>();
             HashSet<string> visibleGridColumns = new HashSet<string>();
             bool visibleGridColumnsFound = false;
             lock (gridFieldsConfigLock)
@@ -424,25 +537,53 @@ namespace DemoCutterGUI
                         }
                     }
                 }
-            }
+            }*/
 
             if (visibleGridColumnsFound)
             {
-                foreach(var col in retsMidPanel.TheGrid.Columns)
+                foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, HashSet<string>> categoryVisibleColumns in visibleGridColumns)
                 {
-                    col.Visibility = visibleGridColumns.Contains(col.Header) ? Visibility.Visible : Visibility.Collapsed;
+                    if (categoryPanels.ContainsKey(categoryVisibleColumns.Key))
+                    {
+                        foreach (DataGridColumn col in categoryPanels[categoryVisibleColumns.Key].midPanel.TheGrid.Columns)
+                        {
+                            col.Visibility = visibleGridColumns[categoryVisibleColumns.Key].Contains(col.Header) ? Visibility.Visible : Visibility.Collapsed;
+                        }
+                    }
                 }
             } else
             {
                 MessageBox.Show("Specified preset not found.");
             }
 
-            visibleRetsColumnsComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
-            visibleRetsColumnsComboBox.SelectedValue = "default";
+            visibleColumnsPresetComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
+            visibleColumnsPresetComboBox.SelectedValue = "default";
         }
 
-        private void visibleRetsColumnsSaveBtn_Click(object sender, RoutedEventArgs e)
+        private void visibleColumnsPresetSaveBtn_Click(object sender, RoutedEventArgs e)
         {
+            Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string, bool>> columnVisibility = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string, bool>>();
+
+            foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> categoryPanel in categoryPanels)
+            {
+                columnVisibility[categoryPanel.Key] = new Dictionary<string, bool>();
+                foreach (var col in categoryPanel.Value.midPanel.TheGrid.Columns)
+                {
+                    columnVisibility[categoryPanel.Key][col.Header.ToString()] = col.Visibility == Visibility.Visible;
+                }
+
+            }
+
+            (Dictionary<DatabaseFieldInfo.FieldCategory, HashSet<string>> visibleGridColumns, List<string> visibleGridColumnsConfig) = VisibleFieldsManager.SetVisibleGridColumnsAndPresets(visibleColumnsPresetComboBox.Text, columnVisibility);
+
+            bool visibleGridColumnsFound = visibleGridColumns != null;
+
+
+            visibleColumnsPresetComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
+            visibleColumnsPresetComboBox.SelectedValue = "default";
+
+            /*
+
             HashSet<string> visibleGridColumns = new HashSet<string>();
 
             bool visibleGridColumnsFound = false;
@@ -502,9 +643,7 @@ namespace DemoCutterGUI
             {
                 visibleGridColumnsConfig.Add(section.SectionName);
             }
-
-            visibleRetsColumnsComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
-            visibleRetsColumnsComboBox.SelectedValue = "default";
+            */
         }
     }
 

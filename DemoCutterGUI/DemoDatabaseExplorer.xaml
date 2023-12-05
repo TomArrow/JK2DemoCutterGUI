@@ -120,9 +120,9 @@
                     </ItemsControl>
                 </ScrollViewer>
                 <WrapPanel>
-                    <ComboBox x:Name="visibleRetsColumnsComboBox" IsEditable="True" SelectedValue="default" MinWidth="100"></ComboBox>
-                    <Button x:Name="visibleRetsColumnsLoadBtn" Click="visibleRetsColumnsLoadBtn_Click">Load</Button>
-                    <Button x:Name="visibleRetsColumnsSaveBtn" Click="visibleRetsColumnsSaveBtn_Click">Save</Button>
+                    <ComboBox x:Name="visibleColumnsPresetComboBox" IsEditable="True" SelectedValue="default" MinWidth="100"></ComboBox>
+                    <Button x:Name="visibleColumnsPresetLoadBtn" Click="visibleColumnsPresetLoadBtn_Click">Load</Button>
+                    <Button x:Name="visibleColumnsPresetSaveBtn" Click="visibleColumnsPresetSaveBtn_Click">Save</Button>
                 </WrapPanel>
             </StackPanel>
             <Button x:Name="bspToMinimapBtn" Click="bspToMinimapBtn_Click">BSP to Minimap</Button>

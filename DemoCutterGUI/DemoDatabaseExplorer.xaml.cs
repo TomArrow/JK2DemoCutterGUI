@@ -31,6 +31,7 @@ namespace DemoCutterGUI
     public partial class DemoDatabaseExplorer : Window
     {
         partial void Constructor();
+        partial void Destructor();
 
         SQLiteConnection dbConn = null;
         Mutex dbMutex = new Mutex();
@@ -98,6 +99,33 @@ namespace DemoCutterGUI
             this.DataContext = this;
             InitializeComponent();
             Constructor();
+            this.Closed += DemoDatabaseExplorer_Closed;
+        }
+
+        private void DemoDatabaseExplorer_Closed(object sender, EventArgs e)
+        {
+            CloseDown();
+        }
+
+        ~DemoDatabaseExplorer()
+        {
+            CloseDown();
+        }
+
+        object closeDownLock = new object();
+        bool closedDown = false;
+
+        private void CloseDown()
+        {
+            lock (closeDownLock)
+            {
+                if (!closedDown)
+                {
+                    this.Closed -= DemoDatabaseExplorer_Closed;
+                    Destructor();
+                }
+                closedDown = true;
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
