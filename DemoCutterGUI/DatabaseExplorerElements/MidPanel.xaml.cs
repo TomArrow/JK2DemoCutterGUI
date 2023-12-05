@@ -15,10 +15,6 @@ using System.Windows.Shapes;
 
 namespace DemoCutterGUI.DatabaseExplorerElements
 {
-    public struct SortingInfo {
-        public string fieldName;
-        public bool descending;
-    }
 
     /// <summary>
     /// Interaction logic for MidPanel.xaml

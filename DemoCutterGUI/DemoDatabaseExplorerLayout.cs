@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -194,6 +195,13 @@ namespace DemoCutterGUI
     }
 
 
+    public struct SortingInfo
+    {
+        public string fieldName;
+        public bool descending;
+    }
+
+
     public partial class DemoDatabaseExplorer
     {
 
@@ -207,7 +215,8 @@ namespace DemoCutterGUI
         {
             categoryPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
             {
-                { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel} }
+                { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret)} },
+                { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(Capture)} }
             };
 
             // Register fields for monitoring whether they are active.
@@ -219,7 +228,7 @@ namespace DemoCutterGUI
 
             foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> panelSet in categoryPanels)
             {
-                panelSet.Value.midPanel.sortingChanged += RetsMidPanel_sortingChanged;
+                panelSet.Value.midPanel.sortingChanged += MidPanel_sortingChanged;
             }
         }
         partial void Destructor()
@@ -228,7 +237,7 @@ namespace DemoCutterGUI
 
             foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> panelSet in categoryPanels)
             {
-                panelSet.Value.midPanel.sortingChanged -= RetsMidPanel_sortingChanged;
+                panelSet.Value.midPanel.sortingChanged -= MidPanel_sortingChanged;
             }
         }
 
@@ -236,16 +245,23 @@ namespace DemoCutterGUI
         private void FieldMan_fieldInfoChanged(object sender, DatabaseFieldInfo e)
         {
             //UpdateLayout();
-            retsItemSource?.Reset();
+            if (sqlTableItemsSources.ContainsKey(e.Category))
+            {
+                sqlTableItemsSources[e.Category]?.Reset();
+                //retsItemSource?.Reset();
+            }
         }
 
 
         struct CategoryInfoCollection {
             public DatabaseExplorerElements.MidPanel midPanel;
             public DatabaseExplorerElements.SidePanel sidePanel;
+            public string tableName;
+            public Type dataType;
         }
 
-        IDataVirtualizingCollection<Ret> retsItemSource = null;
+        Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection> sqlTableItemsSources = new Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection>();
+
         private void InitializeLayoutDispatcher()
         {
             lock (dbMutex)
@@ -263,7 +279,10 @@ namespace DemoCutterGUI
 
 
                     // Kills first.
-                    var retColumns = dbConn.GetTableInfo("rets");
+                    //Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>> sqlColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>>();
+                    Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>> sqlColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>>();
+                    
+                    //var retColumns = dbConn.GetTableInfo("rets");
 
                     
 
@@ -273,38 +292,41 @@ namespace DemoCutterGUI
                     foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanel in categoryPanels)
                     {
                         associatedPanel.Value.midPanel.TheGrid.Columns.Clear();
-                    }
+                        sqlColumns[associatedPanel.Key] =  dbConn.GetTableInfo(associatedPanel.Value.tableName);
 
-                    foreach(var retColumn in retColumns)
-                    {
 
-                        // Find corresponding search field
-                        foreach (DatabaseFieldInfo fieldInfo in fieldInfoForSearch)
+                        foreach (var sqlColumn in sqlColumns[associatedPanel.Key])
                         {
 
-                            if (!categorizedFieldInfos.ContainsKey(fieldInfo.Category))
+                            // Find corresponding search field
+                            foreach (DatabaseFieldInfo fieldInfo in fieldInfoForSearch)
                             {
-                                categorizedFieldInfos[fieldInfo.Category] = new Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>();
-                            }
-                            if (!categorizedFieldInfos[fieldInfo.Category].ContainsKey(fieldInfo.SubCategory))
-                            {
-                                categorizedFieldInfos[fieldInfo.Category][fieldInfo.SubCategory] = new List<DatabaseFieldInfo>();
-                            }
-                            if (!categorizedFieldInfos[fieldInfo.Category].ContainsKey(DatabaseFieldInfo.FieldSubCategory.All))
-                            {
-                                categorizedFieldInfos[fieldInfo.Category][DatabaseFieldInfo.FieldSubCategory.All] = new List<DatabaseFieldInfo>();
-                            }
 
-                            if (retColumn.Name.Equals(fieldInfo.FieldName, StringComparison.OrdinalIgnoreCase) /*&& (fieldInfo.Category == "Kills" || fieldInfo.Category == "KillAngles")*/)
-                            {
-                                categorizedFieldInfos[fieldInfo.Category][fieldInfo.SubCategory].Add(fieldInfo);
-                                categorizedFieldInfos[fieldInfo.Category][DatabaseFieldInfo.FieldSubCategory.All].Add(fieldInfo);
-                                
-                                break;
-                            }
+                                if (!categorizedFieldInfos.ContainsKey(fieldInfo.Category))
+                                {
+                                    categorizedFieldInfos[fieldInfo.Category] = new Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>();
+                                }
+                                if (!categorizedFieldInfos[fieldInfo.Category].ContainsKey(fieldInfo.SubCategory))
+                                {
+                                    categorizedFieldInfos[fieldInfo.Category][fieldInfo.SubCategory] = new List<DatabaseFieldInfo>();
+                                }
+                                if (!categorizedFieldInfos[fieldInfo.Category].ContainsKey(DatabaseFieldInfo.FieldSubCategory.All))
+                                {
+                                    categorizedFieldInfos[fieldInfo.Category][DatabaseFieldInfo.FieldSubCategory.All] = new List<DatabaseFieldInfo>();
+                                }
 
+                                if (sqlColumn.Name.Equals(fieldInfo.FieldName, StringComparison.OrdinalIgnoreCase) && associatedPanel.Key == fieldInfo.Category /*&& (fieldInfo.Category == "Kills" || fieldInfo.Category == "KillAngles")*/)
+                                {
+                                    categorizedFieldInfos[fieldInfo.Category][fieldInfo.SubCategory].Add(fieldInfo);
+                                    categorizedFieldInfos[fieldInfo.Category][DatabaseFieldInfo.FieldSubCategory.All].Add(fieldInfo);
+
+                                    break;
+                                }
+
+                            }
                         }
                     }
+
 
                     foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>> kvp in categorizedFieldInfos)
                     {
@@ -378,20 +400,24 @@ namespace DemoCutterGUI
             }
         }
 
-        private string sortField = null;
-        private bool sortDescending = false;
+        Dictionary<DatabaseFieldInfo.FieldCategory, SortingInfo> sortingInfos = new Dictionary<DatabaseFieldInfo.FieldCategory, SortingInfo>();
 
-        private string MakeSelectQuery(bool countQuery = false)
+        //private string sortField = null;
+        //private bool sortDescending = false;
+
+        private string MakeSelectQuery(DatabaseFieldInfo.FieldCategory category, bool countQuery = false)
         {
+            if (!categoryPanels.ContainsKey(category)) return null;
+
             StringBuilder sb = new StringBuilder();
 
             if (countQuery)
             {
-                sb.Append("SELECT COUNT(*) FROM rets");
+                sb.Append($"SELECT COUNT(*) FROM {categoryPanels[category].tableName}");
             }
             else
             {
-                sb.Append("SELECT * FROM rets");
+                sb.Append($"SELECT * FROM {categoryPanels[category].tableName}");
             }
 
             DatabaseFieldInfo[] activeFields = fieldMan.getActiveFields();
@@ -399,7 +425,7 @@ namespace DemoCutterGUI
             bool oneWhereDone = false;
             foreach (DatabaseFieldInfo field in activeFields)
             {
-                if (field.Active)
+                if (field.Active && field.Category == category)
                 {
                     sb.Append(oneWhereDone ? " AND " : " WHERE ");
                     oneWhereDone = true;
@@ -431,12 +457,12 @@ namespace DemoCutterGUI
 
             if (!countQuery)
             {
-                string sortFieldLocal = sortField;
+                string sortFieldLocal = sortingInfos.ContainsKey(category) ? sortingInfos[category].fieldName : null;
                 if (sortFieldLocal != null)
                 {
                     sb.Append(" ORDER BY ");
                     sb.Append(sortFieldLocal);
-                    if (sortDescending)
+                    if (sortingInfos[category].descending)
                     {
                         sb.Append(" DESC");
                     }
@@ -456,44 +482,70 @@ namespace DemoCutterGUI
             {
                 InitializeLayoutDispatcher();
 
-                retsItemSource =
-                    DataVirtualizingCollectionBuilder
-                        .Build<Ret>(
-                            pageSize: 30,
-                            notificationScheduler: new SynchronizationContextScheduler(new DispatcherSynchronizationContext(Application.Current.Dispatcher))
-                            )
-                        .NonPreloading()
-                        .LeastRecentlyUsed(10, 5)
-                        .NonTaskBasedFetchers(
-                            pageFetcher: (offset, pageSize, ct) =>
-                            {
-                                //List<Ret> res = dbConn.Query<Ret>($"SELECT * FROM rets LIMIT {offset},{pageSize}") as List<Ret>;
-                                List<Ret> res = dbConn.Query<Ret>($"{MakeSelectQuery(false)} LIMIT {offset},{pageSize}") as List<Ret>;
-                                return res.ToArray();
-                            },
-                            countFetcher: (ct) =>
-                            {
-                                //int res = dbConn.ExecuteScalar<int>($"SELECT COUNT(*) FROM rets");
-                                int res = dbConn.ExecuteScalar<int>($"{MakeSelectQuery(true)}");
-                                return res;
-                            })
-                        .ThrottledLifoPageRequests().AsyncIndexAccess((a,b)=> {
-                            return new Ret() { hash="Loading, please wait."};
-                        });
-                //.SyncIndexAccess();
+                //sqlTableItemsSources[DatabaseFieldInfo.FieldCategory.Rets] = CreateSQLItemsSource<Ret>(DatabaseFieldInfo.FieldCategory.Rets);
+                //sqlTableItemsSources[DatabaseFieldInfo.FieldCategory.Captures] = CreateSQLItemsSource<Capture>(DatabaseFieldInfo.FieldCategory.Captures);
 
-                retsMidPanel.TheGrid.ItemsSource = retsItemSource;
+                foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> categoryData in categoryPanels)
+                {
+                    sqlTableItemsSources[categoryData.Key] = (IDataVirtualizingCollection)typeof(DemoDatabaseExplorer).GetMethod("CreateSQLItemsSource",BindingFlags.NonPublic| BindingFlags.Instance).MakeGenericMethod(categoryData.Value.dataType).Invoke(this,new object[] { categoryData.Key });
+                    if (sqlTableItemsSources.ContainsKey(categoryData.Key))
+                    {
+                        categoryData.Value.midPanel.TheGrid.ItemsSource = sqlTableItemsSources[categoryData.Key];
+                    }
+                }
 
             }
         }
 
-
-
-        private void RetsMidPanel_sortingChanged(object sender, DatabaseExplorerElements.SortingInfo e)
+        private IDataVirtualizingCollection<T> CreateSQLItemsSource<T>(DatabaseFieldInfo.FieldCategory category) where T : new()
         {
-            sortField = e.fieldName;
-            sortDescending = e.descending;
-            retsItemSource.Reset();
+            return DataVirtualizingCollectionBuilder
+                    .Build<T>(
+                        pageSize: 30,
+                        notificationScheduler: new SynchronizationContextScheduler(new DispatcherSynchronizationContext(Application.Current.Dispatcher))
+                        )
+                    .NonPreloading()
+                    .LeastRecentlyUsed(10, 5)
+                    .NonTaskBasedFetchers(
+                        pageFetcher: (offset, pageSize, ct) =>
+                        {
+                            //List<Ret> res = dbConn.Query<Ret>($"SELECT * FROM rets LIMIT {offset},{pageSize}") as List<Ret>;
+                            List<T> res = dbConn.Query<T>($"{MakeSelectQuery(category, false)} LIMIT {offset},{pageSize}") as List<T>;
+                            return res.ToArray();
+                        },
+                        countFetcher: (ct) =>
+                        {
+                            //int res = dbConn.ExecuteScalar<int>($"SELECT COUNT(*) FROM rets");
+                            int res = dbConn.ExecuteScalar<int>($"{MakeSelectQuery(category, true)}");
+                            return res;
+                        })
+                    .ThrottledLifoPageRequests().AsyncIndexAccess((a, b) => {
+                        return new T();//{ hash = "Loading, please wait." };
+                    });
+            //.SyncIndexAccess();
+        }
+
+
+
+        private void MidPanel_sortingChanged(object sender, SortingInfo e)
+        {
+            DatabaseExplorerElements.MidPanel panel = (DatabaseExplorerElements.MidPanel)sender;
+            DatabaseFieldInfo.FieldCategory category = DatabaseFieldInfo.FieldCategory.None;
+            foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> categoryData in categoryPanels)
+            {
+                if(panel == categoryData.Value.midPanel)
+                {
+                    category = categoryData.Key;
+                }
+            }
+            if(category != DatabaseFieldInfo.FieldCategory.None)
+            {
+                sortingInfos[category] = e;
+            }
+            //sortField = e.fieldName;
+            //sortDescending = e.descending;
+            sqlTableItemsSources[category].Reset();
+            //retsItemSource.Reset();
         }
 
         /*private void retsGrid_Sorting(object sender, DataGridSortingEventArgs e)
@@ -512,32 +564,6 @@ namespace DemoCutterGUI
 
             bool visibleGridColumnsFound = visibleGridColumns != null;
 
-
-            /*List<string> visibleGridColumnsConfig = new List<string>();
-            HashSet<string> visibleGridColumns = new HashSet<string>();
-            bool visibleGridColumnsFound = false;
-            lock (gridFieldsConfigLock)
-            {
-                if (File.Exists(gridfieldsConfigPath))
-                {
-
-                    ConfigParser cfg = new ConfigParser(gridfieldsConfigPath);
-                    foreach (ConfigSection section in cfg.Sections)
-                    {
-                        visibleGridColumnsConfig.Add(section.SectionName);
-                    }
-                    string fields = cfg.GetValue(visibleRetsColumnsComboBox.Text, "visibleGridFieldsRet");
-                    if (fields != null)
-                    {
-                        visibleGridColumnsFound = true;
-                        string[] fieldsArr = fields.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                        foreach (string field in fieldsArr)
-                        {
-                            visibleGridColumns.Add(field);
-                        }
-                    }
-                }
-            }*/
 
             if (visibleGridColumnsFound)
             {
@@ -582,68 +608,6 @@ namespace DemoCutterGUI
             visibleColumnsPresetComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
             visibleColumnsPresetComboBox.SelectedValue = "default";
 
-            /*
-
-            HashSet<string> visibleGridColumns = new HashSet<string>();
-
-            bool visibleGridColumnsFound = false;
-
-            ConfigParser cfg = null;
-
-            string targetConfigName = visibleRetsColumnsComboBox.Text;
-
-
-            lock (gridFieldsConfigLock)
-            {
-                if (File.Exists(gridfieldsConfigPath))
-                {
-                    cfg = new ConfigParser(gridfieldsConfigPath);
-                }
-            }
-
-            if(cfg == null)
-            {
-                cfg = new ConfigParser();
-            }
-
-            // Load existing cfg by this name if it exists, so we will only change visibility of columns that exist in the current db but not affect ones that might be relevant only for other dbs
-            string fields = cfg.GetValue(targetConfigName, "visibleGridFieldsRet");
-            if (fields != null)
-            {
-                visibleGridColumnsFound = true;
-                string[] fieldsArr = fields.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                foreach (string field in fieldsArr)
-                {
-                    visibleGridColumns.Add(field);
-                }
-            }
-
-            foreach (var col in retsMidPanel.TheGrid.Columns)
-            {
-                if (col.Visibility == Visibility.Visible)
-                {
-                    visibleGridColumns.Add(col.Header.ToString());
-                } else
-                {
-                    visibleGridColumns.Remove(col.Header.ToString());
-                }
-            }
-
-            string columnsStringToSaveBack = string.Join(',', visibleGridColumns);
-            cfg.SetValue(targetConfigName, "visibleGridFieldsRet",columnsStringToSaveBack);
-
-            lock (gridFieldsConfigLock)
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(gridfieldsConfigPath));
-                cfg.Save(gridfieldsConfigPath);
-            }
-
-            List<string> visibleGridColumnsConfig = new List<string>();
-            foreach (ConfigSection section in cfg.Sections)
-            {
-                visibleGridColumnsConfig.Add(section.SectionName);
-            }
-            */
         }
     }
 
