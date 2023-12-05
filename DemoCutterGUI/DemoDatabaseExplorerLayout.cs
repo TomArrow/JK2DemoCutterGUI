@@ -216,7 +216,9 @@ namespace DemoCutterGUI
             categoryPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
             {
                 { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret)} },
-                { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(Capture)} }
+                { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(Capture)} },
+                { DatabaseFieldInfo.FieldCategory.KillSprees, new CategoryInfoCollection(){  midPanel=killSpreesMidPanel, sidePanel=killSpreesSidePanel, tableName="killSprees", dataType=typeof(KillSpree)} },
+                { DatabaseFieldInfo.FieldCategory.DefragRuns, new CategoryInfoCollection(){  midPanel=defragMidPanel, sidePanel=defragSidePanel, tableName="defragRuns", dataType=typeof(KillSpree)} }
             };
 
             // Register fields for monitoring whether they are active.

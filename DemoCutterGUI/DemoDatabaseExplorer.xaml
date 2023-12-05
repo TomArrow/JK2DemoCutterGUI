@@ -62,6 +62,12 @@
                 <TabItem Header="Captures" IsSelected="{Binding ElementName=capsMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
                     <dee:SidePanel x:Name="capsSidePanel" ReferenceGrid="{Binding ElementName=capsMidPanel,Path=TheGrid}"></dee:SidePanel>
                 </TabItem>
+                <TabItem Header="KillSprees" IsSelected="{Binding ElementName=killSpreesMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
+                    <dee:SidePanel x:Name="killSpreesSidePanel" ReferenceGrid="{Binding ElementName=killSpreesMidPanel,Path=TheGrid}"></dee:SidePanel>
+                </TabItem>
+                <TabItem Header="Defrag" IsSelected="{Binding ElementName=defragMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
+                    <dee:SidePanel x:Name="defragSidePanel" ReferenceGrid="{Binding ElementName=defragMidPanel,Path=TheGrid}"></dee:SidePanel>
+                </TabItem>
             </TabControl>
         </DockPanel>
         <WrapPanel Grid.Row="1" Grid.ColumnSpan="2">
@@ -80,6 +86,8 @@
             <StackPanel>
                 <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=retsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=killMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
                 <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=capsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=capsMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
+                <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=killSpreesMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=killSpreesMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
+                <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=defragMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=defragMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
                 
                 <WrapPanel>
                     <ComboBox x:Name="visibleColumnsPresetComboBox" IsEditable="True" SelectedValue="default" MinWidth="100"></ComboBox>
@@ -96,6 +104,12 @@
             </TabItem>
             <TabItem Header="Captures" x:Name="capsMidPanelTab">
                 <dee:MidPanel x:Name="capsMidPanel" Items1Name="Meta" Items2Name="Cap" Items3Name="Movement"></dee:MidPanel>
+            </TabItem>
+            <TabItem Header="KillSprees" x:Name="killSpreesMidPanelTab">
+                <dee:MidPanel x:Name="killSpreesMidPanel" Items1Name="Meta" Items2Name="Kill" Items3Name="Movement"></dee:MidPanel>
+            </TabItem>
+            <TabItem Header="Defrag" x:Name="defragMidPanelTab">
+                <dee:MidPanel x:Name="defragMidPanel" Items1Name="Meta" Items2Name="Kill" Items3Name="Movement"></dee:MidPanel>
             </TabItem>
         </TabControl>
         
