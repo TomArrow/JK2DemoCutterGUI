@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -216,7 +217,7 @@ namespace DemoCutterGUI
             categoryPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
             {
                 { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret)} },
-                { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(Capture)} },
+                { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(TableMappings.Capture)} },
                 { DatabaseFieldInfo.FieldCategory.KillSprees, new CategoryInfoCollection(){  midPanel=killSpreesMidPanel, sidePanel=killSpreesSidePanel, tableName="killSprees", dataType=typeof(KillSpree)} },
                 { DatabaseFieldInfo.FieldCategory.DefragRuns, new CategoryInfoCollection(){  midPanel=defragMidPanel, sidePanel=defragSidePanel, tableName="defragRuns", dataType=typeof(KillSpree)} },
                 { DatabaseFieldInfo.FieldCategory.Laughs, new CategoryInfoCollection(){  midPanel=laughsMidPanel, sidePanel=laughsSidePanel, tableName="laughs", dataType=typeof(Laughs)} }
@@ -265,6 +266,9 @@ namespace DemoCutterGUI
 
         Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection> sqlTableItemsSources = new Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection>();
 
+        Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>> sqlColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>>();
+        //Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string,SQLite.SQLiteConnection.ColumnInfo>> sqlColumnsMapped = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string, SQLite.SQLiteConnection.ColumnInfo>>();
+
         private void InitializeLayoutDispatcher()
         {
             lock (dbMutex)
@@ -283,11 +287,11 @@ namespace DemoCutterGUI
 
                     // Kills first.
                     //Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>> sqlColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>>();
-                    Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>> sqlColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>>();
-                    
+                    sqlColumns.Clear();
+
                     //var retColumns = dbConn.GetTableInfo("rets");
 
-                    
+
 
                     Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>> categorizedFieldInfos = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>>();
 
@@ -296,7 +300,6 @@ namespace DemoCutterGUI
                     {
                         associatedPanel.Value.midPanel.TheGrid.Columns.Clear();
                         sqlColumns[associatedPanel.Key] =  dbConn.GetTableInfo(associatedPanel.Value.tableName);
-
 
                         foreach (var sqlColumn in sqlColumns[associatedPanel.Key])
                         {
@@ -408,6 +411,9 @@ namespace DemoCutterGUI
         //private string sortField = null;
         //private bool sortDescending = false;
 
+        private Regex numericCompareSearchRegex = new Regex(@"^\s*(?<operator>(?:>=)|(?:<=)|<|>)\s*(?<number>(?:-?\d*(?:.\d+))|-?\d+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private Regex numericRangeSearchRegex = new Regex(@"^\s*(?<number1>(?:-?\d*(?:.\d+))|-?\d+)\s*-\s*(?<number2>(?:-?\d*(?:.\d+))|-?\d+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
         private string MakeSelectQuery(DatabaseFieldInfo.FieldCategory category, bool countQuery = false)
         {
             if (!categoryPanels.ContainsKey(category)) return null;
@@ -426,6 +432,7 @@ namespace DemoCutterGUI
             DatabaseFieldInfo[] activeFields = fieldMan.getActiveFields();
 
             bool oneWhereDone = false;
+            Match match;
             foreach (DatabaseFieldInfo field in activeFields)
             {
                 if (field.Active && field.Category == category)
@@ -436,6 +443,44 @@ namespace DemoCutterGUI
                     {
                         sb.Append($"{field.FieldName} ");
                         sb.Append("IS NULL");
+                    }
+                    else if (field.Numeric && (match=numericCompareSearchRegex.Match(field.Content)).Success)
+                    {
+                        string op = match.Groups["operator"].Value.Trim();
+                        string numberString = match.Groups["number"].Value;
+
+                        if (op == ">=" || op == "<=" || op == "<" || op == ">")
+                        {
+                            if (decimal.TryParse(numberString.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal number))
+                            {
+                                sb.Append($"{field.FieldName} ");
+                                sb.Append(op);
+                                sb.Append(" ");
+                                sb.Append(number.ToString("F99").TrimEnd('0'));
+                            }
+                        }
+                    }
+                    else if (field.Numeric && (match=numericRangeSearchRegex.Match(field.Content)).Success)
+                    {
+                        string op = match.Groups["operator"].Value.Trim();
+                        string number1String = match.Groups["number1"].Value;
+                        string number2String = match.Groups["number2"].Value;
+
+                        if (decimal.TryParse(number1String.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal number1))
+                        {
+                            if (decimal.TryParse(number2String.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal number2))
+                            {
+                                decimal from = Math.Min(number1, number2);
+                                decimal to = Math.Max(number1, number2);
+                                sb.Append($"{field.FieldName} ");
+                                sb.Append(" >= ");
+                                sb.Append(from.ToString("F99").TrimEnd('0'));
+                                sb.Append($" AND  ");
+                                sb.Append($"{field.FieldName} ");
+                                sb.Append("<= ");
+                                sb.Append(to.ToString("F99").TrimEnd('0'));
+                            }
+                        }
                     }
                     else if (field.Bool)
                     {
