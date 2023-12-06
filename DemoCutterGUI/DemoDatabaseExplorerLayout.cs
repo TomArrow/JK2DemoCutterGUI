@@ -411,8 +411,9 @@ namespace DemoCutterGUI
         //private string sortField = null;
         //private bool sortDescending = false;
 
-        private Regex numericCompareSearchRegex = new Regex(@"^\s*(?<operator>(?:>=)|(?:<=)|<|>)\s*(?<number>(?:-?\d*(?:.\d+))|-?\d+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        private Regex numericRangeSearchRegex = new Regex(@"^\s*(?<number1>(?:-?\d*(?:.\d+))|-?\d+)\s*-\s*(?<number2>(?:-?\d*(?:.\d+))|-?\d+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private Regex numericCompareSearchRegex = new Regex(@"^\s*(?<operator>(?:>=)|(?:<=)|<|>)\s*(?<number>(?:-?\d*(?:[\.,]\d+))|-?\d+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private Regex numericRangeSearchRegex = new Regex(@"^\s*(?<number1>(?:-?\d*(?:[\.,]\d+))|-?\d+)\s*-\s*(?<number2>(?:-?\d*(?:[\.,]\d+))|-?\d+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private Regex numericSearchRegex = new Regex(@"^\s*(?<number>(?:-?\d*(?:[\.,]\d+))|-?\d+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled); // Not using atm
 
         private string MakeSelectQuery(DatabaseFieldInfo.FieldCategory category, bool countQuery = false)
         {
@@ -447,7 +448,7 @@ namespace DemoCutterGUI
                     else if (field.Numeric && (match=numericCompareSearchRegex.Match(field.Content)).Success)
                     {
                         string op = match.Groups["operator"].Value.Trim();
-                        string numberString = match.Groups["number"].Value;
+                        string numberString = match.Groups["number"].Value.Replace(',', '.');
 
                         if (op == ">=" || op == "<=" || op == "<" || op == ">")
                         {
@@ -463,8 +464,8 @@ namespace DemoCutterGUI
                     else if (field.Numeric && (match=numericRangeSearchRegex.Match(field.Content)).Success)
                     {
                         string op = match.Groups["operator"].Value.Trim();
-                        string number1String = match.Groups["number1"].Value;
-                        string number2String = match.Groups["number2"].Value;
+                        string number1String = match.Groups["number1"].Value.Replace(',', '.');
+                        string number2String = match.Groups["number2"].Value.Replace(',', '.');
 
                         if (decimal.TryParse(number1String.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal number1))
                         {
