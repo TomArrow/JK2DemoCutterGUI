@@ -59,13 +59,13 @@ namespace DemoCutterGUI
                 {
                     switch (field.SubCategory)
                     {
-                        case DatabaseFieldInfo.FieldSubCategory.Rets_Names:
+                        case DatabaseFieldInfo.FieldSubCategory.Rets_Meta:
                             KillDatabaseFieldsKillNames.Add(field);
                             break;
                         case DatabaseFieldInfo.FieldSubCategory.Rets_Kill:
                             KillDatabaseFieldsKillKill.Add(field);
                             break;
-                        case DatabaseFieldInfo.FieldSubCategory.Rets_Position:
+                        case DatabaseFieldInfo.FieldSubCategory.Rets_Movement:
                             KillDatabaseFieldsKillPosition.Add(field);
                             break;
                         default:
