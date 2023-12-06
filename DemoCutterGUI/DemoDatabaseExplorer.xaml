@@ -57,19 +57,19 @@
         <DockPanel>
             <TabControl x:Name="sidePanelTabs">
                 <TabItem Header="Kill" IsSelected="{Binding ElementName=killMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
-                    <dee:SidePanel x:Name="retsSidePanel" ReferenceGrid="{Binding ElementName=retsMidPanel,Path=TheGrid}"></dee:SidePanel>
+                    <dee:SidePanel x:Name="retsSidePanel" ReferenceMidPanel="{Binding ElementName=retsMidPanel}"></dee:SidePanel>
                 </TabItem>
                 <TabItem Header="Captures" IsSelected="{Binding ElementName=capsMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
-                    <dee:SidePanel x:Name="capsSidePanel" ReferenceGrid="{Binding ElementName=capsMidPanel,Path=TheGrid}"></dee:SidePanel>
+                    <dee:SidePanel x:Name="capsSidePanel" ReferenceMidPanel="{Binding ElementName=capsMidPanel}"></dee:SidePanel>
                 </TabItem>
                 <TabItem Header="KillSprees" IsSelected="{Binding ElementName=killSpreesMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
-                    <dee:SidePanel x:Name="killSpreesSidePanel" ReferenceGrid="{Binding ElementName=killSpreesMidPanel,Path=TheGrid}"></dee:SidePanel>
+                    <dee:SidePanel x:Name="killSpreesSidePanel" ReferenceMidPanel="{Binding ElementName=killSpreesMidPanel}"></dee:SidePanel>
                 </TabItem>
                 <TabItem Header="Defrag" IsSelected="{Binding ElementName=defragMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
-                    <dee:SidePanel x:Name="defragSidePanel" ReferenceGrid="{Binding ElementName=defragMidPanel,Path=TheGrid}"></dee:SidePanel>
+                    <dee:SidePanel x:Name="defragSidePanel" ReferenceMidPanel="{Binding ElementName=defragMidPanel}"></dee:SidePanel>
                 </TabItem>
                 <TabItem Header="Laughs" IsSelected="{Binding ElementName=laughsMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
-                    <dee:SidePanel x:Name="laughsSidePanel" ReferenceGrid="{Binding ElementName=laughsMidPanel,Path=TheGrid}"></dee:SidePanel>
+                    <dee:SidePanel x:Name="laughsSidePanel" ReferenceMidPanel="{Binding ElementName=laughsMidPanel}"></dee:SidePanel>
                 </TabItem>
             </TabControl>
         </DockPanel>

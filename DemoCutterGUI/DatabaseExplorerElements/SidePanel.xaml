@@ -7,6 +7,7 @@
              mc:Ignorable="d" 
              d:DataContext="{StaticResource ResourceKey=ExampleData}"
              x:Name="sidePanel"
+             xmlns:cuttergui="clr-namespace:DemoCutterGUI"
              d:DesignHeight="450" d:DesignWidth="320">
     <UserControl.Resources>
 
@@ -20,7 +21,54 @@
                         <Expander IsExpanded="True">
                             <Expander.Header>
                                 <WrapPanel>
-                                    <TextBlock Text="{Binding Name}"></TextBlock>
+                                    <TextBlock Text="{Binding ElementName=sidePanel,Path=ReferenceMidPanel.Items1Name}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"></Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Items[0].SubCategory}" Value="{x:Static cuttergui:DatabaseFieldInfo+FieldSubCategory.Column1}">
+                                                        <Setter Property="Visibility" Value="Visible"></Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding ElementName=sidePanel,Path=ReferenceMidPanel.Items2Name}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"></Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Items[0].SubCategory}" Value="{x:Static cuttergui:DatabaseFieldInfo+FieldSubCategory.Column2}">
+                                                        <Setter Property="Visibility" Value="Visible"></Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding ElementName=sidePanel,Path=ReferenceMidPanel.Items3Name}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"></Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Items[0].SubCategory}" Value="{x:Static cuttergui:DatabaseFieldInfo+FieldSubCategory.Column3}">
+                                                        <Setter Property="Visibility" Value="Visible"></Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding ElementName=sidePanel,Path=ReferenceMidPanel.Items4Name}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"></Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Items[0].SubCategory}" Value="{x:Static cuttergui:DatabaseFieldInfo+FieldSubCategory.None}">
+                                                        <Setter Property="Visibility" Value="Visible"></Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </WrapPanel>
                             </Expander.Header>
                             <ItemsPresenter />
@@ -48,7 +96,7 @@
                     <CheckBox Margin="0" Padding="0"  Visibility="{Binding Path=Bool, Converter={StaticResource checkedToVisibe}}">
                         <CheckBox.IsChecked>
                             <MultiBinding Converter="{StaticResource objectToPropertyPath}">
-                                <Binding ElementName="sidePanel" Path="ReferenceGrid.SelectedItem" Mode="OneWay"></Binding>
+                                <Binding ElementName="sidePanel" Path="ReferenceMidPanel.TheGrid.SelectedItem" Mode="OneWay"></Binding>
                                 <Binding Path="FieldName" Mode="OneWay"></Binding>
                             </MultiBinding>
                         </CheckBox.IsChecked>
@@ -56,7 +104,7 @@
                     <TextBox Margin="0" Padding="0"  Width="115" Visibility="{Binding Path=NotBool, Converter={StaticResource checkedToVisibe}}" FontSize="10" >
                         <TextBox.Text>
                             <MultiBinding Converter="{StaticResource objectToPropertyPath}">
-                                <Binding ElementName="sidePanel" Path="ReferenceGrid.SelectedItem" Mode="OneWay"></Binding>
+                                <Binding ElementName="sidePanel" Path="ReferenceMidPanel.TheGrid.SelectedItem" Mode="OneWay"></Binding>
                                 <Binding Path="FieldName" Mode="OneWay"></Binding>
                             </MultiBinding>
                         </TextBox.Text>
@@ -72,9 +120,9 @@
             <TextBox x:Name="killFieldText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Height="100" FontSize="14" d:Text="test">
                 <TextBox.Text>
                     <MultiBinding Converter="{StaticResource objectToPropertyPath}">
-                        <Binding ElementName="sidePanel" Path="ReferenceGrid.SelectedItem" Mode="OneWay"></Binding>
+                        <Binding ElementName="sidePanel" Path="ReferenceMidPanel.TheGrid.SelectedItem" Mode="OneWay"></Binding>
                         <Binding ElementName="listKillsNamesDataView" Path="SelectedItem.FieldName" Mode="OneWay"></Binding>
-                        <Binding ElementName="sidePanel" Path="ReferenceGrid.CurrentColumn.SortMemberPath" Mode="OneWay"></Binding>
+                        <Binding ElementName="sidePanel" Path="ReferenceMidPanel.TheGrid.CurrentColumn.SortMemberPath" Mode="OneWay"></Binding>
                     </MultiBinding>
                 </TextBox.Text>
             </TextBox>

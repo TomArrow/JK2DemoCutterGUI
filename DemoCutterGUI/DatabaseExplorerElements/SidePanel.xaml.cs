@@ -21,12 +21,12 @@ namespace DemoCutterGUI.DatabaseExplorerElements
     /// </summary>
     public partial class SidePanel : UserControl
     {
-        public static readonly DependencyProperty ReferenceGridProperty = DependencyProperty.Register("ReferenceGrid",typeof(DataGrid),typeof(SidePanel),new PropertyMetadata(null));
+        public static readonly DependencyProperty ReferenceMidPanelProperty = DependencyProperty.Register("ReferenceMidPanel",typeof(MidPanel),typeof(SidePanel),new PropertyMetadata(null));
 
-        public DataGrid ReferenceGrid
+        public MidPanel ReferenceMidPanel
         {
-            get { return (DataGrid)GetValue(ReferenceGridProperty);}
-            set { SetValue(ReferenceGridProperty,value); }
+            get { return (MidPanel)GetValue(ReferenceMidPanelProperty);}
+            set { SetValue(ReferenceMidPanelProperty, value); }
         }
 
         public static readonly DependencyProperty FieldsProperty = DependencyProperty.Register("Fields",typeof(DatabaseFieldInfo[]),typeof(SidePanel),new PropertyMetadata(null));
