@@ -13,12 +13,52 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media;
 
 namespace DemoCutterGUI
 {
 
     static class Helpers
     {
+
+        // IDK if this works reliably. Test it if you need it.
+        public static DependencyObject GetChildOfType<T>(this DependencyObject obj)
+        {
+            int depth = 0;
+            return obj.GetChildOfType<T>(ref depth);
+        }
+
+        // IDK if this works reliably. Test it if you need it.
+        public static DependencyObject GetChildOfType<T>(this DependencyObject obj, ref int depth)
+        {
+            int lowestDepthFindDepth = int.MaxValue;
+            DependencyObject lowestDepthFind = null;
+            for(int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
+            {
+                DependencyObject thisChild = VisualTreeHelper.GetChild(obj, i);
+                if(thisChild is T)
+                {
+                    return thisChild;
+                } else
+                {
+                    int findDepth = 0;
+                    DependencyObject nestedFind = thisChild.GetChildOfType<T>(ref findDepth);
+                    if(nestedFind != null)
+                    {
+                        findDepth++;
+                        if(findDepth < lowestDepthFindDepth) // Wanna find the highest up child of type T
+                        {
+                            lowestDepthFindDepth = findDepth;
+                            lowestDepthFind = nestedFind;
+                        }
+                    }
+                }
+            }
+            depth += lowestDepthFindDepth;
+            return lowestDepthFind;
+        }
+
         public static T ReadBytesAsType<T>(BinaryReader br, long byteOffset = -1, SeekOrigin seekOrigin = SeekOrigin.Begin)
         {
             if(!(byteOffset == -1 && seekOrigin == SeekOrigin.Begin))

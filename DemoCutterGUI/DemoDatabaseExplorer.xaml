@@ -100,9 +100,10 @@
                 </WrapPanel>
             </StackPanel>
             <Button x:Name="bspToMinimapBtn" Click="bspToMinimapBtn_Click">BSP to Minimap</Button>
+            <Button x:Name="ShowEntryDemoNameBtn" Click="ShowEntryDemoNameBtn_Click">Show entry name</Button>
         </StackPanel>
 
-        <TabControl Grid.Column="1">
+        <TabControl Grid.Column="1" x:Name="midSectionTabs">
             <TabItem Header="Kills" x:Name="killMidPanelTab">
                 <dee:MidPanel x:Name="retsMidPanel" Items1Name="Meta" Items2Name="Kill" Items3Name="Movement"></dee:MidPanel>
             </TabItem>

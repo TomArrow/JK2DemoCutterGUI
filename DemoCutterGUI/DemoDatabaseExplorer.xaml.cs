@@ -244,6 +244,23 @@ namespace DemoCutterGUI
                 }
             }
         }
+
+        private void ShowEntryDemoNameBtn_Click(object sender, RoutedEventArgs e)
+        {
+            TabItem item = midSectionTabs.SelectedItem as TabItem;
+            if (item == null) return;
+
+            MidPanel midPanel = item.Content as MidPanel;
+            if(midPanel == null)
+            {
+                midPanel = item.GetChildOfType<MidPanel>() as MidPanel; // future proofing a bit?
+            }
+            if (midPanel == null) return;
+
+            var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem,10000,10000);
+            MessageBox.Show(demoName.demoName);
+        }
+
     }
 
     public class DoSomethingCommand : ICommand
