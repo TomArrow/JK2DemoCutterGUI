@@ -82,6 +82,8 @@ namespace DemoCutterGUI
         private DemoCutName MakeDemoName(object entry, int preBuffertime, int postBufferTime)
         {
 
+            // BIG TODO: Do the meta events as well!
+
             DemoCutName retVal = new DemoCutName();
 
             if(entry is Ret)
@@ -170,7 +172,9 @@ namespace DemoCutterGUI
                 sb.Append(cap.demoRecorderClientnum);
 
                 long demoTime = cap.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
-                Int64 startTime = demoTime - preBuffertime;
+
+                Int64 capStart = demoTime - cap.flagHoldTime.Value;
+                Int64 startTime = capStart - preBuffertime;
                 Int64 endTime = demoTime + postBufferTime;
                 Int64 earliestPossibleStart = cap.lastGamestateDemoTime.GetValueOrDefault(0) + 1;
                 bool isTruncated = false;
@@ -183,6 +187,66 @@ namespace DemoCutterGUI
                 }
 
                 sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
+
+
+                retVal.demoName = sb.ToString();
+                retVal.demoTimeStart = startTime;
+                retVal.demoTimeEnd = endTime;
+                return retVal;
+            } else if(entry is KillSpree)
+            {
+                KillSpree spree = entry as KillSpree;
+                if (spree == null) return null;
+                
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append(spree.map);
+                sb.Append("___KILLSPREE");
+                sb.Append(spree.maxDelay);
+                sb.Append("_");
+                sb.Append(spree.countKills);
+                sb.Append(spree.countRets > 0 ? $"R{spree.countRets}" : "");
+                sb.Append(spree.countDooms > 0 ? $"D{spree.countDooms}" : "");
+                sb.Append(spree.countExplosions > 0 ? $"E{spree.countExplosions}" : "");
+                sb.Append(spree.countTeamKills > 0 ? $"T{spree.countTeamKills}" : "");
+                sb.Append("_U");
+                sb.Append(spree.countUniqueTargets);
+                sb.Append("___");
+                sb.Append(spree.killerName);
+                sb.Append("__");
+                string[] victims = spree.victimClientNums.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                for (int i = 0; i < victims.Length; i++)
+                {
+                    sb.Append($"_{victims[i]}");
+                }
+                sb.Append("___");
+                sb.Append((int)spree.maxSpeedAttacker);
+                sb.Append("_");
+                sb.Append((int)spree.maxSpeedTargets);
+                sb.Append("ups");
+                sb.Append(spree.countThirdPersons > 0 ? $"___thirdperson{spree.countThirdPersons}" : "");
+                sb.Append("___");
+                sb.Append(spree.killerClientNum);
+                sb.Append("_");
+                sb.Append(spree.demoRecorderClientnum);
+
+                long demoTime = spree.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
+                Int64 spreeStart = demoTime - spree.duration.Value;
+                Int64 startTime = spreeStart - preBuffertime;
+                Int64 endTime = demoTime + postBufferTime;
+                Int64 earliestPossibleStart = spree.lastGamestateDemoTime.GetValueOrDefault(0) + 1;
+                bool isTruncated = false;
+                Int64 truncationOffset = 0;
+                if (earliestPossibleStart > startTime)
+                {
+                    truncationOffset = earliestPossibleStart - startTime;
+                    startTime = earliestPossibleStart;
+                    isTruncated = true;
+                }
+
+                sb.Append(isTruncated ? $"_tr{truncationOffset}": "");
+                sb.Append("_");
+                sb.Append(spree.shorthash);
 
 
                 retVal.demoName = sb.ToString();
