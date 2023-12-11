@@ -253,6 +253,60 @@ namespace DemoCutterGUI
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
                 return retVal;
+            } else if(entry is DefragRun)
+            {
+                DefragRun run = entry as DefragRun;
+                if (run == null) return null;
+                
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append(run.map);
+                sb.Append(!string.IsNullOrWhiteSpace(run.style) ? $"___%{run.style}" : "");
+
+                int totalMilliSeconds = (int)run.totalMilliseconds.Value;
+                int pureMilliseconds = totalMilliSeconds % 1000;
+                int tmpSeconds = totalMilliSeconds / 1000;
+                int pureSeconds = tmpSeconds % 60;
+                int minutes = tmpSeconds / 60;
+
+                sb.Append("___");
+                sb.Append(minutes.ToString("000"));
+                sb.Append("-");
+                sb.Append(pureSeconds.ToString("00"));
+                sb.Append("-");
+                sb.Append(pureMilliseconds.ToString("000"));
+                sb.Append("___");
+                sb.Append(run.playerName);
+                //sb.Append(run.isNumber1 == true ? "" : "___top10");
+                sb.Append(run.isNumber1 == false && run.isTop10 == true ?  "___top10" : ""); // run.isTop10 actually just means isLogged
+                sb.Append(run.isTop10 == true ? "" : (run.isNumber1 == true ? "___unloggedWR" : "___unlogged"));
+                sb.Append(run.wasFollowed== true ? "" : (run.wasFollowedOrVisible == true ? "___thirdperson" : "___NOTvisible"));
+                sb.Append("_");
+                sb.Append(run.runnerClientNum);
+                sb.Append("_");
+                sb.Append(run.demoRecorderClientnum);
+
+                long demoTime = run.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
+                Int64 spreeStart = demoTime - run.totalMilliseconds.Value;
+                Int64 startTime = spreeStart - preBuffertime;
+                Int64 endTime = demoTime + postBufferTime;
+                Int64 earliestPossibleStart = run.lastGamestateDemoTime.GetValueOrDefault(0) + 1;
+                bool isTruncated = false;
+                Int64 truncationOffset = 0;
+                if (earliestPossibleStart > startTime)
+                {
+                    truncationOffset = earliestPossibleStart - startTime;
+                    startTime = earliestPossibleStart;
+                    isTruncated = true;
+                }
+
+                sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
+
+
+                retVal.demoName = sb.ToString();
+                retVal.demoTimeStart = startTime;
+                retVal.demoTimeEnd = endTime;
+                return retVal;
             }
 
             return null;
