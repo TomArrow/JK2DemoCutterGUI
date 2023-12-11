@@ -258,7 +258,7 @@ namespace DemoCutterGUI
             if (midPanel == null) return;
 
             var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem,10000,10000);
-            MessageBox.Show(demoName.demoName);
+            MessageBox.Show(demoName?.demoName);
         }
 
     }

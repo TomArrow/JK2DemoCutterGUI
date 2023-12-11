@@ -24,6 +24,7 @@ namespace DemoCutterGUI.TableMappings
         public TEXT? demoPath { get; set; } = null;
         public INTEGER? duration { get; set; } = null;
         public INTEGER? demoTime { get; set; } = null;
+        public INTEGER? lastGamestateDemoTime { get; set; } = null;
         public INTEGER? serverTime { get; set; } = null;
         public TIMESTAMP? demoDateTime { get; set; } = null;
     }

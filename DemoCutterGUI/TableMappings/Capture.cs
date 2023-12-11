@@ -60,9 +60,12 @@ namespace DemoCutterGUI.TableMappings
         public REAL? positionX { get; set; } = null;
         public REAL? positionY { get; set; } = null;
         public REAL? positionZ { get; set; } = null;
+        public INTEGER? resultingLaughs { get; set; } = null;
+        public INTEGER? resultingLaughsAfter { get; set; } = null;
         public TEXT? demoName { get; set; } = null;
         public TEXT? demoPath { get; set; } = null;
         public INTEGER? demoTime { get; set; } = null;
+        public INTEGER? lastGamestateDemoTime { get; set; } = null;
         public INTEGER? serverTime { get; set; } = null;
         public TIMESTAMP? demoDateTime { get; set; } = null;
     }

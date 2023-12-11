@@ -29,6 +29,8 @@ namespace DemoCutterGUI.TableMappings
         public TEXT? victimClientNums { get; set; } = null;
         public INTEGER? countKills { get; set; } = null;
         public INTEGER? countRets { get; set; } = null;
+        public INTEGER? countTeamKills { get; set; } = null;
+        public INTEGER? countUniqueTargets { get; set; } = null;
         public INTEGER? countDooms { get; set; } = null;
         public INTEGER? countExplosions { get; set; } = null;
         public INTEGER? countThirdPersons { get; set; } = null;
@@ -41,10 +43,13 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? resultingSelfCaptures { get; set; } = null;
         public INTEGER? resultingCapturesAfter { get; set; } = null;
         public INTEGER? resultingSelfCapturesAfter { get; set; } = null;
+        public INTEGER? resultingLaughs { get; set; } = null;
+        public INTEGER? resultingLaughsAfter { get; set; } = null;
         public TEXT? metaEvents { get; set; } = null;
         public TEXT? demoName { get; set; } = null;
         public TEXT? demoPath { get; set; } = null;
         public INTEGER? demoTime { get; set; } = null;
+        public INTEGER? lastGamestateDemoTime { get; set; } = null;
         public INTEGER? duration { get; set; } = null;
         public INTEGER? serverTime { get; set; } = null;
         public TIMESTAMP? demoDateTime { get; set; } = null;

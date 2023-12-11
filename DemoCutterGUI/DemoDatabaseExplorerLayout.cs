@@ -294,15 +294,23 @@ namespace DemoCutterGUI
 
 
                     Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>> categorizedFieldInfos = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>>();
+                    Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo[]>> unmatchedSQLColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo[]>>();
 
+                    int unmatchedSQLColumnCount = 0;
 
                     foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanel in categoryPanels)
                     {
                         associatedPanel.Value.midPanel.TheGrid.Columns.Clear();
                         sqlColumns[associatedPanel.Key] =  dbConn.GetTableInfo(associatedPanel.Value.tableName);
+                        unmatchedSQLColumns[associatedPanel.Key] = new List<SQLite.SQLiteConnection.ColumnInfo[]>();
 
-                        foreach (var sqlColumn in sqlColumns[associatedPanel.Key])
+                        SQLite.SQLiteConnection.ColumnInfo lastColumn = null;
+
+                        foreach (SQLite.SQLiteConnection.ColumnInfo sqlColumn in sqlColumns[associatedPanel.Key])
                         {
+                            if (sqlColumn.Name.EndsWith(":1") || sqlColumn.Name.EndsWith(":2") || sqlColumn.Name.EndsWith(":3")) continue; // Lazy workaround.
+
+                            bool matchFound = false;
 
                             // Find corresponding search field
                             foreach (DatabaseFieldInfo fieldInfo in fieldInfoForSearch)
@@ -326,10 +334,60 @@ namespace DemoCutterGUI
                                     categorizedFieldInfos[fieldInfo.Category][fieldInfo.SubCategory].Add(fieldInfo);
                                     categorizedFieldInfos[fieldInfo.Category][DatabaseFieldInfo.FieldSubCategory.All].Add(fieldInfo);
 
+                                    matchFound = true;
                                     break;
                                 }
 
                             }
+
+                            if (!matchFound)
+                            {
+                                unmatchedSQLColumnCount++;
+                                unmatchedSQLColumns[associatedPanel.Key].Add(new SQLite.SQLiteConnection.ColumnInfo[] { sqlColumn, lastColumn });
+                            }
+
+                            lastColumn = sqlColumn;
+                        }
+                    }
+
+                    if(unmatchedSQLColumnCount > 0)
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        sb.Append("Unmatched SQL columns:\n");
+                        sb.Append("Would you like to copy this error message to the clipboard? Click Yes to do so.\n");
+                        SQLite.SQLiteConnection.ColumnInfo lastColumn = null;
+                        foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanel in categoryPanels)
+                        {
+                            sb.Append($"\n\nCategory {associatedPanel.Key}:\n");
+                            foreach (SQLite.SQLiteConnection.ColumnInfo[] sqlColumn in unmatchedSQLColumns[associatedPanel.Key])
+                            {
+                                if (sqlColumn[1] == null)
+                                {
+                                    sb.Append($"\tAt start: \n");
+                                } 
+                                else if(sqlColumn[1] != lastColumn) { 
+
+                                    sb.Append($"\tAfter: ");
+                                    sb.Append($"{sqlColumn[1].Name}");
+                                    if (sqlColumn[1].notnull > 0)
+                                    {
+                                        sb.Append($" NOT NULL");
+                                    }
+                                    sb.Append($"\n");
+                                }
+                                sb.Append($"{sqlColumn[0].Name}");
+                                if (sqlColumn[0].notnull > 0)
+                                {
+                                    sb.Append($" NOT NULL");
+                                }
+                                sb.Append($"\n");
+                                lastColumn = sqlColumn[0];
+                            }
+                        }
+                        string message = sb.ToString();
+                        if (MessageBox.Show(message, "Unmatched SQL columns, update tool",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                        {
+                            Clipboard.SetText(message);
                         }
                     }
 

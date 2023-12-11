@@ -19,6 +19,7 @@ namespace DemoCutterGUI.TableMappings
         public TEXT? serverNameStripped { get; set; } = null;
         public TEXT? readableTime { get; set; } = null;
         public INTEGER? totalMilliseconds { get; set; } = null;
+        public TEXT? style { get; set; } = null;
         public TEXT? playerName { get; set; } = null;
         public TEXT? playerNameStripped { get; set; } = null;
         public BOOLEAN? isTop10 { get; set; } = null;
@@ -29,10 +30,12 @@ namespace DemoCutterGUI.TableMappings
         public BOOLEAN? wasFollowedOrVisible { get; set; } = null;
         public REAL? averageStrafeDeviation { get; set; } = null;
         public INTEGER? runnerClientNum { get; set; } = null;
+        public INTEGER? resultingLaughs { get; set; } = null;
         public INTEGER? demoRecorderClientnum { get; set; } = null;
         public TEXT? demoName { get; set; } = null;
         public TEXT? demoPath { get; set; } = null;
         public INTEGER? demoTime { get; set; } = null;
+        public INTEGER? lastGamestateDemoTime { get; set; } = null;
         public INTEGER? serverTime { get; set; } = null;
         public TIMESTAMP? demoDateTime { get; set; } = null;
     }

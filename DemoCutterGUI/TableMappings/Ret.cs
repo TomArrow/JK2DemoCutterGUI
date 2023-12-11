@@ -21,6 +21,7 @@ namespace DemoCutterGUI.TableMappings
         public TEXT? map { get; set; } = null;
         public BOOLEAN? killerIsFlagCarrier { get; set; } = null;
         public BOOLEAN? isReturn { get; set; } = null;
+        public BOOLEAN? isTeamKill { get; set; } = null;
         public INTEGER? victimCapperKills { get; set; } = null;
         public INTEGER? victimCapperRets { get; set; } = null;
         public BOOLEAN? victimCapperWasFollowedOrVisible { get; set; } = null;
@@ -51,8 +52,11 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? headJumps { get; set; } = null;
         public INTEGER? specialJumps { get; set; } = null;
         public INTEGER? timeSinceLastSelfSentryJump { get; set; } = null;
+        public INTEGER? lastSneak { get; set; } = null;
+        public INTEGER? lastSneakDuration { get; set; } = null;
         public INTEGER? resultingCaptures { get; set; } = null;
         public INTEGER? resultingSelfCaptures { get; set; } = null;
+        public INTEGER? resultingLaughs { get; set; } = null;
         public TEXT? metaEvents { get; set; } = null;
         public REAL? maxAngularSpeedAttacker { get; set; } = null;
         public REAL? maxAngularAccelerationAttacker { get; set; } = null;
@@ -77,6 +81,7 @@ namespace DemoCutterGUI.TableMappings
         public TEXT? demoName { get; set; } = null;
         public TEXT? demoPath { get; set; } = null;
         public INTEGER? demoTime { get; set; } = null;
+        public INTEGER? lastGamestateDemoTime { get; set; } = null;
         public INTEGER? serverTime { get; set; } = null;
         public TIMESTAMP? demoDateTime { get; set; } = null;
 
