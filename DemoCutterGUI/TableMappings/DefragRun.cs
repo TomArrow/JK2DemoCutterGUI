@@ -12,7 +12,7 @@ using TIMESTAMP = System.Int64;
 
 namespace DemoCutterGUI.TableMappings
 {
-    class DefragRun
+    class DefragRun : TableMapping
     {
         public TEXT? map { get; set; } = null;
         public TEXT? serverName { get; set; } = null;

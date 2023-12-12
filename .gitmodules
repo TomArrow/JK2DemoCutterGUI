@@ -1,3 +1,6 @@
 [submodule "ext/BitmapFontLibrary"]
 	path = ext/BitmapFontLibrary
 	url = git@github.com:Kr0oked/BitmapFontLibrary.git
+[submodule "BFF.DataVirtualizingCollection"]
+	path = BFF.DataVirtualizingCollection
+	url = git@github.com:TomArrow/BFF.DataVirtualizingCollection.git

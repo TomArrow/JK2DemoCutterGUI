@@ -1,4 +1,5 @@
 ﻿using BFF.DataVirtualizingCollection.DataVirtualizingCollection;
+using DemoCutterGUI.DatabaseExplorerElements;
 using DemoCutterGUI.TableMappings;
 using Salaros.Configuration;
 using System;
@@ -265,6 +266,7 @@ namespace DemoCutterGUI
         }
 
         Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection> sqlTableItemsSources = new Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection>();
+        Dictionary<DatabaseFieldInfo.FieldCategory, Func<object[]>> sqlTableSyncDataFetchers = new Dictionary<DatabaseFieldInfo.FieldCategory, Func<object[]>>();
 
         Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>> sqlColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>>();
         //Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string,SQLite.SQLiteConnection.ColumnInfo>> sqlColumnsMapped = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string, SQLite.SQLiteConnection.ColumnInfo>>();
@@ -485,7 +487,7 @@ namespace DemoCutterGUI
             }
             else
             {
-                sb.Append($"SELECT * FROM {categoryPanels[category].tableName}");
+                sb.Append($"SELECT ROWID,* FROM {categoryPanels[category].tableName}");
             }
 
             DatabaseFieldInfo[] activeFields = fieldMan.getActiveFields();
@@ -595,6 +597,7 @@ namespace DemoCutterGUI
                 foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> categoryData in categoryPanels)
                 {
                     sqlTableItemsSources[categoryData.Key] = (IDataVirtualizingCollection)typeof(DemoDatabaseExplorer).GetMethod("CreateSQLItemsSource",BindingFlags.NonPublic| BindingFlags.Instance).MakeGenericMethod(categoryData.Value.dataType).Invoke(this,new object[] { categoryData.Key });
+                    sqlTableSyncDataFetchers[categoryData.Key] = (Func<object[]>)typeof(DemoDatabaseExplorer).GetMethod("CreateSQLItemsSyncDataFetcher",BindingFlags.NonPublic| BindingFlags.Instance).MakeGenericMethod(categoryData.Value.dataType).Invoke(this,new object[] { categoryData.Key });
                     if (sqlTableItemsSources.ContainsKey(categoryData.Key))
                     {
                         categoryData.Value.midPanel.TheGrid.ItemsSource = sqlTableItemsSources[categoryData.Key];
@@ -631,6 +634,13 @@ namespace DemoCutterGUI
                     });
             //.SyncIndexAccess();
         }
+        private Func<T[]> CreateSQLItemsSyncDataFetcher<T>(DatabaseFieldInfo.FieldCategory category) where T : new()
+        {
+            return () => {
+                List<T> res = dbConn.Query<T>($"{MakeSelectQuery(category, false)}") as List<T>;
+                return res.ToArray();
+            };
+        }
 
 
 
@@ -664,6 +674,28 @@ namespace DemoCutterGUI
             e.Handled = true;
         }*/
 
+
+        private DatabaseFieldInfo.FieldCategory? GetActiveTabCategory()
+        {
+            TabItem item = midSectionTabs.SelectedItem as TabItem;
+            if (item == null) return null;
+
+            MidPanel midPanel = item.Content as MidPanel;
+            if (midPanel == null)
+            {
+                midPanel = item.GetChildOfType<MidPanel>() as MidPanel; // future proofing a bit?
+            }
+            if (midPanel == null) return null;
+
+            foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> categoryData in categoryPanels)
+            {
+                if(categoryData.Value.midPanel == midPanel)
+                {
+                    return categoryData.Key;
+                }
+            }
+            return null;
+        }
 
         private void visibleColumnsPresetLoadBtn_Click(object sender, RoutedEventArgs e)
         {

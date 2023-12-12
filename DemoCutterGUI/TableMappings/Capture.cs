@@ -13,7 +13,7 @@ using TIMESTAMP = System.Int64;
 
 namespace DemoCutterGUI.TableMappings
 {
-    class Capture
+    class Capture : TableMapping
     {
         public INTEGER? id { get; set; } = null;
         public TEXT? map { get; set; } = null;

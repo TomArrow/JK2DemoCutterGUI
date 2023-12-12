@@ -11,7 +11,7 @@ using TIMESTAMP = System.Int64;
 
 namespace DemoCutterGUI.TableMappings
 {
-    class KillSpree
+    class KillSpree : TableMapping
     {
         public TEXT? hash { get; set; } = null;
         public TEXT? shorthash { get; set; } = null;

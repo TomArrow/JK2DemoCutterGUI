@@ -3,6 +3,7 @@ using DemoCutterGUI.DatabaseExplorerElements;
 using DemoCutterGUI.TableMappings;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -43,37 +44,107 @@ namespace DemoCutterGUI
             }
             if (midPanel == null) return;
 
-            var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem, 10000, 10000);
+            var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
             MessageBox.Show(demoName?.demoName);
         }
 
+        private List<object> FindOtherAngles(object item,ref List<object> availableObjectPool)
+        {
+            List<object> otherItems = new List<object>();
+
+            if (item is Ret)
+            {
+                Ret ret = item as Ret;
+                if (ret == null) return otherItems;
+
+                foreach(var otherItem in availableObjectPool)
+                {
+                    Ret otherRet = otherItem as Ret;
+                    if (otherRet == ret) continue;
+                    if(otherRet.hash == ret.hash)
+                    {
+                        otherItems.Add(otherItem);
+                    }
+                }
+                foreach (var otherItem in otherItems)
+                {
+                    availableObjectPool.Remove(otherItem);
+                }
+            }
+
+            return otherItems;
+        }
+
+        private Int64 queueItemCountCheckLimit = 1000;
         private void EnqueueCurrentViewEntriesBtn_Click(object sender, RoutedEventArgs e)
         {
-            TabItem item = midSectionTabs.SelectedItem as TabItem;
-            if (item == null) return;
+            var category = GetActiveTabCategory();
+            if (!category.HasValue) return;
 
-            MidPanel midPanel = item.Content as MidPanel;
-            if (midPanel == null)
+            if (!sqlTableSyncDataFetchers.ContainsKey(category.Value) || !sqlTableItemsSources.ContainsKey(category.Value)) return;
+
+            Int64 itemCount = sqlTableItemsSources[category.Value].Count;
+            if (itemCount > queueItemCountCheckLimit)
             {
-                midPanel = item.GetChildOfType<MidPanel>() as MidPanel; // future proofing a bit?
+                if(MessageBox.Show($"Trying to queue {itemCount} items. Are you sure?",$"Over {queueItemCountCheckLimit} items?",MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                {
+                    return;
+                }
             }
-            if (midPanel == null) return;
 
-            List<object> itemsToCut = new List<object>();
+            List<object> items = new List<object>();
+            items.AddRange(sqlTableSyncDataFetchers[category.Value]());
 
-            IDataVirtualizingCollection dataSource = midPanel.TheGrid.ItemsSource as IDataVirtualizingCollection;
-
-            if (dataSource == null) return;
-
-
-            foreach(object whatever in dataSource)
+            List<DemoCutGroup> cutData = new List<DemoCutGroup>();
+            while (items.Count > 0)
             {
-                itemsToCut.Add(whatever);
-            }
-            //itemsToCut.AddRange(itemsToCut);
+                DemoCutGroup newGroup = new DemoCutGroup();
+                object mainItem = items[0];
+                DemoCutName mainCut = MakeDemoName(mainItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+                newGroup.demoCuts.Add(mainCut);
+                items.Remove(mainItem);
 
-            var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem, 10000, 10000);
-            MessageBox.Show(demoName?.demoName);
+                if (CutSettings.reframe)
+                {
+                    newGroup.demoCuts.Add(new DemoCutName()
+                    {
+                        originalDemoPath = $"{mainCut.demoName}{Path.GetExtension(mainCut.originalDemoPath)}",
+                        demoName = $"{mainCut.demoName}_reframe{mainCut.reframeClientNum}",
+                        type = DemoCutType.REFRAME,
+                        reframeClientNum = mainCut.reframeClientNum
+                    });
+                }
+                if (CutSettings.findOtherAngles)
+                {
+                    List<object> otherAngles = FindOtherAngles(mainItem, ref items);
+                    foreach(var otherItem in otherAngles)
+                    {
+                        DemoCutName otherAngleCut = MakeDemoName(otherItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+                        newGroup.demoCuts.Add(otherAngleCut);
+                        if (CutSettings.reframe)
+                        {
+                            newGroup.demoCuts.Add(new DemoCutName()
+                            {
+                                originalDemoPath = $"{otherAngleCut.demoName}{Path.GetExtension(otherAngleCut.originalDemoPath)}",
+                                demoName = $"{otherAngleCut.demoName}_reframe{otherAngleCut.reframeClientNum}",
+                                type = DemoCutType.REFRAME,
+                                reframeClientNum = otherAngleCut.reframeClientNum
+                            });
+                        }
+                    }
+                }
+                cutData.Add(newGroup);
+            }
+            //foreach(var item in items)
+            //{
+            //    cutData.Add(MakeDemoName(item, CutSettings.preBufferTime, CutSettings.postBufferTime));
+            //}
+            //var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+            //MessageBox.Show(demoName?.demoName);
+
+
+
+            MessageBox.Show(cutData.Count.ToString());
         }
 
         private void EnqueueSelectedEntriesBtn_Click(object sender, RoutedEventArgs e)
@@ -89,8 +160,8 @@ namespace DemoCutterGUI
 
 
 
-
-        private string getResultingCapturesString(long? resultingSelfCaptures, long? resultingCaptures, long? resultingSelfCapturesAfter, long? resultingCapturesAfter)
+        // TODO Add Laughs
+        private string getResultingCapturesString(long? resultingSelfCaptures, long? resultingCaptures, long? resultingLaughs, long? resultingSelfCapturesAfter, long? resultingCapturesAfter, long? resultingLaughsAfter)
         {
             StringBuilder sb = new StringBuilder();
             if (resultingSelfCaptures >= 1)
@@ -149,13 +220,57 @@ namespace DemoCutterGUI
                     }
                 }
             }
+            if (resultingLaughs >= 1)
+            {
+                long ledToLaughsAfter = resultingLaughsAfter.HasValue ? resultingLaughsAfter.Value : resultingLaughs.Value;
+                sb.Append("_LGH");
+                if (resultingLaughs == ledToLaughsAfter)
+                {
+                    sb.Append("A");
+                    if (resultingLaughs > 1)
+                    {
+                        sb.Append(resultingLaughs);
+                    }
+                }
+                else
+                {
+                    if (resultingLaughs > 1)
+                    {
+                        sb.Append(resultingLaughs);
+                    }
+                    if (ledToLaughsAfter > 0)
+                    {
+                        sb.Append("_LGHA");
+                        if (ledToLaughsAfter > 1)
+                        {
+                            sb.Append(ledToLaughsAfter);
+                        }
+                    }
+                }
+            }
             return sb.ToString();
         }
 
+        enum DemoCutType
+        {
+            CUT,
+            REFRAME,
+            MERGE
+        }
+
         class DemoCutName {
+            public DemoCutType type;
+            public string originalDemoPath;
             public string demoName;
+            public int? reframeClientNum = null;
             public Int64 demoTimeStart;
             public Int64 demoTimeEnd;
+        }
+
+        class DemoCutGroup
+        {
+            public List<DemoCutName> demoCuts = new List<DemoCutName>();
+
         }
 
         private DemoCutName MakeDemoName(object entry, int preBuffertime, int postBufferTime)
@@ -163,7 +278,7 @@ namespace DemoCutterGUI
 
             // BIG TODO: Do the meta events as well!
 
-            DemoCutName retVal = new DemoCutName();
+            DemoCutName retVal = new DemoCutName() { type = DemoCutType.CUT };
 
             if(entry is Ret)
             {
@@ -171,11 +286,13 @@ namespace DemoCutterGUI
                 if (ret == null) return null;
                 string boostString = ((ret.boostCountAttacker + ret.boostCountVictim) > 0 ? ( "_BST" +  (ret.boostCountAttacker > 0 ? $"{ret.boostCountAttacker}A" : "") +( ret.boostCountVictim > 0 ? $"{ret.boostCountVictim}V" : "")) : "");
                 StringBuilder sb = new StringBuilder();
+                retVal.originalDemoPath = ret.demoPath;
+                retVal.reframeClientNum = (int?)ret.killerClientNum;
                 sb.Append(ret.map);
                 sb.Append("___");
                 sb.Append(ret.meansOfDeathString);
                 sb.Append(boostString);
-                sb.Append(getResultingCapturesString(ret.resultingSelfCaptures, ret.resultingCaptures, null, null));
+                sb.Append(getResultingCapturesString(ret.resultingSelfCaptures, ret.resultingCaptures, ret.resultingLaughs, null, null, null));
                 sb.Append("___");
                 sb.Append(ret.killerName);
                 sb.Append("___");
@@ -221,10 +338,14 @@ namespace DemoCutterGUI
                 if (cap == null) return null;
                 
                 StringBuilder sb = new StringBuilder();
+                retVal.originalDemoPath = cap.demoPath;
+                retVal.reframeClientNum = (int?)cap.capperClientNum;
                 sb.Append(cap.map);
                 sb.Append("___CAPTURE");
                 sb.Append(cap.capperKills > 0 ? $"{cap.capperKills}K" : "");
                 sb.Append(cap.capperRets > 0 ? $"{cap.capperRets}R": "");
+
+                sb.Append(getResultingCapturesString(null, null, cap.resultingLaughs, null, null, cap.resultingLaughsAfter));
 
                 sb.Append("___");
                 int milliSeconds = (int)cap.flagHoldTime.Value;
@@ -279,6 +400,8 @@ namespace DemoCutterGUI
                 
                 StringBuilder sb = new StringBuilder();
 
+                retVal.originalDemoPath = spree.demoPath;
+                retVal.reframeClientNum = (int?)spree.killerClientNum;
                 sb.Append(spree.map);
                 sb.Append("___KILLSPREE");
                 sb.Append(spree.maxDelay);
@@ -290,6 +413,9 @@ namespace DemoCutterGUI
                 sb.Append(spree.countTeamKills > 0 ? $"T{spree.countTeamKills}" : "");
                 sb.Append("_U");
                 sb.Append(spree.countUniqueTargets);
+
+                sb.Append(getResultingCapturesString(spree.resultingSelfCaptures, spree.resultingCaptures, spree.resultingLaughs, spree.resultingSelfCapturesAfter, spree.resultingCapturesAfter, spree.resultingLaughsAfter));
+
                 sb.Append("___");
                 sb.Append(spree.killerName);
                 sb.Append("__");
@@ -339,6 +465,8 @@ namespace DemoCutterGUI
                 
                 StringBuilder sb = new StringBuilder();
 
+                retVal.originalDemoPath = run.demoPath;
+                retVal.reframeClientNum = (int?)run.runnerClientNum;
                 sb.Append(run.map);
                 sb.Append(!string.IsNullOrWhiteSpace(run.style) ? $"___%{run.style}" : "");
 
@@ -394,6 +522,8 @@ namespace DemoCutterGUI
                 
                 StringBuilder sb = new StringBuilder();
 
+                retVal.originalDemoPath = laughs.demoPath;
+                retVal.reframeClientNum = null;
 
                 sb.Append(laughs.map);
                 sb.Append("___LAUGHS");

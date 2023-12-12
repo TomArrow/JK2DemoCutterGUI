@@ -9,7 +9,7 @@ using TEXT = System.String;
 using TIMESTAMP = System.Int64;
 namespace DemoCutterGUI.TableMappings
 {
-    class Laughs
+    class Laughs : TableMapping
     {
         public INTEGER? id { get; set; } = null;
         public TEXT? map { get; set; } = null;
