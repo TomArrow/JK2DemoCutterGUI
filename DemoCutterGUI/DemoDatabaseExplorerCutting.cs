@@ -1,14 +1,93 @@
-﻿using DemoCutterGUI.TableMappings;
+﻿using BFF.DataVirtualizingCollection.DataVirtualizingCollection;
+using DemoCutterGUI.DatabaseExplorerElements;
+using DemoCutterGUI.TableMappings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace DemoCutterGUI
 {
+    public class CuttingSettings {
+        public int preBufferTime { get; set; } = 10000;
+        public int postBufferTime { get; set; } = 10000;
+        public bool reframe { get; set; } = true;
+        public bool findOtherAngles { get; set; } = true;
+
+    }
+
+
     public partial class DemoDatabaseExplorer
     {
+
+        CuttingSettings CutSettings = new CuttingSettings();
+        partial void Constructor2()
+        {
+            cuttingGroupBox.DataContext = CutSettings;
+        }
+
+
+
+        private void ShowEntryDemoNameBtn_Click(object sender, RoutedEventArgs e)
+        {
+            TabItem item = midSectionTabs.SelectedItem as TabItem;
+            if (item == null) return;
+
+            MidPanel midPanel = item.Content as MidPanel;
+            if (midPanel == null)
+            {
+                midPanel = item.GetChildOfType<MidPanel>() as MidPanel; // future proofing a bit?
+            }
+            if (midPanel == null) return;
+
+            var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem, 10000, 10000);
+            MessageBox.Show(demoName?.demoName);
+        }
+
+        private void EnqueueCurrentViewEntriesBtn_Click(object sender, RoutedEventArgs e)
+        {
+            TabItem item = midSectionTabs.SelectedItem as TabItem;
+            if (item == null) return;
+
+            MidPanel midPanel = item.Content as MidPanel;
+            if (midPanel == null)
+            {
+                midPanel = item.GetChildOfType<MidPanel>() as MidPanel; // future proofing a bit?
+            }
+            if (midPanel == null) return;
+
+            List<object> itemsToCut = new List<object>();
+
+            IDataVirtualizingCollection dataSource = midPanel.TheGrid.ItemsSource as IDataVirtualizingCollection;
+
+            if (dataSource == null) return;
+
+
+            foreach(object whatever in dataSource)
+            {
+                itemsToCut.Add(whatever);
+            }
+            //itemsToCut.AddRange(itemsToCut);
+
+            var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem, 10000, 10000);
+            MessageBox.Show(demoName?.demoName);
+        }
+
+        private void EnqueueSelectedEntriesBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+
+
+
+
+
+
+
 
 
         private string getResultingCapturesString(long? resultingSelfCaptures, long? resultingCaptures, long? resultingSelfCapturesAfter, long? resultingCapturesAfter)

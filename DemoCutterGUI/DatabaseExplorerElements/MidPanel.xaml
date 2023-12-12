@@ -68,6 +68,7 @@
                 </ListView>
             </GroupBox>
         </Grid>
+        <!-- SelectedIndex="{Binding ElementName=retsGrid,Path=ItemsSource.SelectedIndex}"-->
         <DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" x:Name="retsGrid" AlternationCount="2" AlternatingRowBackground="#f3f3f3" FontSize="11" VerticalGridLinesBrush="LightGray" HorizontalGridLinesBrush="LightGray" DockPanel.Dock="Bottom" d:ItemsSource="{Binding KillDatabaseExampleKills}" d:AutoGenerateColumns="True" AllowDrop="False" CanUserAddRows="False" IsReadOnly="True" Sorting="retsGrid_Sorting" CanUserResizeColumns="True">
             <!-- This is just to see some columns in the designer. We generate columns more dynamically for live. -->
 

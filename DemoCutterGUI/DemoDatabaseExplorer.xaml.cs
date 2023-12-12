@@ -31,7 +31,21 @@ namespace DemoCutterGUI
     public partial class DemoDatabaseExplorer : Window
     {
         partial void Constructor();
+        partial void Constructor2(); // Yes it's extremely cringe lol. I misunderstood the concept at first and now I'm too lazy to find a more sensible approach
+        partial void Constructor3();
+        partial void Constructor4();
+        partial void Constructor5();
+        partial void Constructor6();
+        partial void Constructor7();
+        partial void Constructor8();
         partial void Destructor();
+        partial void Destructor2();
+        partial void Destructor3();
+        partial void Destructor4();
+        partial void Destructor5();
+        partial void Destructor6();
+        partial void Destructor7();
+        partial void Destructor8();
 
         SQLiteConnection dbConn = null;
         Mutex dbMutex = new Mutex();
@@ -99,6 +113,13 @@ namespace DemoCutterGUI
             this.DataContext = this;
             InitializeComponent();
             Constructor();
+            Constructor2();
+            Constructor3();
+            Constructor4();
+            Constructor5();
+            Constructor6();
+            Constructor7();
+            Constructor8();
             this.Closed += DemoDatabaseExplorer_Closed;
         }
 
@@ -123,6 +144,13 @@ namespace DemoCutterGUI
                 {
                     this.Closed -= DemoDatabaseExplorer_Closed;
                     Destructor();
+                    Destructor2();
+                    Destructor3();
+                    Destructor4();
+                    Destructor5();
+                    Destructor6();
+                    Destructor7();
+                    Destructor8();
                 }
                 closedDown = true;
             }
@@ -243,22 +271,6 @@ namespace DemoCutterGUI
                     MessageBox.Show($"Error making minimap: {ex.ToString()}");
                 }
             }
-        }
-
-        private void ShowEntryDemoNameBtn_Click(object sender, RoutedEventArgs e)
-        {
-            TabItem item = midSectionTabs.SelectedItem as TabItem;
-            if (item == null) return;
-
-            MidPanel midPanel = item.Content as MidPanel;
-            if(midPanel == null)
-            {
-                midPanel = item.GetChildOfType<MidPanel>() as MidPanel; // future proofing a bit?
-            }
-            if (midPanel == null) return;
-
-            var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem,10000,10000);
-            MessageBox.Show(demoName?.demoName);
         }
 
     }

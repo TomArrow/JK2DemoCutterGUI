@@ -100,7 +100,23 @@
                 </WrapPanel>
             </StackPanel>
             <Button x:Name="bspToMinimapBtn" Click="bspToMinimapBtn_Click">BSP to Minimap</Button>
-            <Button x:Name="ShowEntryDemoNameBtn" Click="ShowEntryDemoNameBtn_Click">Show entry name</Button>
+            <GroupBox Header="Cutting" x:Name="cuttingGroupBox">
+                <StackPanel>
+                    <WrapPanel>
+                        <TextBox Width="40" Margin="0" Padding="0" Text="{Binding preBufferTime,Mode=TwoWay}"></TextBox>
+                        <Label Margin="3 0 3 0" Padding="0">ms pre</Label>
+                        <TextBox Width="40" Margin="0" Padding="0" Text="{Binding postBufferTime,Mode=TwoWay}"></TextBox>
+                        <Label  Margin="3 0 3 0"  Padding="0">ms post</Label>
+                    </WrapPanel>
+                    <WrapPanel>
+                        <CheckBox IsChecked="{Binding reframe,Mode=TwoWay}">Reframe</CheckBox>
+                        <CheckBox IsChecked="{Binding findOtherAngles,Mode=TwoWay}">Find alt angles &amp; merge</CheckBox>
+                    </WrapPanel>
+                    <Button x:Name="EnqueueCurrentViewEntriesBtn" Click="EnqueueCurrentViewEntriesBtn_Click">Enqueue entries in current view</Button>
+                    <Button x:Name="EnqueueSelectedEntriesBtn" Click="EnqueueSelectedEntriesBtn_Click">Enqueue selected entries</Button>
+                    <Button x:Name="ShowEntryDemoNameBtn" Click="ShowEntryDemoNameBtn_Click">Preview file name</Button>
+                </StackPanel>
+            </GroupBox>
         </StackPanel>
 
         <TabControl Grid.Column="1" x:Name="midSectionTabs">
