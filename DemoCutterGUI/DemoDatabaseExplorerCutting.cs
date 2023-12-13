@@ -17,6 +17,7 @@ namespace DemoCutterGUI
         public int postBufferTime { get; set; } = 10000;
         public bool reframe { get; set; } = true;
         public bool findOtherAngles { get; set; } = true;
+        public bool merge { get; set; } = true;
 
     }
 
@@ -99,17 +100,19 @@ namespace DemoCutterGUI
             while (items.Count > 0)
             {
                 DemoCutGroup newGroup = new DemoCutGroup();
+                List<DemoCut> originalCuts = new List<DemoCut>();
                 object mainItem = items[0];
-                DemoCutName mainCut = MakeDemoName(mainItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+                DemoCut mainCut = MakeDemoName(mainItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+                originalCuts.Add(mainCut);
                 newGroup.demoCuts.Add(mainCut);
                 items.Remove(mainItem);
 
                 if (CutSettings.reframe)
                 {
-                    newGroup.demoCuts.Add(new DemoCutName()
+                    newGroup.demoCuts.Add(new DemoCut()
                     {
-                        originalDemoPath = $"{mainCut.demoName}{Path.GetExtension(mainCut.originalDemoPath)}",
-                        demoName = $"{mainCut.demoName}_reframe{mainCut.reframeClientNum}",
+                        originalDemoPath = $"{mainCut.GetFinalName()}{Path.GetExtension(mainCut.originalDemoPath)}",
+                        demoName = $"{mainCut.GetFinalName()}_reframe{mainCut.reframeClientNum}",
                         type = DemoCutType.REFRAME,
                         reframeClientNum = mainCut.reframeClientNum
                     });
@@ -119,16 +122,52 @@ namespace DemoCutterGUI
                     List<object> otherAngles = FindOtherAngles(mainItem, ref items);
                     foreach(var otherItem in otherAngles)
                     {
-                        DemoCutName otherAngleCut = MakeDemoName(otherItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+                        DemoCut otherAngleCut = MakeDemoName(otherItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+                        originalCuts.Add(otherAngleCut);
                         newGroup.demoCuts.Add(otherAngleCut);
                         if (CutSettings.reframe)
                         {
-                            newGroup.demoCuts.Add(new DemoCutName()
+                            newGroup.demoCuts.Add(new DemoCut()
                             {
-                                originalDemoPath = $"{otherAngleCut.demoName}{Path.GetExtension(otherAngleCut.originalDemoPath)}",
-                                demoName = $"{otherAngleCut.demoName}_reframe{otherAngleCut.reframeClientNum}",
+                                originalDemoPath = $"{otherAngleCut.GetFinalName()}{Path.GetExtension(otherAngleCut.originalDemoPath)}",
+                                demoName = $"{otherAngleCut.GetFinalName()}_reframe{otherAngleCut.reframeClientNum}",
                                 type = DemoCutType.REFRAME,
                                 reframeClientNum = otherAngleCut.reframeClientNum
+                            });
+                        }
+                    }
+                    if (CutSettings.merge && originalCuts.Count > 1)
+                    {
+                        int? reframeClientNum = originalCuts[0].reframeClientNum;
+
+                        // Find main reference name to use.
+                        string bestBaseName = null;
+                        VisibilityType bestVisType = VisibilityType.Invisible;
+                        List<int> recorderClientNums = new List<int>();
+                        List<string> sourceCutOutputNames = new List<string>();
+                        foreach (DemoCut democut in originalCuts)
+                        {
+                            if(democut.visType >= bestVisType)
+                            {
+                                bestBaseName = democut.demoName;
+                                bestVisType = democut.visType;
+                            }
+                            recorderClientNums.Add(democut.demoRecorderClientNum.Value);
+                            sourceCutOutputNames.Add($"{democut.GetFinalName()}{Path.GetExtension(democut.originalDemoPath)}");
+                            if(reframeClientNum != democut.reframeClientNum)
+                            {
+                                MessageBox.Show($"Wtf reframeclientnum different across group: {reframeClientNum} vs {democut.reframeClientNum}");
+                            }
+                        }
+                        if(bestBaseName != null)
+                        {
+                            newGroup.demoCuts.Add(new DemoCut()
+                            {
+                                originalDemoPathsForMerge = sourceCutOutputNames.ToArray(),
+                                demoRecorderClientNums = recorderClientNums.ToArray(),
+                                demoName = $"{bestBaseName}_merge",
+                                type = DemoCutType.MERGE,
+                                reframeClientNum = reframeClientNum
                             });
                         }
                     }
@@ -257,28 +296,55 @@ namespace DemoCutterGUI
             REFRAME,
             MERGE
         }
+        enum VisibilityType
+        {
+            Invisible,
+            Unknown,
+            PartiallyInvisible,
+            Thirdperson,
+            Followed
+        }
 
-        class DemoCutName {
+        class DemoCut {
+            public const string recorderClientNumPlaceHolder = "#@#@#@#recorderClientNum#@#@#@#";
             public DemoCutType type;
+            public VisibilityType visType;
+            public string[] originalDemoPathsForMerge = null;
             public string originalDemoPath;
             public string demoName;
             public int? reframeClientNum = null;
+            public int? demoRecorderClientNum = null;
+            public int[] demoRecorderClientNums = null;
             public Int64 demoTimeStart;
             public Int64 demoTimeEnd;
+            public string GetFinalName()
+            {
+                switch (type)
+                {
+                    default:
+                        return "WEIRD DEMONAME WTF SPECIFY THE TAPE YOU ANIMAL";
+                    case DemoCutType.CUT:
+                        return Helpers.DemoCuttersanitizeFilename(demoName?.Replace(recorderClientNumPlaceHolder, demoRecorderClientNum.Value.ToString()),false);
+                    case DemoCutType.REFRAME:
+                        return Helpers.DemoCuttersanitizeFilename(demoName,false);
+                    case DemoCutType.MERGE:
+                        return Helpers.DemoCuttersanitizeFilename(demoName?.Replace(recorderClientNumPlaceHolder, string.Join('_', demoRecorderClientNums)),false);
+                }
+            }
         }
 
         class DemoCutGroup
         {
-            public List<DemoCutName> demoCuts = new List<DemoCutName>();
+            public List<DemoCut> demoCuts = new List<DemoCut>();
 
         }
 
-        private DemoCutName MakeDemoName(object entry, int preBuffertime, int postBufferTime)
+        private DemoCut MakeDemoName(object entry, int preBuffertime, int postBufferTime)
         {
 
             // BIG TODO: Do the meta events as well!
 
-            DemoCutName retVal = new DemoCutName() { type = DemoCutType.CUT };
+            DemoCut retVal = new DemoCut() { type = DemoCutType.CUT };
 
             if(entry is Ret)
             {
@@ -302,13 +368,16 @@ namespace DemoCutterGUI
                 sb.Append("_");
                 sb.Append((int)ret.maxSpeedTarget);
                 sb.Append("ups");
-                sb.Append((ret.attackerIsFollowed == true ? "" : "___thirdperson"));
-                sb.Append((ret.attackerIsFollowedOrVisible == true ? "" : "_attackerInvis"));
-                sb.Append((ret.targetIsFollowedOrVisible == true ? "" : "_targetInvis"));
+                sb.Append(ret.attackerIsFollowed == true ? "" : "___thirdperson");
+                sb.Append(ret.attackerIsFollowedOrVisible == true ? "" : "_attackerInvis");
+                sb.Append(ret.targetIsFollowedOrVisible == true ? "" : "_targetInvis");
                 sb.Append("_");
                 sb.Append(ret.killerClientNum);
                 sb.Append("_");
-                sb.Append(ret.demoRecorderClientnum);
+                sb.Append(DemoCut.recorderClientNumPlaceHolder);
+                retVal.demoRecorderClientNum = (int?)ret.demoRecorderClientnum;
+
+                retVal.visType = ret.attackerIsFollowed == true ? VisibilityType.Followed : (ret.attackerIsFollowedOrVisible == true ? VisibilityType.Thirdperson : (ret.targetIsFollowedOrVisible == true ? VisibilityType.PartiallyInvisible : VisibilityType.Invisible));
 
                 long demoTime = ret.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
                 Int64 startTime = demoTime - preBuffertime;
@@ -369,7 +438,10 @@ namespace DemoCutterGUI
                 sb.Append("_");
                 sb.Append(cap.capperClientNum);
                 sb.Append("_");
-                sb.Append(cap.demoRecorderClientnum);
+                sb.Append(DemoCut.recorderClientNumPlaceHolder);
+                retVal.demoRecorderClientNum = (int?)cap.demoRecorderClientnum;
+
+                retVal.visType = cap.capperWasFollowed == true ? VisibilityType.Followed : (cap.capperWasFollowedOrVisible == true ? VisibilityType.Thirdperson : (cap.capperIsFollowedOrVisible == true ? VisibilityType.PartiallyInvisible : VisibilityType.Invisible));
 
                 long demoTime = cap.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
 
@@ -433,7 +505,10 @@ namespace DemoCutterGUI
                 sb.Append("___");
                 sb.Append(spree.killerClientNum);
                 sb.Append("_");
-                sb.Append(spree.demoRecorderClientnum);
+                sb.Append(DemoCut.recorderClientNumPlaceHolder);
+                retVal.demoRecorderClientNum = (int?)spree.demoRecorderClientnum;
+
+                retVal.visType = spree.countThirdPersons > 0 ? VisibilityType.Thirdperson : VisibilityType.Followed;
 
                 long demoTime = spree.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
                 Int64 spreeStart = demoTime - spree.duration.Value;
@@ -491,7 +566,10 @@ namespace DemoCutterGUI
                 sb.Append("_");
                 sb.Append(run.runnerClientNum);
                 sb.Append("_");
-                sb.Append(run.demoRecorderClientnum);
+                sb.Append(DemoCut.recorderClientNumPlaceHolder);
+                retVal.demoRecorderClientNum = (int?)run.demoRecorderClientnum;
+
+                retVal.visType = run.wasFollowed == true ? VisibilityType.Followed : (run.wasFollowedOrVisible == true ? VisibilityType.Thirdperson : VisibilityType.Invisible);
 
                 long demoTime = run.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
                 Int64 spreeStart = demoTime - run.totalMilliseconds.Value;
@@ -533,7 +611,9 @@ namespace DemoCutterGUI
                 sb.Append(laughs.laughs.Substring(0,70));
                 sb.Append(laughs.laughs.Length > 70 ? "--" : "");
                 sb.Append("_");
-                sb.Append(laughs.demoRecorderClientnum);
+                sb.Append(DemoCut.recorderClientNumPlaceHolder);
+                retVal.demoRecorderClientNum = (int?)laughs.demoRecorderClientnum;
+                retVal.visType = VisibilityType.Unknown;
 
                 long demoTime = laughs.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
                 Int64 laughsStart = demoTime - laughs.duration.GetValueOrDefault(0) - LAUGHS_CUT_PRE_TIME;

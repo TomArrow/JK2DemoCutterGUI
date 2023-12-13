@@ -21,6 +21,70 @@ namespace DemoCutterGUI
 
     static class Helpers
     {
+        static public unsafe string DemoCuttersanitizeFilename(string input, bool allowExtension)
+        {
+            if (input == null) return null;
+            byte[] byteArray = new byte[input.Length + 1];
+            byte[] byteArrayOut = new byte[input.Length + 1];
+            for (int i = 0; i < input.Length; i++)
+            {
+                byteArray[i] = (byte)input[i];
+            }
+            byteArray[input.Length] = 0;
+
+            int outLength = 0;
+            fixed (byte* inP = byteArray, outP = byteArrayOut)
+            {
+                DemoCuttersanitizeFilenameReal(inP, outP, allowExtension, ref outLength);
+            }
+            return Encoding.ASCII.GetString(byteArrayOut, 0, Math.Min(input.Length, outLength));
+        }
+        static unsafe void DemoCuttersanitizeFilenameReal(byte* input, byte* output, bool allowExtension, ref int outLength)
+        {
+            byte* outStart = output;
+            byte* lastDot = (byte*)0;
+            byte* inputStart = input;
+            while (*input != 0)
+            {
+                if (*input == '.' && input != inputStart)
+                { // Even tho we allow extensions (dots), we don't allow the dot at the start of the filename.
+                    lastDot = output;
+                }
+                if ((*input == 32) // Don't allow ! exclamation mark. Linux doesn't like that.
+                    || (*input >= 35 && *input < 42)
+                    || (*input >= 43 && *input < 46)
+                    || (*input >= 48 && *input < 58)
+                    || (*input >= 59 && *input < 60)
+                    || (*input == 61)
+                    || (*input >= 64 && *input < 92)
+                    || (*input >= 93 && *input < 96) // Don't allow `. Linux doesn't like that either, at least not in shell scripts.
+                    || (*input >= 97 && *input < 124)
+                    || (*input >= 125 && *input < 127)
+                    )
+                {
+                    *output++ = *input;
+                }
+                else if (*input == '|')
+                {
+
+                    *output++ = (byte)'I';
+                }
+
+                else
+                {
+                    *output++ = (byte)'-';
+                }
+                input++;
+            }
+            *output = 0;
+            outLength = (int)(output - outStart);
+
+            if (allowExtension && lastDot != (byte*)0)
+            {
+                *lastDot = (byte)'.';
+            }
+        }
+
 
         // IDK if this works reliably. Test it if you need it.
         public static DependencyObject GetChildOfType<T>(this DependencyObject obj)
