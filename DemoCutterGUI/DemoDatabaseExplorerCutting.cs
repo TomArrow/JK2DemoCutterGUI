@@ -33,21 +33,6 @@ namespace DemoCutterGUI
 
 
 
-        private void ShowEntryDemoNameBtn_Click(object sender, RoutedEventArgs e)
-        {
-            TabItem item = midSectionTabs.SelectedItem as TabItem;
-            if (item == null) return;
-
-            MidPanel midPanel = item.Content as MidPanel;
-            if (midPanel == null)
-            {
-                midPanel = item.GetChildOfType<MidPanel>() as MidPanel; // future proofing a bit?
-            }
-            if (midPanel == null) return;
-
-            var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
-            MessageBox.Show(demoName?.demoName);
-        }
 
         private List<object> FindOtherAngles(object item,ref List<object> availableObjectPool)
         {
@@ -71,31 +56,25 @@ namespace DemoCutterGUI
                 {
                     availableObjectPool.Remove(otherItem);
                 }
+
+                List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE hash='{ret.hash}'") as List<Ret>;
+                if(res != null)
+                {
+                    foreach (var result in res)
+                    {
+                        if (!otherItems.Contains(result) && !result.Equals(item))
+                        {
+                            otherItems.Add(result);
+                        }
+                    }
+                }
             }
 
             return otherItems;
         }
 
-        private Int64 queueItemCountCheckLimit = 1000;
-        private void EnqueueCurrentViewEntriesBtn_Click(object sender, RoutedEventArgs e)
+        private void EnqueueCutEntries(List<object> items)
         {
-            var category = GetActiveTabCategory();
-            if (!category.HasValue) return;
-
-            if (!sqlTableSyncDataFetchers.ContainsKey(category.Value) || !sqlTableItemsSources.ContainsKey(category.Value)) return;
-
-            Int64 itemCount = sqlTableItemsSources[category.Value].Count;
-            if (itemCount > queueItemCountCheckLimit)
-            {
-                if(MessageBox.Show($"Trying to queue {itemCount} items. Are you sure?",$"Over {queueItemCountCheckLimit} items?",MessageBoxButton.YesNo) != MessageBoxResult.Yes)
-                {
-                    return;
-                }
-            }
-
-            List<object> items = new List<object>();
-            items.AddRange(sqlTableSyncDataFetchers[category.Value]());
-
             List<DemoCutGroup> cutData = new List<DemoCutGroup>();
             while (items.Count > 0)
             {
@@ -120,7 +99,7 @@ namespace DemoCutterGUI
                 if (CutSettings.findOtherAngles)
                 {
                     List<object> otherAngles = FindOtherAngles(mainItem, ref items);
-                    foreach(var otherItem in otherAngles)
+                    foreach (var otherItem in otherAngles)
                     {
                         DemoCut otherAngleCut = MakeDemoName(otherItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
                         originalCuts.Add(otherAngleCut);
@@ -147,19 +126,19 @@ namespace DemoCutterGUI
                         List<string> sourceCutOutputNames = new List<string>();
                         foreach (DemoCut democut in originalCuts)
                         {
-                            if(democut.visType >= bestVisType)
+                            if (democut.visType >= bestVisType)
                             {
                                 bestBaseName = democut.demoName;
                                 bestVisType = democut.visType;
                             }
                             recorderClientNums.Add(democut.demoRecorderClientNum.Value);
                             sourceCutOutputNames.Add($"{democut.GetFinalName()}{Path.GetExtension(democut.originalDemoPath)}");
-                            if(reframeClientNum != democut.reframeClientNum)
+                            if (reframeClientNum != democut.reframeClientNum)
                             {
                                 MessageBox.Show($"Wtf reframeclientnum different across group: {reframeClientNum} vs {democut.reframeClientNum}");
                             }
                         }
-                        if(bestBaseName != null)
+                        if (bestBaseName != null)
                         {
                             newGroup.demoCuts.Add(new DemoCut()
                             {
@@ -186,12 +165,71 @@ namespace DemoCutterGUI
             MessageBox.Show(cutData.Count.ToString());
         }
 
+
+
+        private Int64 queueItemCountCheckLimit = 1000;
+        private void EnqueueCurrentViewEntriesBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var category = GetActiveTabCategory();
+            if (!category.HasValue) return;
+
+            if (!sqlTableSyncDataFetchers.ContainsKey(category.Value) || !sqlTableItemsSources.ContainsKey(category.Value)) return;
+
+            Int64 itemCount = sqlTableItemsSources[category.Value].Count;
+            if (itemCount > queueItemCountCheckLimit)
+            {
+                if(MessageBox.Show($"Trying to queue {itemCount} items. Are you sure?",$"Over {queueItemCountCheckLimit} items?",MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            List<object> items = new List<object>();
+            items.AddRange(sqlTableSyncDataFetchers[category.Value]());
+
+            EnqueueCutEntries(items);
+        }
+
         private void EnqueueSelectedEntriesBtn_Click(object sender, RoutedEventArgs e)
         {
+            TabItem item = midSectionTabs.SelectedItem as TabItem;
+            if (item == null) return;
 
+            MidPanel midPanel = item.Content as MidPanel;
+            if (midPanel == null)
+            {
+                midPanel = item.GetChildOfType<MidPanel>() as MidPanel; // future proofing a bit?
+            }
+            if (midPanel == null) return;
+
+            List<object> items = new List<object>();
+            var midPanelSelectedItems = midPanel.TheGrid.SelectedItems;
+            if(midPanelSelectedItems != null)
+            {
+                foreach(var selectedItem in midPanelSelectedItems)
+                {
+                    items.Add(selectedItem);
+                }
+            }
+            EnqueueCutEntries(items);
         }
 
 
+        private void ShowEntryDemoNameBtn_Click(object sender, RoutedEventArgs e)
+        {
+            TabItem item = midSectionTabs.SelectedItem as TabItem;
+            if (item == null) return;
+
+            MidPanel midPanel = item.Content as MidPanel;
+            if (midPanel == null)
+            {
+                midPanel = item.GetChildOfType<MidPanel>() as MidPanel; // future proofing a bit?
+            }
+            if (midPanel == null) return;
+
+            var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+            MessageBox.Show(demoName?.demoName);
+        }
 
 
 
