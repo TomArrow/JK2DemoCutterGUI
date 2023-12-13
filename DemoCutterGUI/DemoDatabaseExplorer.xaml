@@ -111,7 +111,8 @@
                     <WrapPanel>
                         <CheckBox IsChecked="{Binding reframe,Mode=TwoWay}">Reframe</CheckBox>
                         <CheckBox IsChecked="{Binding findOtherAngles,Mode=TwoWay}" x:Name="findOtherAnglesCheck">Find alt angles</CheckBox>
-                        <CheckBox IsChecked="{Binding merge,Mode=TwoWay}" IsEnabled="{Binding ElementName=findOtherAnglesCheck,Path=IsChecked}">Merge</CheckBox>
+                        <CheckBox IsChecked="{Binding merge,Mode=TwoWay}" IsEnabled="{Binding ElementName=findOtherAnglesCheck,Path=IsChecked}" x:Name="mergeCheck">Merge</CheckBox>
+                        <CheckBox IsChecked="{Binding interpolate,Mode=TwoWay}" IsEnabled="{Binding ElementName=mergeCheck,Path=IsChecked}">Interpolate</CheckBox>
                     </WrapPanel>
                     <Button x:Name="EnqueueCurrentViewEntriesBtn" Click="EnqueueCurrentViewEntriesBtn_Click">Enqueue entries in current view</Button>
                     <Button x:Name="EnqueueSelectedEntriesBtn" Click="EnqueueSelectedEntriesBtn_Click">Enqueue selected entries</Button>

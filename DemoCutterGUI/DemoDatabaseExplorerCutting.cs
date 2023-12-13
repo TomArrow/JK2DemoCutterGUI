@@ -18,6 +18,8 @@ namespace DemoCutterGUI
         public bool reframe { get; set; } = true;
         public bool findOtherAngles { get; set; } = true;
         public bool merge { get; set; } = true;
+        public bool interpolate { get; set; } = true;
+        public bool zipSecondaryDemos { get; set; } = false; // Not implemented
 
     }
 
@@ -68,6 +70,110 @@ namespace DemoCutterGUI
                         }
                     }
                 }
+            } else if (item is KillSpree)
+            {
+                KillSpree spree = item as KillSpree;
+                if (spree == null) return otherItems;
+
+                HashSet<string> initialSourceDemoFiles = new HashSet<string>();
+
+                initialSourceDemoFiles.Add(spree.demoPath);
+
+                foreach (var otherItem in availableObjectPool)
+                {
+                    KillSpree otherSpree = otherItem as KillSpree;
+                    if (otherSpree == spree) continue;
+                    if(otherSpree.hash == spree.hash)
+                    {
+                        otherItems.Add(otherItem);
+                        initialSourceDemoFiles.Add(otherSpree.demoPath);
+                    }
+                }
+                foreach (var otherItem in otherItems)
+                {
+                    availableObjectPool.Remove(otherItem);
+                }
+
+                // Find other demos with the killspree
+                { 
+                    List<KillSpree> res = dbConn.Query<KillSpree>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.KillSprees].tableName} WHERE hash='{spree.hash}'") as List<KillSpree>;
+                    if (res != null)
+                    {
+                        foreach (var result in res)
+                        {
+                            if (!otherItems.Contains(result) && !result.Equals(item))
+                            {
+                                otherItems.Add(result);
+                                initialSourceDemoFiles.Add(result.demoPath);
+                            }
+                        }
+                    }
+                }
+
+                // For finding more other angles we gotta be a little bit more elaborate
+                // because by default killsprees don't include invisible kills, so we gotta look for overlaps of individual kills
+                // to get a fuller image
+                string[] killHashes = spree.killHashes?.Split('\n',StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries);
+
+                HashSet<string> newlyFoundDemoFiles = new HashSet<string>();
+                Dictionary<string, Tuple<Int64,int>> newlyFoundDemoFileTimingsAndClientNums = new Dictionary<string, Tuple<Int64, int>>();
+                foreach(string killHash in killHashes)
+                {
+                    List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE hash='{killHash}'") as List<Ret>;
+                    if (res != null)
+                    {
+                        // First find the ret entry from the same demo as the killspree, for a reference time.
+                        Int64 referenceDemoTime = 0;
+                        bool referenceFileFound = false; 
+                        foreach (var result in res)
+                        {
+                            if (result.demoPath == spree.demoPath)
+                            {
+                                referenceDemoTime = result.demoTime.Value;
+                                referenceFileFound = true;
+                                break;
+                            }
+                        }
+
+                        if (referenceFileFound)
+                        {
+                            // Now find new files
+                            foreach (var result in res)
+                            {
+                                if (!initialSourceDemoFiles.Contains(result.demoPath) && !newlyFoundDemoFiles.Contains(result.demoPath) )
+                                {
+                                    newlyFoundDemoFiles.Add(result.demoPath);
+                                    newlyFoundDemoFileTimingsAndClientNums[result.demoPath] = new Tuple<long, int>( result.demoTime.Value - referenceDemoTime,(int)result.demoRecorderClientnum.Value);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                int index = -1;
+                foreach(KeyValuePair<string, Tuple<long, int>> newDemoTiming in newlyFoundDemoFileTimingsAndClientNums)
+                {
+                    // Make a copy and change it up. We don't have a real entry since that killspree doesn't exist in that other demo file as a proper find from analyzer.
+                    // Bit dirty but should do the trick.
+                    KillSpree otherAngleKillSpree = spree.Clone<KillSpree>();
+                    otherAngleKillSpree.rowid = index--;
+                    otherAngleKillSpree.demoTime = spree.demoTime + newDemoTiming.Value.Item1;
+                    otherAngleKillSpree.demoPath = newDemoTiming.Key;
+                    otherAngleKillSpree.demoRecorderClientnum = newDemoTiming.Value.Item2;
+                    otherItems.Add(otherAngleKillSpree);
+                }
+
+                /*List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE hash='{ret.hash}'") as List<Ret>;
+                if(res != null)
+                {
+                    foreach (var result in res)
+                    {
+                        if (!otherItems.Contains(result) && !result.Equals(item))
+                        {
+                            otherItems.Add(result);
+                        }
+                    }
+                }*/
             }
 
             return otherItems;
@@ -434,6 +540,7 @@ namespace DemoCutterGUI
                 sb.Append("_");
                 sb.Append(ret.shorthash);
 
+                sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
@@ -498,6 +605,7 @@ namespace DemoCutterGUI
 
                 sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
 
+                sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
@@ -566,6 +674,7 @@ namespace DemoCutterGUI
                 sb.Append("_");
                 sb.Append(spree.shorthash);
 
+                sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
@@ -625,6 +734,8 @@ namespace DemoCutterGUI
 
                 sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
 
+                sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
+
 
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
@@ -668,50 +779,9 @@ namespace DemoCutterGUI
                 }
 
                 sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
-                /*
-                sb.Append(run.map);
-                sb.Append(!string.IsNullOrWhiteSpace(run.style) ? $"___%{run.style}" : "");
 
-                int totalMilliSeconds = (int)run.totalMilliseconds.Value;
-                int pureMilliseconds = totalMilliSeconds % 1000;
-                int tmpSeconds = totalMilliSeconds / 1000;
-                int pureSeconds = tmpSeconds % 60;
-                int minutes = tmpSeconds / 60;
+                sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
-                sb.Append("___");
-                sb.Append(minutes.ToString("000"));
-                sb.Append("-");
-                sb.Append(pureSeconds.ToString("00"));
-                sb.Append("-");
-                sb.Append(pureMilliseconds.ToString("000"));
-                sb.Append("___");
-                sb.Append(run.playerName);
-                //sb.Append(run.isNumber1 == true ? "" : "___top10");
-                sb.Append(run.isNumber1 == false && run.isTop10 == true ?  "___top10" : ""); // run.isTop10 actually just means isLogged
-                sb.Append(run.isTop10 == true ? "" : (run.isNumber1 == true ? "___unloggedWR" : "___unlogged"));
-                sb.Append(run.wasFollowed== true ? "" : (run.wasFollowedOrVisible == true ? "___thirdperson" : "___NOTvisible"));
-                sb.Append("_");
-                sb.Append(run.runnerClientNum);
-                sb.Append("_");
-                sb.Append(run.demoRecorderClientnum);
-
-                long demoTime = run.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
-                Int64 spreeStart = demoTime - run.totalMilliseconds.Value;
-                Int64 startTime = spreeStart - preBuffertime;
-                Int64 endTime = demoTime + postBufferTime;
-                Int64 earliestPossibleStart = run.lastGamestateDemoTime.GetValueOrDefault(0) + 1;
-                bool isTruncated = false;
-                Int64 truncationOffset = 0;
-                if (earliestPossibleStart > startTime)
-                {
-                    truncationOffset = earliestPossibleStart - startTime;
-                    startTime = earliestPossibleStart;
-                    isTruncated = true;
-                }
-
-                sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
-
-                */
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
