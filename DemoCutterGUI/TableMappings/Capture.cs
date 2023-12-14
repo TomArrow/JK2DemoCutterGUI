@@ -15,6 +15,18 @@ namespace DemoCutterGUI.TableMappings
 {
     class Capture : TableMapping
     {
+        public bool IsLikelySameCapture(Capture otherCapture)
+        {
+            return this.serverName == otherCapture.serverName
+                && this.redScore == otherCapture.redScore
+                && this.blueScore == otherCapture.blueScore
+                && this.redPlayerCount == otherCapture.redPlayerCount
+                && this.bluePlayerCount == otherCapture.bluePlayerCount
+                && this.capperName == otherCapture.capperName
+                && Math.Abs(this.serverTime.GetValueOrDefault(-99999) - otherCapture.serverTime.GetValueOrDefault(-99999)) <= (Int64)Constants.EVENT_VALID_MSEC // I believe this must be true because caps are registered from events and those only last a max of EVENT_VALID_MSEC, but maybe I'm wrong.
+                && this.flagTeam == otherCapture.flagTeam;
+        }
+
         public INTEGER? id { get; set; } = null;
         public TEXT? map { get; set; } = null;
         public TEXT? serverName { get; set; } = null;

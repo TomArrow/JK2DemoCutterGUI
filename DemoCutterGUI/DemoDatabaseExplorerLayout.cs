@@ -268,7 +268,8 @@ namespace DemoCutterGUI
         Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection> sqlTableItemsSources = new Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection>();
         Dictionary<DatabaseFieldInfo.FieldCategory, Func<object[]>> sqlTableSyncDataFetchers = new Dictionary<DatabaseFieldInfo.FieldCategory, Func<object[]>>();
 
-        Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>> sqlColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>>();
+        Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLColumnInfo>> sqlColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLColumnInfo>>();
+        Dictionary<DatabaseFieldInfo.FieldCategory, string> sqlPrimaryKeys = new Dictionary<DatabaseFieldInfo.FieldCategory, string>();
         //Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string,SQLite.SQLiteConnection.ColumnInfo>> sqlColumnsMapped = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string, SQLite.SQLiteConnection.ColumnInfo>>();
 
         private void InitializeLayoutDispatcher()
@@ -296,20 +297,29 @@ namespace DemoCutterGUI
 
 
                     Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>> categorizedFieldInfos = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>>();
-                    Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo[]>> unmatchedSQLColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo[]>>();
+                    Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLColumnInfo[]>> unmatchedSQLColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLColumnInfo[]>>();
 
                     int unmatchedSQLColumnCount = 0;
 
-                    foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanel in categoryPanels)
+                    sqlPrimaryKeys.Clear();
+                    unmatchedSQLColumns.Clear();
+                    sqlColumns.Clear();
+
+                    foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanel in categoryPanels)
                     {
                         associatedPanel.Value.midPanel.TheGrid.Columns.Clear();
-                        sqlColumns[associatedPanel.Key] =  dbConn.GetTableInfo(associatedPanel.Value.tableName);
-                        unmatchedSQLColumns[associatedPanel.Key] = new List<SQLite.SQLiteConnection.ColumnInfo[]>();
+                        sqlColumns[associatedPanel.Key] =  dbConn.GetTableInfoMore(associatedPanel.Value.tableName);
+                        unmatchedSQLColumns[associatedPanel.Key] = new List<SQLColumnInfo[]>();
 
-                        SQLite.SQLiteConnection.ColumnInfo lastColumn = null;
+                        SQLColumnInfo lastColumn = null;
 
-                        foreach (SQLite.SQLiteConnection.ColumnInfo sqlColumn in sqlColumns[associatedPanel.Key])
+                        foreach (SQLColumnInfo sqlColumn in sqlColumns[associatedPanel.Key])
                         {
+                            if (sqlColumn.pk > 0)
+                            {
+                                sqlPrimaryKeys[associatedPanel.Key] = sqlColumn.Name; 
+                            }
+
                             if (sqlColumn.Name.EndsWith(":1") || sqlColumn.Name.EndsWith(":2") || sqlColumn.Name.EndsWith(":3")) continue; // Lazy workaround.
 
                             bool matchFound = false;
@@ -345,7 +355,7 @@ namespace DemoCutterGUI
                             if (!matchFound)
                             {
                                 unmatchedSQLColumnCount++;
-                                unmatchedSQLColumns[associatedPanel.Key].Add(new SQLite.SQLiteConnection.ColumnInfo[] { sqlColumn, lastColumn });
+                                unmatchedSQLColumns[associatedPanel.Key].Add(new SQLColumnInfo[] { sqlColumn, lastColumn });
                             }
 
                             lastColumn = sqlColumn;
@@ -357,11 +367,11 @@ namespace DemoCutterGUI
                         StringBuilder sb = new StringBuilder();
                         sb.Append("Unmatched SQL columns:\n");
                         sb.Append("Would you like to copy this error message to the clipboard? Click Yes to do so.\n");
-                        SQLite.SQLiteConnection.ColumnInfo lastColumn = null;
+                        SQLColumnInfo lastColumn = null;
                         foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> associatedPanel in categoryPanels)
                         {
                             sb.Append($"\n\nCategory {associatedPanel.Key}:\n");
-                            foreach (SQLite.SQLiteConnection.ColumnInfo[] sqlColumn in unmatchedSQLColumns[associatedPanel.Key])
+                            foreach (SQLColumnInfo[] sqlColumn in unmatchedSQLColumns[associatedPanel.Key])
                             {
                                 if (sqlColumn[1] == null)
                                 {
@@ -371,14 +381,14 @@ namespace DemoCutterGUI
 
                                     sb.Append($"\tAfter: ");
                                     sb.Append($"{sqlColumn[1].Name}");
-                                    if (sqlColumn[1].notnull > 0)
+                                    if (sqlColumn[1].notnull)
                                     {
                                         sb.Append($" NOT NULL");
                                     }
                                     sb.Append($"\n");
                                 }
                                 sb.Append($"{sqlColumn[0].Name}");
-                                if (sqlColumn[0].notnull > 0)
+                                if (sqlColumn[0].notnull)
                                 {
                                     sb.Append($" NOT NULL");
                                 }
@@ -481,13 +491,19 @@ namespace DemoCutterGUI
 
             StringBuilder sb = new StringBuilder();
 
+            string primaryKeyASPrefix = "";
+            if (sqlPrimaryKeys.ContainsKey(category))
+            {
+                primaryKeyASPrefix = $"`{sqlPrimaryKeys[category]}` AS ";
+            }
+
             if (countQuery)
             {
                 sb.Append($"SELECT COUNT(*) FROM {categoryPanels[category].tableName}");
             }
             else
             {
-                sb.Append($"SELECT ROWID,* FROM {categoryPanels[category].tableName}");
+                sb.Append($"SELECT {primaryKeyASPrefix}ROWID,* FROM {categoryPanels[category].tableName}");
             }
 
             DatabaseFieldInfo[] activeFields = fieldMan.getActiveFields();

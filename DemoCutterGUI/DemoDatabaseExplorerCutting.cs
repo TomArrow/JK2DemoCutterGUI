@@ -70,7 +70,60 @@ namespace DemoCutterGUI
                         }
                     }
                 }
-            } else if (item is KillSpree)
+            } else if (item is Capture)
+            {
+                Capture cap = item as Capture;
+                if (cap == null) return otherItems;
+
+                // Possible database methods of searching:
+                // 1. Find kills near the cap. Find other demos that have these kills and build other demo list.
+                // or 2. Find captures roughly around same serverTime with same capper name, same server, same team
+                // 
+                // 1 isn't bad but maybe overkill and 2 is kinda more elegant overall. But maybe I can just do both?
+
+                
+                foreach(var otherItem in availableObjectPool)
+                {
+                    Capture otherCap = otherItem as Capture;
+                    if (otherCap == cap) continue;
+                    if (otherCap.IsLikelySameCapture(cap))
+                    {
+                        otherItems.Add(otherItem);
+                    }
+                }
+                foreach (var otherItem in otherItems)
+                {
+                    availableObjectPool.Remove(otherItem);
+                }
+
+                string serverNameSearch = cap.serverName.Replace("'","''");
+                string capperNameSearch = cap.capperName.Replace("'","''");
+                List<Capture> res = dbConn.Query<Capture>($"SELECT id AS ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Captures].tableName} WHERE " +
+                    $"serverName='{serverNameSearch}' AND " +
+                    $"redScore={cap.redScore.Value} AND " +
+                    $"blueScore={cap.blueScore.Value} AND " +
+                    $"redPlayerCount={cap.redPlayerCount.Value} AND " +
+                    $"bluePlayerCount={cap.bluePlayerCount.Value} AND " +
+                    $"capperName='{capperNameSearch}' AND " +
+                    $"flagTeam={cap.flagTeam.Value} AND " +
+                    $"(serverTime-{cap.serverTime})<{Constants.EVENT_VALID_MSEC}") as List<Capture>;
+                if(res != null)
+                {
+                    foreach (var result in res)
+                    {
+                        if (!otherItems.Contains(result) && !result.Equals(item))
+                        {
+                            otherItems.Add(result);
+                        }
+                    }
+                }
+
+                // So, this all works decent enough now, but what if we have a demo that doesn't have the cap, but has some PART of the hold time in it?
+                // Shouldn't we then maybe search for kills during the hold time and correlate them to other demos?
+                // Or do we just let that be a TODO?
+
+            }
+            else if (item is KillSpree)
             {
                 KillSpree spree = item as KillSpree;
                 if (spree == null) return otherItems;
