@@ -100,13 +100,13 @@ namespace DemoCutterGUI
                 string capperNameSearch = cap.capperName.Replace("'","''");
                 List<Capture> res = dbConn.Query<Capture>($"SELECT id AS ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Captures].tableName} WHERE " +
                     $"serverName='{serverNameSearch}' AND " +
-                    $"redScore={cap.redScore.Value} AND " +
+                    $"redScore={cap.redScore.Value} AND " +     // This whole block is just the SQL version of IsLikelySameCapture()
                     $"blueScore={cap.blueScore.Value} AND " +
                     $"redPlayerCount={cap.redPlayerCount.Value} AND " +
                     $"bluePlayerCount={cap.bluePlayerCount.Value} AND " +
                     $"capperName='{capperNameSearch}' AND " +
                     $"flagTeam={cap.flagTeam.Value} AND " +
-                    $"(serverTime-{cap.serverTime})<{Constants.EVENT_VALID_MSEC}") as List<Capture>;
+                    $"ABS(serverTime-{cap.serverTime})<{Constants.EVENT_VALID_MSEC}") as List<Capture>;
                 if(res != null)
                 {
                     foreach (var result in res)
