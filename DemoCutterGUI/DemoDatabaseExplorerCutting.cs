@@ -27,6 +27,9 @@ namespace DemoCutterGUI
     public partial class DemoDatabaseExplorer
     {
 
+
+        const int LAUGHS_CUT_PRE_TIME = 10000;
+
         CuttingSettings CutSettings = new CuttingSettings();
         partial void Constructor2()
         {
@@ -164,7 +167,7 @@ namespace DemoCutterGUI
                     $"capperName='{capperNameSearch}' AND " +
                     $"capperClientNum={cap.capperClientNum.Value} AND " +
                     $"flagTeam={cap.flagTeam.Value} AND " +
-                    $"ABS(serverTime-{cap.serverTime})<{Constants.EVENT_VALID_MSEC}") as List<Capture>;
+                    $"ABS(serverTime-{cap.serverTime})<={Constants.EVENT_VALID_MSEC}") as List<Capture>;
                 if(res != null)
                 {
                     foreach (var result in res)
@@ -185,18 +188,92 @@ namespace DemoCutterGUI
                 // Shouldn't we then maybe search for kills during the hold time and correlate them to other demos?
                 // Or do we just let that be a TODO?
                 // Nvm, here we go:
-                Dictionary<string, Tuple<long, int>> newlyFoundDemoFileTimingsAndClientNums = FindOtherDemosBasedOnKillTimes(longestCapAngle.demoPath, cap.demoTime.Value-cap.flagHoldTime.Value, cap.demoTime.Value, initialSourceDemoFiles);
+                Dictionary<string, Tuple<long, int>> newlyFoundDemoFileTimingsAndClientNums = FindOtherDemosBasedOnKillTimes(longestCapAngle.demoPath, longestCapAngle.demoTime.Value- longestCapAngle.flagHoldTime.Value, longestCapAngle.demoTime.Value, initialSourceDemoFiles);
                 int index = -1;
                 foreach (KeyValuePair<string, Tuple<long, int>> newDemoTiming in newlyFoundDemoFileTimingsAndClientNums)
                 {
                     // Make a copy and change it up. We don't have a real entry since that killspree doesn't exist in that other demo file as a proper find from analyzer.
                     // Bit dirty but should do the trick.
-                    Capture otherAngleKillSpree = longestCapAngle.Clone<Capture>();
-                    otherAngleKillSpree.rowid = index--;
-                    otherAngleKillSpree.demoTime = longestCapAngle.demoTime + newDemoTiming.Value.Item1;
-                    otherAngleKillSpree.demoPath = newDemoTiming.Key;
-                    otherAngleKillSpree.demoRecorderClientnum = newDemoTiming.Value.Item2;
-                    otherItems.Add(otherAngleKillSpree);
+                    Capture otherAngleCapture = longestCapAngle.Clone<Capture>();
+                    otherAngleCapture.rowid = index--;
+                    otherAngleCapture.demoTime = longestCapAngle.demoTime + newDemoTiming.Value.Item1;
+                    otherAngleCapture.demoPath = newDemoTiming.Key;
+                    otherAngleCapture.demoRecorderClientnum = newDemoTiming.Value.Item2;
+                    otherItems.Add(otherAngleCapture);
+                }
+            } else if (item is Laughs)
+            {
+                Laughs laughs = item as Laughs;
+                if (laughs == null) return otherItems;
+
+                HashSet<string> initialSourceDemoFiles = new HashSet<string>();
+                initialSourceDemoFiles.Add(laughs.demoPath);
+                Laughs longestLaughAngle = laughs;
+                
+                foreach(var otherItem in availableObjectPool)
+                {
+                    Laughs otherLaugh = otherItem as Laughs;
+                    if (otherLaugh == laughs) continue;
+                    if (otherLaugh.IsLikelySameLaugh(laughs))
+                    {
+                        otherItems.Add(otherItem);
+                        initialSourceDemoFiles.Add(otherLaugh.demoPath);
+                        if (otherLaugh.duration.Value > longestLaughAngle.duration.Value)
+                        {
+                            longestLaughAngle = otherLaugh;
+                        }
+                    }
+                }
+                foreach (var otherItem in otherItems)
+                {
+                    availableObjectPool.Remove(otherItem);
+                }
+
+                /*
+                 this.serverName == otherLaughs.serverName
+                && this.laughs == otherLaughs.laughs
+                && this.laughCount == otherLaughs.laughCount
+                //&& this.chatlog == otherLaughs.chatlog
+                && Math.Abs(this.serverTime.GetValueOrDefault(-99999) - otherLaughs.serverTime.GetValueOrDefault(-99999)) <= 1000L // Chats are reliable commands, so in theory this is uncertain since we can potentially get a print many seconds later due to extreme loss of packets. But it will simply have to do.
+                && Math.Abs(this.duration.GetValueOrDefault(-99999) - otherLaughs.duration.GetValueOrDefault(-99999)) <= 1000L
+                 */
+                string serverNameSearch = laughs.serverName.Replace("'","''");
+                string laughsSearch = laughs.laughs.Replace("'","''");
+                List<Laughs> res = dbConn.Query<Laughs>($"SELECT id AS ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Laughs].tableName} WHERE " +
+                    $"serverName='{serverNameSearch}' AND " +
+                    $"laughs='{laughsSearch}' AND " +       // This whole block is just the SQL version of IsLikelySameLaugh()
+                    $"ABS(serverTime-{laughs.serverTime})<=1000 AND " +
+                    $"ABS(duration-{laughs.duration})<=1000") as List<Laughs>;
+                if(res != null)
+                {
+                    foreach (var result in res)
+                    {
+                        if (!otherItems.Contains(result) && !result.Equals(item) && laughs.IsLikelySameLaugh(result))
+                        {
+                            otherItems.Add(result);
+                            initialSourceDemoFiles.Add(result.demoPath);
+                            if (result.duration.Value > longestLaughAngle.duration.Value)
+                            {
+                                longestLaughAngle = result;
+                            }
+                        }
+                    }
+                }
+
+                // So, this all works decent enough now, but what if we have a demo that has laughs in spectator mode but we have another demo from the player's perspective that doesn't have the laughs?
+                // So cross reference some kills over the duration of the laughs (and a bit before) and find other angles that way.
+                Dictionary<string, Tuple<long, int>> newlyFoundDemoFileTimingsAndClientNums = FindOtherDemosBasedOnKillTimes(longestLaughAngle.demoPath, longestLaughAngle.demoTime.Value- longestLaughAngle.duration.Value- LAUGHS_CUT_PRE_TIME, longestLaughAngle.demoTime.Value, initialSourceDemoFiles);
+                int index = -1;
+                foreach (KeyValuePair<string, Tuple<long, int>> newDemoTiming in newlyFoundDemoFileTimingsAndClientNums)
+                {
+                    // Make a copy and change it up. We don't have a real entry since that killspree doesn't exist in that other demo file as a proper find from analyzer.
+                    // Bit dirty but should do the trick.
+                    Laughs otherAngleLaughs = longestLaughAngle.Clone<Laughs>();
+                    otherAngleLaughs.rowid = index--;
+                    otherAngleLaughs.demoTime = longestLaughAngle.demoTime + newDemoTiming.Value.Item1;
+                    otherAngleLaughs.demoPath = newDemoTiming.Key;
+                    otherAngleLaughs.demoRecorderClientnum = newDemoTiming.Value.Item2;
+                    otherItems.Add(otherAngleLaughs);
                 }
             } else if (item is DefragRun)
             {
@@ -240,7 +317,7 @@ namespace DemoCutterGUI
                     $"playerName='{playerNameSearch}' AND " +
                     $"runnerClientNum={run.runnerClientNum.Value} AND " +
                     (styleSearch is null ? "" : $"style='{styleSearch}' AND ") +
-                    $"ABS(serverTime-{run.serverTime})<1000") as List<DefragRun>;
+                    $"ABS(serverTime-{run.serverTime})<=1000") as List<DefragRun>;
                 if(res != null)
                 {
                     foreach (var result in res)
@@ -365,7 +442,7 @@ namespace DemoCutterGUI
         private void EnqueueCutEntries(List<object> items)
         {
             List<DemoCutGroup> cutData = new List<DemoCutGroup>();
-            HashSet<string> originalDemoPaths = new HashSet<string>();
+            HashSet<string> originalDemoOutputPaths = new HashSet<string>();
             while (items.Count > 0)
             {
                 DemoCutGroup newGroup = new DemoCutGroup();
@@ -376,14 +453,14 @@ namespace DemoCutterGUI
                 newGroup.demoCuts.Add(mainCut);
                 items.Remove(mainItem);
 
-                if (originalDemoPaths.Contains(mainCut.GetFinalName()))
+                if (originalDemoOutputPaths.Contains(mainCut.GetFinalName()))
                 {
                     // Avoid duplicates (can happen if a demo was analyzed multiple times by accident). Not the most elegant solution, maybe improve someday.
                     // Might break if we ever do custom file naming schemes
                     // Could break on stuff like multiple caps by the same person with the same time (unlikely but theoretically possible)
                     continue; 
                 }
-                originalDemoPaths.Add(mainCut.GetFinalName());
+                originalDemoOutputPaths.Add(mainCut.GetFinalName());
 
                 if (CutSettings.reframe)
                 {
@@ -401,14 +478,14 @@ namespace DemoCutterGUI
                     foreach (var otherItem in otherAngles)
                     {
                         DemoCut otherAngleCut = MakeDemoName(otherItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
-                        if (originalDemoPaths.Contains(otherAngleCut.GetFinalName()))
+                        if (originalDemoOutputPaths.Contains(otherAngleCut.GetFinalName()))
                         {
                             // Avoid duplicates (can happen if a demo was analyzed multiple times by accident). Not the most elegant solution, maybe improve someday.
                             // Might break if we ever do custom file naming schemes
                             // Could break on stuff like multiple caps by the same person with the same time (unlikely but theoretically possible)
                             continue;
                         }
-                        originalDemoPaths.Add(otherAngleCut.GetFinalName());
+                        originalDemoOutputPaths.Add(otherAngleCut.GetFinalName());
                         originalCuts.Add(otherAngleCut);
                         newGroup.demoCuts.Add(otherAngleCut);
                         if (CutSettings.reframe)
@@ -944,7 +1021,6 @@ namespace DemoCutterGUI
                 return retVal;
             } else if(entry is Laughs)
             {
-                const int LAUGHS_CUT_PRE_TIME = 10000;
                 Laughs laughs = entry as Laughs;
                 if (laughs == null) return null;
                 
@@ -958,7 +1034,7 @@ namespace DemoCutterGUI
                 sb.Append(laughs.laughCount);
                 sb.Append("_");
                 sb.Append(laughs.duration);
-                sb.Append(laughs.laughs.Substring(0,70));
+                sb.Append(laughs.laughs.Length > 70 ? laughs.laughs.Substring(0,70) : laughs.laughs);
                 sb.Append(laughs.laughs.Length > 70 ? "--" : "");
                 sb.Append("_");
                 sb.Append(DemoCut.recorderClientNumPlaceHolder);

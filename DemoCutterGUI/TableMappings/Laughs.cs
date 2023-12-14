@@ -11,6 +11,16 @@ namespace DemoCutterGUI.TableMappings
 {
     class Laughs : TableMapping
     {
+        public bool IsLikelySameLaugh(Laughs otherLaughs)
+        {
+            return this.serverName == otherLaughs.serverName
+                && this.laughs == otherLaughs.laughs
+                && this.laughCount == otherLaughs.laughCount
+                //&& this.chatlog == otherLaughs.chatlog
+                && Math.Abs(this.serverTime.GetValueOrDefault(-99999) - otherLaughs.serverTime.GetValueOrDefault(-99999)) <= 1000L // Chats are reliable commands, so in theory this is uncertain since we can potentially get a print many seconds later due to extreme loss of packets. But it will simply have to do.
+                && Math.Abs(this.duration.GetValueOrDefault(-99999) - otherLaughs.duration.GetValueOrDefault(-99999)) <= 1000L;
+
+        }
         public INTEGER? id { get; set; } = null;
         public TEXT? map { get; set; } = null;
         public TEXT? serverName { get; set; } = null;
