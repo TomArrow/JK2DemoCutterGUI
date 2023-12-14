@@ -33,7 +33,56 @@ namespace DemoCutterGUI
             cuttingGroupBox.DataContext = CutSettings;
         }
 
+        private Dictionary<string, Tuple<Int64, int>> FindOtherDemosBasedOnKillTimes(string referenceDemo, Int64 demoTimeRangeStart, Int64 demoTimeRangeEnd, in HashSet<string> existingDemos)
+        {
+            HashSet<string> killHashes = new HashSet<string>();
 
+            string cleanDemoPath = referenceDemo.Replace("'","''");
+            List<Ret> resRef = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE demoTime>={demoTimeRangeStart} AND demoTime<={demoTimeRangeEnd} AND demoPath='{cleanDemoPath}'") as List<Ret>;
+            if(resRef != null)
+            {
+                foreach(Ret ret in resRef)
+                {
+                    killHashes.Add(ret.hash);
+                }
+            }
+
+            HashSet<string> newlyFoundDemoFiles = new HashSet<string>();
+            Dictionary<string, Tuple<Int64, int>> newlyFoundDemoFileTimingsAndClientNums = new Dictionary<string, Tuple<Int64, int>>();
+            foreach (string killHash in killHashes)
+            {
+                List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE hash='{killHash}'") as List<Ret>;
+                if (res != null)
+                {
+                    // First find the ret entry from the same demo as the killspree, for a reference time.
+                    Int64 referenceDemoTime = 0;
+                    bool referenceFileFound = false;
+                    foreach (var result in res)
+                    {
+                        if (result.demoPath == referenceDemo)
+                        {
+                            referenceDemoTime = result.demoTime.Value;
+                            referenceFileFound = true;
+                            break;
+                        }
+                    }
+
+                    if (referenceFileFound)
+                    {
+                        // Now find new files
+                        foreach (var result in res)
+                        {
+                            if (!existingDemos.Contains(result.demoPath) && !newlyFoundDemoFiles.Contains(result.demoPath))
+                            {
+                                newlyFoundDemoFiles.Add(result.demoPath);
+                                newlyFoundDemoFileTimingsAndClientNums[result.demoPath] = new Tuple<long, int>(result.demoTime.Value - referenceDemoTime, (int)result.demoRecorderClientnum.Value);
+                            }
+                        }
+                    }
+                }
+            }
+            return newlyFoundDemoFileTimingsAndClientNums;
+        }
 
 
         private List<object> FindOtherAngles(object item,ref List<object> availableObjectPool)
@@ -45,7 +94,7 @@ namespace DemoCutterGUI
                 Ret ret = item as Ret;
                 if (ret == null) return otherItems;
 
-                foreach(var otherItem in availableObjectPool)
+                foreach (var otherItem in availableObjectPool)
                 {
                     Ret otherRet = otherItem as Ret;
                     if (otherRet == ret) continue;
@@ -81,6 +130,9 @@ namespace DemoCutterGUI
                 // 
                 // 1 isn't bad but maybe overkill and 2 is kinda more elegant overall. But maybe I can just do both?
 
+                HashSet<string> initialSourceDemoFiles = new HashSet<string>();
+                initialSourceDemoFiles.Add(cap.demoPath);
+                Capture longestCapAngle = cap;
                 
                 foreach(var otherItem in availableObjectPool)
                 {
@@ -89,6 +141,11 @@ namespace DemoCutterGUI
                     if (otherCap.IsLikelySameCapture(cap))
                     {
                         otherItems.Add(otherItem);
+                        initialSourceDemoFiles.Add(otherCap.demoPath);
+                        if (otherCap.flagHoldTime.Value > longestCapAngle.flagHoldTime.Value)
+                        {
+                            longestCapAngle = otherCap;
+                        }
                     }
                 }
                 foreach (var otherItem in otherItems)
@@ -105,6 +162,7 @@ namespace DemoCutterGUI
                     $"redPlayerCount={cap.redPlayerCount.Value} AND " +
                     $"bluePlayerCount={cap.bluePlayerCount.Value} AND " +
                     $"capperName='{capperNameSearch}' AND " +
+                    $"capperClientNum={cap.capperClientNum.Value} AND " +
                     $"flagTeam={cap.flagTeam.Value} AND " +
                     $"ABS(serverTime-{cap.serverTime})<{Constants.EVENT_VALID_MSEC}") as List<Capture>;
                 if(res != null)
@@ -114,6 +172,11 @@ namespace DemoCutterGUI
                         if (!otherItems.Contains(result) && !result.Equals(item) && cap.IsLikelySameCapture(result))
                         {
                             otherItems.Add(result);
+                            initialSourceDemoFiles.Add(result.demoPath);
+                            if (result.flagHoldTime.Value > longestCapAngle.flagHoldTime.Value)
+                            {
+                                longestCapAngle = result;
+                            }
                         }
                     }
                 }
@@ -121,6 +184,73 @@ namespace DemoCutterGUI
                 // So, this all works decent enough now, but what if we have a demo that doesn't have the cap, but has some PART of the hold time in it?
                 // Shouldn't we then maybe search for kills during the hold time and correlate them to other demos?
                 // Or do we just let that be a TODO?
+                // Nvm, here we go:
+                Dictionary<string, Tuple<long, int>> newlyFoundDemoFileTimingsAndClientNums = FindOtherDemosBasedOnKillTimes(longestCapAngle.demoPath, cap.demoTime.Value-cap.flagHoldTime.Value, cap.demoTime.Value, initialSourceDemoFiles);
+                int index = -1;
+                foreach (KeyValuePair<string, Tuple<long, int>> newDemoTiming in newlyFoundDemoFileTimingsAndClientNums)
+                {
+                    // Make a copy and change it up. We don't have a real entry since that killspree doesn't exist in that other demo file as a proper find from analyzer.
+                    // Bit dirty but should do the trick.
+                    Capture otherAngleKillSpree = longestCapAngle.Clone<Capture>();
+                    otherAngleKillSpree.rowid = index--;
+                    otherAngleKillSpree.demoTime = longestCapAngle.demoTime + newDemoTiming.Value.Item1;
+                    otherAngleKillSpree.demoPath = newDemoTiming.Key;
+                    otherAngleKillSpree.demoRecorderClientnum = newDemoTiming.Value.Item2;
+                    otherItems.Add(otherAngleKillSpree);
+                }
+            } else if (item is DefragRun)
+            {
+                DefragRun run = item as DefragRun;
+                if (run == null) return otherItems;
+
+                // Possible database methods of searching:
+                // 1. Find kills near the cap. Find other demos that have these kills and build other demo list.
+                // or 2. Find captures roughly around same serverTime with same capper name, same server, same team
+                // 
+                // 1 isn't bad but maybe overkill and 2 is kinda more elegant overall. But maybe I can just do both?
+
+                
+                foreach(var otherItem in availableObjectPool)
+                {
+                    DefragRun otherRun = otherItem as DefragRun;
+                    if (otherRun == run) continue;
+                    if (otherRun.IsLikelySameRun(run))
+                    {
+                        otherItems.Add(otherItem);
+                    }
+                }
+                foreach (var otherItem in otherItems)
+                {
+                    availableObjectPool.Remove(otherItem);
+                }
+                /*
+                 this.serverName == otherRun.serverName
+                && this.totalMilliseconds == otherRun.totalMilliseconds
+                && this.playerName == otherRun.playerName
+                && this.runnerClientNum == otherRun.runnerClientNum
+                && this.style == otherRun.style
+                && Math.Abs(this.serverTime.GetValueOrDefault(-99999) - otherRun.serverTime.GetValueOrDefault(-99999)) <= 1000L
+                 */
+                string serverNameSearch = run.serverName.Replace("'","''");
+                string playerNameSearch = run.playerName.Replace("'","''");
+                string styleSearch = run.style?.Replace("'","''");
+                List<DefragRun> res = dbConn.Query<DefragRun>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.DefragRuns].tableName} WHERE " +
+                    $"serverName='{serverNameSearch}' AND " +
+                    $"totalMilliseconds={run.totalMilliseconds.Value} AND " +     // This whole block is just the SQL version of IsLikelySameRun()
+                    $"playerName='{playerNameSearch}' AND " +
+                    $"runnerClientNum={run.runnerClientNum.Value} AND " +
+                    (styleSearch is null ? "" : $"style='{styleSearch}' AND ") +
+                    $"ABS(serverTime-{run.serverTime})<1000") as List<DefragRun>;
+                if(res != null)
+                {
+                    foreach (var result in res)
+                    {
+                        if (!otherItems.Contains(result) && !result.Equals(item) && run.IsLikelySameRun(result))
+                        {
+                            otherItems.Add(result);
+                        }
+                    }
+                }
 
             }
             else if (item is KillSpree)
@@ -235,6 +365,7 @@ namespace DemoCutterGUI
         private void EnqueueCutEntries(List<object> items)
         {
             List<DemoCutGroup> cutData = new List<DemoCutGroup>();
+            HashSet<string> originalDemoPaths = new HashSet<string>();
             while (items.Count > 0)
             {
                 DemoCutGroup newGroup = new DemoCutGroup();
@@ -244,6 +375,15 @@ namespace DemoCutterGUI
                 originalCuts.Add(mainCut);
                 newGroup.demoCuts.Add(mainCut);
                 items.Remove(mainItem);
+
+                if (originalDemoPaths.Contains(mainCut.GetFinalName()))
+                {
+                    // Avoid duplicates (can happen if a demo was analyzed multiple times by accident). Not the most elegant solution, maybe improve someday.
+                    // Might break if we ever do custom file naming schemes
+                    // Could break on stuff like multiple caps by the same person with the same time (unlikely but theoretically possible)
+                    continue; 
+                }
+                originalDemoPaths.Add(mainCut.GetFinalName());
 
                 if (CutSettings.reframe)
                 {
@@ -261,6 +401,14 @@ namespace DemoCutterGUI
                     foreach (var otherItem in otherAngles)
                     {
                         DemoCut otherAngleCut = MakeDemoName(otherItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+                        if (originalDemoPaths.Contains(otherAngleCut.GetFinalName()))
+                        {
+                            // Avoid duplicates (can happen if a demo was analyzed multiple times by accident). Not the most elegant solution, maybe improve someday.
+                            // Might break if we ever do custom file naming schemes
+                            // Could break on stuff like multiple caps by the same person with the same time (unlikely but theoretically possible)
+                            continue;
+                        }
+                        originalDemoPaths.Add(otherAngleCut.GetFinalName());
                         originalCuts.Add(otherAngleCut);
                         newGroup.demoCuts.Add(otherAngleCut);
                         if (CutSettings.reframe)

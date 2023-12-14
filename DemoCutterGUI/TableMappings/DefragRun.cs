@@ -14,6 +14,16 @@ namespace DemoCutterGUI.TableMappings
 {
     class DefragRun : TableMapping
     {
+        public bool IsLikelySameRun(DefragRun otherRun)
+        {
+            return this.serverName == otherRun.serverName
+                && this.totalMilliseconds == otherRun.totalMilliseconds
+                && this.playerName == otherRun.playerName
+                && this.runnerClientNum == otherRun.runnerClientNum
+                && this.style == otherRun.style
+                && Math.Abs(this.serverTime.GetValueOrDefault(-99999) - otherRun.serverTime.GetValueOrDefault(-99999)) <= 1000L; // Defrag runs are usually registered via prints, which are reliable commands, so in theory this is uncertain since we can potentially get a print many seconds later due to extreme loss of packets. But it will simply have to do.
+                
+        }
         public TEXT? map { get; set; } = null;
         public TEXT? serverName { get; set; } = null;
         public TEXT? serverNameStripped { get; set; } = null;

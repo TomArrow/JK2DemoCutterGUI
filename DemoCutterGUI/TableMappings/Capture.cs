@@ -23,6 +23,7 @@ namespace DemoCutterGUI.TableMappings
                 && this.redPlayerCount == otherCapture.redPlayerCount
                 && this.bluePlayerCount == otherCapture.bluePlayerCount
                 && this.capperName == otherCapture.capperName
+                && this.capperClientNum == otherCapture.capperClientNum
                 && Math.Abs(this.serverTime.GetValueOrDefault(-99999) - otherCapture.serverTime.GetValueOrDefault(-99999)) <= (Int64)Constants.EVENT_VALID_MSEC // I believe this must be true because caps are registered from events and those only last a max of EVENT_VALID_MSEC, but maybe I'm wrong.
                 && this.flagTeam == otherCapture.flagTeam;
         }
