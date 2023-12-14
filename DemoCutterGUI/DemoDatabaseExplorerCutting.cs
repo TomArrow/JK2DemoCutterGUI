@@ -111,7 +111,7 @@ namespace DemoCutterGUI
                 {
                     foreach (var result in res)
                     {
-                        if (!otherItems.Contains(result) && !result.Equals(item))
+                        if (!otherItems.Contains(result) && !result.Equals(item) && cap.IsLikelySameCapture(result))
                         {
                             otherItems.Add(result);
                         }
