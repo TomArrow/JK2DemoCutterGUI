@@ -23,6 +23,9 @@ namespace DemoCutterGUI
         public bool interpolate { get; set; } = true;
         public bool zipSecondaryDemos { get; set; } = false; // Not implemented
 
+        public bool zipThirdPersons { get; set; } = true;
+        public bool zipSimpleReframes { get; set; } = true;
+        public bool zipKeepSimpleReframesIfNoMain { get; set; } = true;
     }
 
 
@@ -538,6 +541,31 @@ namespace DemoCutterGUI
                         }
                     }
                 }
+
+                if(CutSettings.zipThirdPersons || CutSettings.zipSimpleReframes)
+                {
+                    bool mainAngleExists = false;
+                    foreach (var cut in newGroup.demoCuts)
+                    {
+                        if(cut.visType == VisibilityType.Followed)
+                        {
+                            mainAngleExists = true;
+                        }
+                    }
+                    foreach (var cut in newGroup.demoCuts)
+                    {
+                        if(cut.type == DemoCutType.CUT && CutSettings.zipThirdPersons && cut.visType < VisibilityType.Followed)
+                        {
+                            cut.zipAndDelete = true;
+                        }
+                        if(cut.type == DemoCutType.REFRAME && CutSettings.zipSimpleReframes && !(CutSettings.zipKeepSimpleReframesIfNoMain && !mainAngleExists))
+                        {
+                            cut.zipAndDelete = true;
+                        }
+                    }
+
+                }
+
                 cutData.Add(newGroup);
             }
             //foreach(var item in items)
@@ -645,6 +673,7 @@ namespace DemoCutterGUI
 
             foreach(DemoCutGroup item in items)
             {
+                List<string> filesToZipAndDelete = new List<string>();
                 foreach(DemoCut cut in item.demoCuts)
                 {
                     if(cut.type == DemoCutType.CUT)
@@ -654,13 +683,22 @@ namespace DemoCutterGUI
                         sb.Append($"\"{cut.GetFinalName()}\" ");
                         sb.Append($"{cut.demoTimeStart} ");
                         sb.Append($"{cut.demoTimeEnd}\n");
+                        if (cut.zipAndDelete)
+                        {
+                            filesToZipAndDelete.Add($"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPath)}");
+                        }
                     } else if (cut.type == DemoCutType.REFRAME && cut.reframeClientNum.GetValueOrDefault(-1) >= 0 && cut.reframeClientNum.GetValueOrDefault(-1) < 64) // TODO dynamic for demo type?
                     {
                         sb.Append("DemoReframer ");
                         sb.Append($"\"{cut.originalDemoPath}\" ");
                         sb.Append($"\"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPath)}\" ");
                         sb.Append($"{cut.reframeClientNum}\n");
-                    }else if (cut.type == DemoCutType.MERGE && cut.originalDemoPathsForMerge.Length > 0) 
+                        if (cut.zipAndDelete)
+                        {
+                            filesToZipAndDelete.Add($"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPath)}");
+                        }
+                    }
+                    else if (cut.type == DemoCutType.MERGE && cut.originalDemoPathsForMerge.Length > 0) 
                     {
                         sb.Append("DemoMerger ");
                         sb.Append($"\"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPathsForMerge[0])}\" ");
@@ -673,7 +711,20 @@ namespace DemoCutterGUI
                             sb.Append($"-r {cut.reframeClientNum}");
                         }
                         sb.Append($"\n");
+                        if (cut.zipAndDelete)
+                        {
+                            filesToZipAndDelete.Add($"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPathsForMerge[0])}");
+                        }
                     }
+                }
+                if(filesToZipAndDelete.Count > 0)
+                {
+                    sb.Append($"7za a lessImportantDemoAngles.7z");
+                    foreach (string file in filesToZipAndDelete)
+                    {
+                        sb.Append($" \"{file}\"");
+                    }
+                    sb.Append($" -mx9 -myx9 -sdel\n");
                 }
                 sb.Append($"\n\n");
             }
@@ -802,6 +853,7 @@ namespace DemoCutterGUI
             public int[] demoRecorderClientNums = null;
             public Int64 demoTimeStart;
             public Int64 demoTimeEnd;
+            public bool zipAndDelete = false;
             public string GetFinalName()
             {
                 switch (type)

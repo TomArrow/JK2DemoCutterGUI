@@ -114,6 +114,15 @@
                         <CheckBox IsChecked="{Binding merge,Mode=TwoWay}" IsEnabled="{Binding ElementName=findOtherAnglesCheck,Path=IsChecked}" x:Name="mergeCheck">Merge</CheckBox>
                         <CheckBox IsChecked="{Binding interpolate,Mode=TwoWay}" IsEnabled="{Binding ElementName=mergeCheck,Path=IsChecked}">Interpolate</CheckBox>
                     </WrapPanel>
+                    <GroupBox Header="Zip and delete" ToolTip="Which files should be zipped and deleted to reduce clutter">
+                        <StackPanel>
+                            <WrapPanel>
+                                <CheckBox IsChecked="{Binding zipThirdPersons,Mode=TwoWay}" ToolTip="Any cuts of an event that were recorded from someone else's angle">Thirdpersons</CheckBox>
+                                <CheckBox IsChecked="{Binding zipSimpleReframes,Mode=TwoWay}" ToolTip="Simple reframes (doesn't affect merges which are never deleted)">Reframes</CheckBox>
+                                <CheckBox IsChecked="{Binding zipKeepSimpleReframesIfNoMain,Mode=TwoWay}" ToolTip="If no angle is available directly from the player's perspective, keep the simple reframes in addition to the merge">Keep reframes if no main</CheckBox>
+                            </WrapPanel>
+                        </StackPanel>
+                    </GroupBox>
                     <Button x:Name="EnqueueCurrentViewEntriesBtn" Click="EnqueueCurrentViewEntriesBtn_Click">Enqueue entries in current view</Button>
                     <Button x:Name="EnqueueSelectedEntriesBtn" Click="EnqueueSelectedEntriesBtn_Click">Enqueue selected entries</Button>
                     <Button x:Name="ShowEntryDemoNameBtn" Click="ShowEntryDemoNameBtn_Click">Preview file name</Button>
