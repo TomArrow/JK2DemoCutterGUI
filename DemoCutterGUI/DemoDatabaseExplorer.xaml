@@ -117,6 +117,12 @@
                     <Button x:Name="EnqueueCurrentViewEntriesBtn" Click="EnqueueCurrentViewEntriesBtn_Click">Enqueue entries in current view</Button>
                     <Button x:Name="EnqueueSelectedEntriesBtn" Click="EnqueueSelectedEntriesBtn_Click">Enqueue selected entries</Button>
                     <Button x:Name="ShowEntryDemoNameBtn" Click="ShowEntryDemoNameBtn_Click">Preview file name</Button>
+                    <WrapPanel>
+                        <Label Margin="3 0 3 0"  Padding="0">Queued items:</Label>
+                        <TextBlock x:Name="cutQueueItemCountText" Margin="0" Padding="0" Text="{Binding Count}"></TextBlock>
+                    </WrapPanel>
+                    <Button x:Name="clearCutQueueBtn" Click="clearCutQueueBtn_Click">Clear cut queue</Button>
+                    <Button x:Name="generateCutScriptBtn" Click="generateCutScriptBtn_Click">Generate cut script</Button>
                 </StackPanel>
             </GroupBox>
         </StackPanel>

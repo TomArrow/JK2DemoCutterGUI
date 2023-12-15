@@ -1,8 +1,10 @@
 ﻿using BFF.DataVirtualizingCollection.DataVirtualizingCollection;
 using DemoCutterGUI.DatabaseExplorerElements;
 using DemoCutterGUI.TableMappings;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -27,13 +29,14 @@ namespace DemoCutterGUI
     public partial class DemoDatabaseExplorer
     {
 
-
+        ObservableCollection<DemoCutGroup> demoCutsQueue = new ObservableCollection<DemoCutGroup>();
         const int LAUGHS_CUT_PRE_TIME = 10000;
 
         CuttingSettings CutSettings = new CuttingSettings();
         partial void Constructor2()
         {
             cuttingGroupBox.DataContext = CutSettings;
+            cutQueueItemCountText.DataContext = demoCutsQueue;
         }
 
         private Dictionary<string, Tuple<Int64, int>> FindOtherDemosBasedOnKillTimes(string referenceDemo, Int64 demoTimeRangeStart, Int64 demoTimeRangeEnd, in HashSet<string> existingDemos)
@@ -544,9 +547,12 @@ namespace DemoCutterGUI
             //var demoName = MakeDemoName(midPanel.TheGrid.SelectedItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
             //MessageBox.Show(demoName?.demoName);
 
-
-
-            MessageBox.Show(cutData.Count.ToString());
+            foreach(var item in cutData)
+            {
+                demoCutsQueue.Add(item);
+            }
+            //demoCutsQueue.AddRange(cutData);
+            //MessageBox.Show(cutData.Count.ToString());
         }
 
 
@@ -616,7 +622,64 @@ namespace DemoCutterGUI
         }
 
 
+        private void clearCutQueueBtn_Click(object sender, RoutedEventArgs e)
+        {
+            demoCutsQueue.Clear();
+        }
 
+        private void generateCutScriptBtn_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Filter = "Shell script (*.sh)|*.sh|Windows batch script (*.bat)|*.bat";
+            if(sfd.ShowDialog() == true)
+            {
+                File.WriteAllText(sfd.FileName, GenerateCutScriptText());
+            }
+        }
+
+        private string GenerateCutScriptText()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            DemoCutGroup[] items = demoCutsQueue.ToArray();
+
+            foreach(DemoCutGroup item in items)
+            {
+                foreach(DemoCut cut in item.demoCuts)
+                {
+                    if(cut.type == DemoCutType.CUT)
+                    {
+                        sb.Append("DemoCutter ");
+                        sb.Append($"\"{cut.originalDemoPath}\" ");
+                        sb.Append($"\"{cut.GetFinalName()}\" ");
+                        sb.Append($"{cut.demoTimeStart} ");
+                        sb.Append($"{cut.demoTimeEnd}\n");
+                    } else if (cut.type == DemoCutType.REFRAME && cut.reframeClientNum.GetValueOrDefault(-1) >= 0 && cut.reframeClientNum.GetValueOrDefault(-1) < 64) // TODO dynamic for demo type?
+                    {
+                        sb.Append("DemoReframer ");
+                        sb.Append($"\"{cut.originalDemoPath}\" ");
+                        sb.Append($"\"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPath)}\" ");
+                        sb.Append($"{cut.reframeClientNum}\n");
+                    }else if (cut.type == DemoCutType.MERGE && cut.originalDemoPathsForMerge.Length > 0) 
+                    {
+                        sb.Append("DemoMerger ");
+                        sb.Append($"\"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPathsForMerge[0])}\" ");
+                        foreach (string originalDemo in cut.originalDemoPathsForMerge)
+                        {
+                            sb.Append($"\"{originalDemo}\" ");
+                        }
+                        if(cut.reframeClientNum.GetValueOrDefault(-1) >= 0 && cut.reframeClientNum.GetValueOrDefault(-1) < 64) // TODO dynamic for demo type?
+                        {
+                            sb.Append($"-r {cut.reframeClientNum}");
+                        }
+                        sb.Append($"\n");
+                    }
+                }
+                sb.Append($"\n\n");
+            }
+
+            return sb.ToString();
+        }
 
 
 
