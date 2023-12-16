@@ -34,6 +34,7 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? countDooms { get; set; } = null;
         public INTEGER? countExplosions { get; set; } = null;
         public INTEGER? countThirdPersons { get; set; } = null;
+        public INTEGER? countInvisibles { get; set; } = null;
         public TEXT? nearbyPlayers { get; set; } = null;
         public INTEGER? nearbyPlayerCount { get; set; } = null;
         public INTEGER? demoRecorderClientnum { get; set; } = null;

@@ -25,6 +25,7 @@ namespace DemoCutterGUI
 
         public bool zipThirdPersons { get; set; } = true;
         public bool zipSimpleReframes { get; set; } = true;
+        public bool zipFakeFindAngles { get; set; } = true;
         public bool zipKeepSimpleReframesIfNoMain { get; set; } = true;
     }
 
@@ -536,7 +537,8 @@ namespace DemoCutterGUI
                                 demoRecorderClientNums = recorderClientNums.ToArray(),
                                 demoName = $"{bestBaseName}_merge",
                                 type = DemoCutType.MERGE,
-                                reframeClientNum = reframeClientNum
+                                reframeClientNum = reframeClientNum,
+                                interpolate = CutSettings.interpolate
                             });
                         }
                     }
@@ -555,6 +557,10 @@ namespace DemoCutterGUI
                     foreach (var cut in newGroup.demoCuts)
                     {
                         if(cut.type == DemoCutType.CUT && CutSettings.zipThirdPersons && cut.visType < VisibilityType.Followed)
+                        {
+                            cut.zipAndDelete = true;
+                        }
+                        if(cut.type == DemoCutType.CUT && CutSettings.zipFakeFindAngles && cut.isFakeFind)
                         {
                             cut.zipAndDelete = true;
                         }
@@ -709,6 +715,10 @@ namespace DemoCutterGUI
                         if(cut.reframeClientNum.GetValueOrDefault(-1) >= 0 && cut.reframeClientNum.GetValueOrDefault(-1) < 64) // TODO dynamic for demo type?
                         {
                             sb.Append($"-r {cut.reframeClientNum}");
+                            if (cut.interpolate)
+                            {
+                                sb.Append($" -i -I");
+                            }
                         }
                         sb.Append($"\n");
                         if (cut.zipAndDelete)
@@ -854,6 +864,8 @@ namespace DemoCutterGUI
             public Int64 demoTimeStart;
             public Int64 demoTimeEnd;
             public bool zipAndDelete = false;
+            public bool isFakeFind = false;
+            public bool interpolate = false;
             public string GetFinalName()
             {
                 switch (type)
@@ -882,6 +894,11 @@ namespace DemoCutterGUI
             // BIG TODO: Do the meta events as well!
 
             DemoCut retVal = new DemoCut() { type = DemoCutType.CUT };
+
+            if(!(entry is null))
+            {
+                retVal.isFakeFind = (entry as TableMapping).IsCopiedEntry;
+            }
 
             if(entry is Ret)
             {
@@ -1041,13 +1058,14 @@ namespace DemoCutterGUI
                 sb.Append((int)spree.maxSpeedTargets);
                 sb.Append("ups");
                 sb.Append(spree.countThirdPersons > 0 ? $"___thirdperson{spree.countThirdPersons}" : "");
+                sb.Append(spree.countInvisibles > 0 ? $"___invisibles{spree.countInvisibles}" : "");
                 sb.Append("___");
                 sb.Append(spree.killerClientNum);
                 sb.Append("_");
                 sb.Append(DemoCut.recorderClientNumPlaceHolder);
                 retVal.demoRecorderClientNum = (int?)spree.demoRecorderClientnum;
 
-                retVal.visType = spree.countThirdPersons > 0 ? VisibilityType.Thirdperson : VisibilityType.Followed;
+                retVal.visType = spree.countInvisibles > 0 ? (spree.countInvisibles >= spree.countKills ? VisibilityType.Invisible : VisibilityType.PartiallyInvisible) : ( spree.countThirdPersons > 0 ? VisibilityType.Thirdperson : VisibilityType.Followed);
 
                 long demoTime = spree.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
                 Int64 spreeStart = demoTime - spree.duration.Value;

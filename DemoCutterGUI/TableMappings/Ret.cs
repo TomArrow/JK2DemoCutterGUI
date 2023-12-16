@@ -48,6 +48,7 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? boostCountAttacker { get; set; } = null;
         public INTEGER? boostCountVictim { get; set; } = null;
         public BOOLEAN? projectileWasAirborne { get; set; } = null;
+        public BOOLEAN? sameFrameRet { get; set; } = null;
         public REAL? baseFlagDistance { get; set; } = null;
         public INTEGER? headJumps { get; set; } = null;
         public INTEGER? specialJumps { get; set; } = null;

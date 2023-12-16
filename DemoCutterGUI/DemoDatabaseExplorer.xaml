@@ -119,6 +119,7 @@
                             <WrapPanel>
                                 <CheckBox IsChecked="{Binding zipThirdPersons,Mode=TwoWay}" ToolTip="Any cuts of an event that were recorded from someone else's angle">Thirdpersons</CheckBox>
                                 <CheckBox IsChecked="{Binding zipSimpleReframes,Mode=TwoWay}" ToolTip="Simple reframes (doesn't affect merges which are never deleted)">Reframes</CheckBox>
+                                <CheckBox IsChecked="{Binding zipFakeFindAngles,Mode=TwoWay}" ToolTip="Angles that are found by cross-referencing various demos in various ways, may not even contain the actual angle required but could serve as a fill in">"Fake" found angles</CheckBox>
                                 <CheckBox IsChecked="{Binding zipKeepSimpleReframesIfNoMain,Mode=TwoWay}" ToolTip="If no angle is available directly from the player's perspective, keep the simple reframes in addition to the merge">Keep reframes if no main</CheckBox>
                             </WrapPanel>
                         </StackPanel>
