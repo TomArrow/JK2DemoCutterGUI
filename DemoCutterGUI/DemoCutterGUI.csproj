@@ -11,6 +11,10 @@
     <DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFont.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFont.cs" />
 <Compile Include="..\ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFontModule.cs" Link="ext\BitmapFontLibrary\BitmapFontLibrary\BitmapFontModule.cs" />

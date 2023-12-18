@@ -21,6 +21,7 @@ namespace DemoCutterGUI
         public bool findOtherAngles { get; set; } = true;
         public bool merge { get; set; } = true;
         public bool interpolate { get; set; } = true;
+        public bool discardProcessedDemos { get; set; } = true;
         public bool zipSecondaryDemos { get; set; } = false; // Not implemented
 
         public bool zipThirdPersons { get; set; } = true;
@@ -460,6 +461,12 @@ namespace DemoCutterGUI
                 newGroup.demoCuts.Add(mainCut);
                 items.Remove(mainItem);
 
+                if(CutSettings.discardProcessedDemos && mainCut.isPreProcessed)
+                {
+                    // This is a demo that was already reframed/merged before. We don't wanna use those as source usually.
+                    continue;
+                }
+
                 if (originalDemoOutputPaths.Contains(mainCut.GetFinalName()))
                 {
                     // Avoid duplicates (can happen if a demo was analyzed multiple times by accident). Not the most elegant solution, maybe improve someday.
@@ -485,6 +492,12 @@ namespace DemoCutterGUI
                     foreach (var otherItem in otherAngles)
                     {
                         DemoCut otherAngleCut = MakeDemoName(otherItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+
+                        if (CutSettings.discardProcessedDemos && otherAngleCut.isPreProcessed)
+                        {
+                            // This is a demo that was already reframed/merged before. We don't wanna use those as source usually.
+                            continue;
+                        }
                         if (originalDemoOutputPaths.Contains(otherAngleCut.GetFinalName()))
                         {
                             // Avoid duplicates (can happen if a demo was analyzed multiple times by accident). Not the most elegant solution, maybe improve someday.
@@ -667,11 +680,11 @@ namespace DemoCutterGUI
             sfd.Filter = "Shell script (*.sh)|*.sh|Windows batch script (*.bat)|*.bat";
             if(sfd.ShowDialog() == true)
             {
-                File.WriteAllText(sfd.FileName, GenerateCutScriptText());
+                File.WriteAllText(sfd.FileName, GenerateCutScriptText(Path.GetExtension(sfd.FileName).Equals(".sh",StringComparison.InvariantCultureIgnoreCase)));
             }
         }
 
-        private string GenerateCutScriptText()
+        private string GenerateCutScriptText(bool linuxShellScript)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -680,15 +693,23 @@ namespace DemoCutterGUI
             foreach(DemoCutGroup item in items)
             {
                 List<string> filesToZipAndDelete = new List<string>();
-                foreach(DemoCut cut in item.demoCuts)
+                DemoCut[] cuts = item.demoCuts.ToArray();
+                Array.Sort(cuts, (a,b)=> { return (int)a.type - (int)b.type; });
+                DemoCutType lastCutType = DemoCutType.CUT;
+                foreach(DemoCut cut in cuts)
                 {
-                    if(cut.type == DemoCutType.CUT)
+                    if (cut.type != lastCutType && linuxShellScript)
+                    {
+                        sb.Append("wait\n");
+                    }
+                    lastCutType = cut.type;
+                    if (cut.type == DemoCutType.CUT)
                     {
                         sb.Append("DemoCutter ");
                         sb.Append($"\"{cut.originalDemoPath}\" ");
                         sb.Append($"\"{cut.GetFinalName()}\" ");
                         sb.Append($"{cut.demoTimeStart} ");
-                        sb.Append($"{cut.demoTimeEnd}\n");
+                        sb.Append($"{cut.demoTimeEnd}");
                         if (cut.zipAndDelete)
                         {
                             filesToZipAndDelete.Add($"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPath)}");
@@ -698,7 +719,7 @@ namespace DemoCutterGUI
                         sb.Append("DemoReframer ");
                         sb.Append($"\"{cut.originalDemoPath}\" ");
                         sb.Append($"\"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPath)}\" ");
-                        sb.Append($"{cut.reframeClientNum}\n");
+                        sb.Append($"{cut.reframeClientNum}");
                         if (cut.zipAndDelete)
                         {
                             filesToZipAndDelete.Add($"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPath)}");
@@ -720,21 +741,40 @@ namespace DemoCutterGUI
                                 sb.Append($" -i -I");
                             }
                         }
-                        sb.Append($"\n");
+                        //sb.Append($"\n");
                         if (cut.zipAndDelete)
                         {
                             filesToZipAndDelete.Add($"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPathsForMerge[0])}");
                         }
                     }
+                    if (linuxShellScript)
+                    {
+                        sb.Append(" & \n");
+                    } else
+                    {
+                        sb.Append("\n");
+                    }
                 }
                 if(filesToZipAndDelete.Count > 0)
                 {
+                    if (linuxShellScript)
+                    {
+                        sb.Append("wait\n");
+                    }
                     sb.Append($"7za a lessImportantDemoAngles.7z");
                     foreach (string file in filesToZipAndDelete)
                     {
                         sb.Append($" \"{file}\"");
                     }
-                    sb.Append($" -mx9 -myx9 -sdel\n");
+                    sb.Append($" -mx9 -myx9 -sdel");
+                    if (linuxShellScript)
+                    {
+                        sb.Append(" & \n");
+                    }
+                    else
+                    {
+                        sb.Append("\n");
+                    }
                 }
                 sb.Append($"\n\n");
             }
@@ -866,6 +906,7 @@ namespace DemoCutterGUI
             public bool zipAndDelete = false;
             public bool isFakeFind = false;
             public bool interpolate = false;
+            public bool isPreProcessed = false;
             public string GetFinalName()
             {
                 switch (type)
@@ -886,6 +927,15 @@ namespace DemoCutterGUI
         {
             public List<DemoCut> demoCuts = new List<DemoCut>();
 
+        }
+
+        private bool IsSpreePreProcessed(KillSpree spree)
+        {
+            string demoPathSearch = spree.demoPath.Replace("'","''");
+            //List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE demoPath='{demoPathSearch}' AND serverName='^1^7^1FAKE ^4^7^4DEMO'") as List<Ret>;
+            //return res.Count > 0;
+            int res = dbConn.ExecuteScalar<int>($"SELECT COUNT(*) FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE demoPath='{demoPathSearch}' AND serverName!='^1^7^1FAKE ^4^7^4DEMO'");
+            return res == 0; // Sadly we have to do this reversed (make sure there is not a single kill WITHOUT fake demo), because serverName is not saved per kill angle but per kill so if the reframe is analyzed first, .... yikes. We need to change this up, but in the meantime this will have to do. We also should save serverName directly in the killspree.
         }
 
         private DemoCut MakeDemoName(object entry, int preBuffertime, int postBufferTime)
@@ -952,6 +1002,7 @@ namespace DemoCutterGUI
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
+                retVal.isPreProcessed = ret.serverName == "^1^7^1FAKE ^4^7^4DEMO";
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
@@ -1017,6 +1068,7 @@ namespace DemoCutterGUI
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
+                retVal.isPreProcessed = cap.serverName == "^1^7^1FAKE ^4^7^4DEMO";
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
@@ -1087,6 +1139,7 @@ namespace DemoCutterGUI
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
+                retVal.isPreProcessed = IsSpreePreProcessed(spree);
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
@@ -1148,6 +1201,7 @@ namespace DemoCutterGUI
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
 
+                retVal.isPreProcessed = run.serverName == "^1^7^1FAKE ^4^7^4DEMO";
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
@@ -1192,6 +1246,7 @@ namespace DemoCutterGUI
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
+                retVal.isPreProcessed = laughs.serverName == "^1^7^1FAKE ^4^7^4DEMO";
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;

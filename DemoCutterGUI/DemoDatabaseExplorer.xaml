@@ -113,6 +113,7 @@
                         <CheckBox IsChecked="{Binding findOtherAngles,Mode=TwoWay}" x:Name="findOtherAnglesCheck">Find alt angles</CheckBox>
                         <CheckBox IsChecked="{Binding merge,Mode=TwoWay}" IsEnabled="{Binding ElementName=findOtherAnglesCheck,Path=IsChecked}" x:Name="mergeCheck">Merge</CheckBox>
                         <CheckBox IsChecked="{Binding interpolate,Mode=TwoWay}" IsEnabled="{Binding ElementName=mergeCheck,Path=IsChecked}">Interpolate</CheckBox>
+                        <CheckBox IsChecked="{Binding discardProcessedDemos,Mode=TwoWay}" ToolTip="Demos that were already reframed or merged get FAKE DEMO as servername. We don't wanna re-process them, so use this checkbox for that.">Discard processed demos</CheckBox>
                     </WrapPanel>
                     <GroupBox Header="Zip and delete" ToolTip="Which files should be zipped and deleted to reduce clutter">
                         <StackPanel>

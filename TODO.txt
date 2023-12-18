@@ -1,1 +1,2 @@
 - Cross-demo killspree finding? Or find killsprees even if invisible parts? hm.
+- Don't use any demo with "^1^7^1FAKE ^4^7^4DEMO" as server name as source, ever!

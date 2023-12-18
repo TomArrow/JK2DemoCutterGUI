@@ -27,8 +27,14 @@ namespace DemoCutterGUI
             InitializeComponent();
             //combineCutter.Show();
             demoDatabaseExplorer.Show();
+            demoDatabaseExplorer.Closed += SubWindow_Closed;
             this.WindowState = WindowState.Minimized;
             this.Close();
+        }
+
+        private void SubWindow_Closed(object sender, EventArgs e)
+        {
+            Application.Current.Shutdown();
         }
     }
 }

@@ -8,11 +8,13 @@ using INTEGER = System.Int64;
 using TEXT = System.String;
 using REAL = System.Double;
 using TIMESTAMP = System.Int64;
+using SQLite;
 
 namespace DemoCutterGUI.TableMappings
 {
     class KillSpree : TableMapping
     {
+
         public TEXT? hash { get; set; } = null;
         public TEXT? shorthash { get; set; } = null;
         public INTEGER? maxDelay { get; set; } = null;
