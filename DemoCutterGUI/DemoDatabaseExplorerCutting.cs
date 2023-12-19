@@ -929,9 +929,9 @@ namespace DemoCutterGUI
 
         }
 
-        private bool IsSpreePreProcessed(KillSpree spree)
+        private bool IsDemoPreProcessedByKills(string demoPath)
         {
-            string demoPathSearch = spree.demoPath.Replace("'","''");
+            string demoPathSearch = demoPath.Replace("'","''");
             //List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE demoPath='{demoPathSearch}' AND serverName='^1^7^1FAKE ^4^7^4DEMO'") as List<Ret>;
             //return res.Count > 0;
             int res = dbConn.ExecuteScalar<int>($"SELECT COUNT(*) FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE demoPath='{demoPathSearch}' AND serverName!='^1^7^1FAKE ^4^7^4DEMO'");
@@ -1002,7 +1002,8 @@ namespace DemoCutterGUI
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
-                retVal.isPreProcessed = ret.serverName == "^1^7^1FAKE ^4^7^4DEMO";
+                //retVal.isPreProcessed = ret.serverName == "^1^7^1FAKE ^4^7^4DEMO";
+                retVal.isPreProcessed = IsDemoPreProcessedByKills(ret.demoPath);
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
@@ -1139,7 +1140,7 @@ namespace DemoCutterGUI
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
-                retVal.isPreProcessed = IsSpreePreProcessed(spree);
+                retVal.isPreProcessed = IsDemoPreProcessedByKills(spree.demoPath);
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
