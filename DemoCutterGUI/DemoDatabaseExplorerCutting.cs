@@ -627,7 +627,7 @@ namespace DemoCutterGUI
                     List<DemoCut> reframeDemoCuts = new List<DemoCut>();
                     foreach (DemoCut cut in newGroup.demoCuts)
                     {
-                        if (cut.type == DemoCutType.CUT)
+                        if (cut.type == DemoCutType.CUT && cut.reframeClientNum != cut.demoRecorderClientNum) // Don't reframe if it was recorded by the relevant player himself. There is no way that there was any switching away from the angle then.
                         {
                             reframeDemoCuts.Add(new DemoCut()
                             {
