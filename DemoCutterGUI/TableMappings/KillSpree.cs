@@ -20,6 +20,8 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? maxDelay { get; set; } = null;
         public INTEGER? maxDelayActual { get; set; } = null;
         public TEXT? map { get; set; } = null;
+        public TEXT? serverName { get; set; } = null; // Exists if demodatabaseproperty  serverNameInKillSpree is 1. (newer versions of highlight finder)
+        public TEXT? serverNameStripped { get; set; } = null; // Exists if demodatabaseproperty  serverNameInKillSpree is 1. (newer versions of highlight finder)
         public TEXT? killerName { get; set; } = null;
         public TEXT? killerNameStripped { get; set; } = null;
         public TEXT? victimNames { get; set; } = null;

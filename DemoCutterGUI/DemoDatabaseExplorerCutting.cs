@@ -450,7 +450,7 @@ namespace DemoCutterGUI
         private void EnqueueCutEntries(List<object> items)
         {
             List<DemoCutGroup> cutData = new List<DemoCutGroup>();
-            HashSet<string> originalDemoOutputPaths = new HashSet<string>();
+            Dictionary<string,Tuple<DemoCut, DemoCutGroup>> originalDemoOutputPaths = new Dictionary<string, Tuple<DemoCut, DemoCutGroup>>();
             while (items.Count > 0)
             {
                 DemoCutGroup newGroup = new DemoCutGroup();
@@ -467,25 +467,73 @@ namespace DemoCutterGUI
                     continue;
                 }
 
-                if (originalDemoOutputPaths.Contains(mainCut.GetFinalName()))
+                if (originalDemoOutputPaths.ContainsKey(mainCut.GetFinalName(true)))
                 {
                     // Avoid duplicates (can happen if a demo was analyzed multiple times by accident). Not the most elegant solution, maybe improve someday.
                     // Might break if we ever do custom file naming schemes
                     // Could break on stuff like multiple caps by the same person with the same time (unlikely but theoretically possible)
-                    continue; 
-                }
-                originalDemoOutputPaths.Add(mainCut.GetFinalName());
 
-                if (CutSettings.reframe)
-                {
-                    newGroup.demoCuts.Add(new DemoCut()
+                    if (!CutSettings.findOtherAngles)
                     {
-                        originalDemoPath = $"{mainCut.GetFinalName()}{Path.GetExtension(mainCut.originalDemoPath)}",
-                        demoName = $"{mainCut.GetFinalName()}_reframe{mainCut.reframeClientNum}",
-                        type = DemoCutType.REFRAME,
-                        reframeClientNum = mainCut.reframeClientNum
-                    });
+                        Tuple<DemoCut, DemoCutGroup> previousCut = originalDemoOutputPaths[mainCut.GetFinalName(true)];
+                        bool removeOld = false;
+
+                        // Compare the two.
+                        if (demoMetaCache.Count > 0)
+                        {
+                            if (demoMetaCache.ContainsKey(mainCut.originalDemoPath) && demoMetaCache.ContainsKey(previousCut.Item1.originalDemoPath))
+                            {
+                                if(demoMetaCache[previousCut.Item1.originalDemoPath].fileSize >= demoMetaCache[mainCut.originalDemoPath].fileSize)
+                                {
+                                    // The current demo is probably a smaller cut (or just plain dupe) out of the other one before. Discard it.
+                                    if (previousCut.Item1.demoCutTruncationOffset.HasValue && (!mainCut.demoCutTruncationOffset.HasValue || previousCut.Item1.demoCutTruncationOffset > mainCut.demoCutTruncationOffset))
+                                    {
+                                        MessageBox.Show($"{previousCut.Item1.originalDemoPath} is bigger or equal in size to {mainCut.originalDemoPath} but is MORE truncated, so using the latter. WEIRD!");
+                                        removeOld = true;
+                                    } else
+                                    {
+                                        continue;
+                                    }
+                                } else
+                                {
+                                    removeOld = true;
+                                }
+                            } else
+                            {
+                                MessageBox.Show($"{mainCut.originalDemoPath} or {previousCut.Item1.originalDemoPath} not found in demoMetaCache! WEIRD!");
+                                continue;
+                            }
+                        } else
+                        {
+                            // We don't really know which is better necessarily, forget about it.
+                            // Bad solution. We could check which of the demoPaths has more finds etc., but ultimately people should use a current version of 
+                            // HighlightFinder anyway.
+                            // We can do a quick and dirty check if one is more truncated...
+                            if (previousCut.Item1.demoCutTruncationOffset.HasValue && (!mainCut.demoCutTruncationOffset.HasValue || previousCut.Item1.demoCutTruncationOffset > mainCut.demoCutTruncationOffset))
+                            {
+                                removeOld = true;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+
+                        if (removeOld)
+                        {
+                            // Current demo is probably the main demo and the old one was a cut. Discard the old one.
+                            cutData.Remove(previousCut.Item2);
+                            originalDemoOutputPaths.Remove(previousCut.Item1.GetFinalName(true));
+                        }
+
+                    } else
+                    {
+                        MessageBox.Show($"originalDemoOutputPaths already contains {mainCut.GetFinalName(true)}, but finding other angles is active. Should have been found. WEIRD! Discarding new duplicate.");
+                        continue;
+                    }
                 }
+                originalDemoOutputPaths.Add(mainCut.GetFinalName(true), new Tuple<DemoCut, DemoCutGroup>( mainCut, newGroup));
+
                 if (CutSettings.findOtherAngles)
                 {
                     List<object> otherAngles = FindOtherAngles(mainItem, ref items);
@@ -498,66 +546,138 @@ namespace DemoCutterGUI
                             // This is a demo that was already reframed/merged before. We don't wanna use those as source usually.
                             continue;
                         }
-                        if (originalDemoOutputPaths.Contains(otherAngleCut.GetFinalName()))
+                        if (originalDemoOutputPaths.ContainsKey(otherAngleCut.GetFinalName(true)))
                         {
                             // Avoid duplicates (can happen if a demo was analyzed multiple times by accident). Not the most elegant solution, maybe improve someday.
                             // Might break if we ever do custom file naming schemes
-                            // Could break on stuff like multiple caps by the same person with the same time (unlikely but theoretically possible)
-                            continue;
+                            // Could break on stuff like multiple caps by the same person with the same time (unlikely but theoretically possible?)
+
+                            Tuple<DemoCut, DemoCutGroup> previousCut = originalDemoOutputPaths[otherAngleCut.GetFinalName(true)];
+                            bool removeOld = false;
+
+                            // Compare the two.
+                            if (demoMetaCache.Count > 0)
+                            {
+                                if (demoMetaCache.ContainsKey(otherAngleCut.originalDemoPath) && demoMetaCache.ContainsKey(previousCut.Item1.originalDemoPath))
+                                {
+                                    if (demoMetaCache[previousCut.Item1.originalDemoPath].fileSize >= demoMetaCache[otherAngleCut.originalDemoPath].fileSize)
+                                    {
+                                        // The current demo is probably a smaller cut (or just plain dupe) of the other one before. Discard it.
+                                        if (previousCut.Item1.demoCutTruncationOffset.HasValue && (!otherAngleCut.demoCutTruncationOffset.HasValue || previousCut.Item1.demoCutTruncationOffset > otherAngleCut.demoCutTruncationOffset))
+                                        {
+                                            MessageBox.Show($"{previousCut.Item1.originalDemoPath} is bigger or equal in size to {otherAngleCut.originalDemoPath} but is MORE truncated, so using the latter. WEIRD!");
+                                            removeOld = true;
+                                        }
+                                        else
+                                        {
+                                            continue;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        removeOld = true;
+                                    }
+                                }
+                                else
+                                {
+                                    MessageBox.Show($"{otherAngleCut.originalDemoPath} or {previousCut.Item1.originalDemoPath} not found in demoMetaCache! WEIRD!");
+                                    continue;
+                                }
+                            }
+                            else
+                            {
+                                // We don't really know which is better, forget about it.
+                                // Bad solution. We could check which of the demoPaths has more finds etc., but ultimately people should use a current version of 
+                                // HighlightFinder anyway.
+                                // We can do a quick and dirty check if one is more truncated...
+                                if (previousCut.Item1.demoCutTruncationOffset.HasValue && (!otherAngleCut.demoCutTruncationOffset.HasValue || previousCut.Item1.demoCutTruncationOffset > otherAngleCut.demoCutTruncationOffset))
+                                {
+                                    removeOld = true;
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }
+
+                            if (removeOld)
+                            {
+                                // Current demo is probably the main demo and the old one was a cut. Discard the old one.
+                                if (newGroup != previousCut.Item2)
+                                {
+                                    MessageBox.Show($"{previousCut.Item1.GetFinalName(true)} is a duplicate but not part of the current group!! WEIRD!!");
+                                    continue;
+                                }
+                                else
+                                {
+                                    newGroup.demoCuts.Remove(previousCut.Item1);
+                                    originalDemoOutputPaths.Remove(previousCut.Item1.GetFinalName(true));
+                                }
+                            }
+
                         }
-                        originalDemoOutputPaths.Add(otherAngleCut.GetFinalName());
+                        originalDemoOutputPaths.Add(otherAngleCut.GetFinalName(true), new Tuple<DemoCut, DemoCutGroup>(otherAngleCut, newGroup));
                         originalCuts.Add(otherAngleCut);
                         newGroup.demoCuts.Add(otherAngleCut);
-                        if (CutSettings.reframe)
+                    }
+                    
+                }
+                if (CutSettings.reframe)
+                {
+                    List<DemoCut> reframeDemoCuts = new List<DemoCut>();
+                    foreach (DemoCut cut in newGroup.demoCuts)
+                    {
+                        if (cut.type == DemoCutType.CUT)
                         {
-                            newGroup.demoCuts.Add(new DemoCut()
+                            reframeDemoCuts.Add(new DemoCut()
                             {
-                                originalDemoPath = $"{otherAngleCut.GetFinalName()}{Path.GetExtension(otherAngleCut.originalDemoPath)}",
-                                demoName = $"{otherAngleCut.GetFinalName()}_reframe{otherAngleCut.reframeClientNum}",
+                                originalDemoPath = $"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPath)}",
+                                demoName = $"{cut.GetFinalName()}_reframe{cut.reframeClientNum}",
                                 type = DemoCutType.REFRAME,
-                                reframeClientNum = otherAngleCut.reframeClientNum
+                                reframeClientNum = cut.reframeClientNum
                             });
                         }
                     }
-                    if (CutSettings.merge && originalCuts.Count > 1)
-                    {
-                        int? reframeClientNum = originalCuts[0].reframeClientNum;
+                    newGroup.demoCuts.AddRange(reframeDemoCuts);
+                }
+                if (CutSettings.merge && originalCuts.Count > 1)
+                {
+                    int? reframeClientNum = originalCuts[0].reframeClientNum;
 
-                        // Find main reference name to use.
-                        string bestBaseName = null;
-                        VisibilityType bestVisType = VisibilityType.Invisible;
-                        List<int> recorderClientNums = new List<int>();
-                        List<string> sourceCutOutputNames = new List<string>();
-                        foreach (DemoCut democut in originalCuts)
+                    // Find main reference name to use.
+                    string bestBaseName = null;
+                    VisibilityType bestVisType = VisibilityType.Invisible;
+                    List<int> recorderClientNums = new List<int>();
+                    List<string> sourceCutOutputNames = new List<string>();
+                    foreach (DemoCut democut in originalCuts)
+                    {
+                        if (democut.visType >= bestVisType)
                         {
-                            if (democut.visType >= bestVisType)
-                            {
-                                bestBaseName = democut.demoName;
-                                bestVisType = democut.visType;
-                            }
-                            recorderClientNums.Add(democut.demoRecorderClientNum.Value);
-                            sourceCutOutputNames.Add($"{democut.GetFinalName()}{Path.GetExtension(democut.originalDemoPath)}");
-                            if (reframeClientNum != democut.reframeClientNum)
-                            {
-                                MessageBox.Show($"Wtf reframeclientnum different across group: {reframeClientNum} vs {democut.reframeClientNum}");
-                            }
+                            bestBaseName = democut.demoName;
+                            bestVisType = democut.visType;
                         }
-                        if (bestBaseName != null)
+                        recorderClientNums.Add(democut.demoRecorderClientNum.Value);
+                        sourceCutOutputNames.Add($"{democut.GetFinalName()}{Path.GetExtension(democut.originalDemoPath)}");
+                        if (reframeClientNum != democut.reframeClientNum)
                         {
-                            newGroup.demoCuts.Add(new DemoCut()
-                            {
-                                originalDemoPathsForMerge = sourceCutOutputNames.ToArray(),
-                                demoRecorderClientNums = recorderClientNums.ToArray(),
-                                demoName = $"{bestBaseName}_merge",
-                                type = DemoCutType.MERGE,
-                                reframeClientNum = reframeClientNum,
-                                interpolate = CutSettings.interpolate
-                            });
+                            MessageBox.Show($"Wtf reframeclientnum different across group: {reframeClientNum} vs {democut.reframeClientNum}");
                         }
+                    }
+                    if (bestBaseName != null)
+                    {
+                        newGroup.demoCuts.Add(new DemoCut()
+                        {
+                            originalDemoPathsForMerge = sourceCutOutputNames.ToArray(),
+                            demoRecorderClientNums = recorderClientNums.ToArray(),
+                            demoName = $"{bestBaseName}_merge",
+                            type = DemoCutType.MERGE,
+                            reframeClientNum = reframeClientNum,
+                            interpolate = CutSettings.interpolate
+                        });
                     }
                 }
 
-                if(CutSettings.zipThirdPersons || CutSettings.zipSimpleReframes)
+                if (CutSettings.zipThirdPersons || CutSettings.zipSimpleReframes)
                 {
                     bool mainAngleExists = false;
                     foreach (var cut in newGroup.demoCuts)
@@ -893,6 +1013,7 @@ namespace DemoCutterGUI
 
         class DemoCut {
             public const string recorderClientNumPlaceHolder = "#@#@#@#recorderClientNum#@#@#@#";
+            public const string truncationPlaceHolder = "#@#@#@#demoCutTrim#@#@#@#";
             public DemoCutType type;
             public VisibilityType visType;
             public string[] originalDemoPathsForMerge = null;
@@ -900,6 +1021,7 @@ namespace DemoCutterGUI
             public string demoName;
             public int? reframeClientNum = null;
             public int? demoRecorderClientNum = null;
+            public Int64? demoCutTruncationOffset = null;
             public int[] demoRecorderClientNums = null;
             public Int64 demoTimeStart;
             public Int64 demoTimeEnd;
@@ -907,18 +1029,18 @@ namespace DemoCutterGUI
             public bool isFakeFind = false;
             public bool interpolate = false;
             public bool isPreProcessed = false;
-            public string GetFinalName()
+            public string GetFinalName(bool genericTrim = false)
             {
                 switch (type)
                 {
                     default:
                         return "WEIRD DEMONAME WTF SPECIFY THE TAPE YOU ANIMAL";
                     case DemoCutType.CUT:
-                        return Helpers.DemoCuttersanitizeFilename(demoName?.Replace(recorderClientNumPlaceHolder, demoRecorderClientNum.Value.ToString()),false);
+                        return Helpers.DemoCuttersanitizeFilename(demoName?.Replace(recorderClientNumPlaceHolder, demoRecorderClientNum.Value.ToString())?.Replace(truncationPlaceHolder, genericTrim ? "" : (demoCutTruncationOffset.HasValue? $"_tr{demoCutTruncationOffset.Value.ToString()}" : "")),false);
                     case DemoCutType.REFRAME:
                         return Helpers.DemoCuttersanitizeFilename(demoName,false);
                     case DemoCutType.MERGE:
-                        return Helpers.DemoCuttersanitizeFilename(demoName?.Replace(recorderClientNumPlaceHolder, string.Join('_', demoRecorderClientNums)),false);
+                        return Helpers.DemoCuttersanitizeFilename(demoName?.Replace(recorderClientNumPlaceHolder, string.Join('_', demoRecorderClientNums))?.Replace(truncationPlaceHolder, genericTrim ? "" : (demoCutTruncationOffset.HasValue ? $"_tr{demoCutTruncationOffset.Value.ToString()}" : "")), false);
                 }
             }
         }
@@ -994,16 +1116,28 @@ namespace DemoCutterGUI
                     truncationOffset = earliestPossibleStart - startTime;
                     startTime = earliestPossibleStart;
                     isTruncated = true;
+                    retVal.demoCutTruncationOffset = truncationOffset;
                 }
 
-                sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
+                sb.Append(DemoCut.truncationPlaceHolder);
+                //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
                 sb.Append("_");
                 sb.Append(ret.shorthash);
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
-                //retVal.isPreProcessed = ret.serverName == "^1^7^1FAKE ^4^7^4DEMO";
-                retVal.isPreProcessed = IsDemoPreProcessedByKills(ret.demoPath);
+                if (dbProperties.serverNameInKillAngles)
+                {
+                    // The way it's meant to be.
+                    retVal.isPreProcessed = ret.serverName == "^1^7^1FAKE ^4^7^4DEMO";
+                }
+                else
+                {
+                    // Older DemoHighlightFidner versions save it into the kills table, aka unique for each kill, but not specific to each kill angle.
+                    // So if a pre-processed demo is analyzed first, it just assumes that any kills in there are just generally pre-processed.
+                    // This is a shitty workaround to test the entire demo (because usually processed ones are from smaller cuts), but it's not really 100% reliable, and slow.
+                    retVal.isPreProcessed = IsDemoPreProcessedByKills(ret.demoPath);
+                }
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
@@ -1063,9 +1197,11 @@ namespace DemoCutterGUI
                     truncationOffset = earliestPossibleStart - startTime;
                     startTime = earliestPossibleStart;
                     isTruncated = true;
+                    retVal.demoCutTruncationOffset = truncationOffset;
                 }
 
-                sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
+                sb.Append(DemoCut.truncationPlaceHolder);
+                //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
@@ -1132,15 +1268,23 @@ namespace DemoCutterGUI
                     truncationOffset = earliestPossibleStart - startTime;
                     startTime = earliestPossibleStart;
                     isTruncated = true;
+                    retVal.demoCutTruncationOffset = truncationOffset;
                 }
 
-                sb.Append(isTruncated ? $"_tr{truncationOffset}": "");
+                sb.Append(DemoCut.truncationPlaceHolder);
+                //sb.Append(isTruncated ? $"_tr{truncationOffset}": "");
                 sb.Append("_");
                 sb.Append(spree.shorthash);
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
-                retVal.isPreProcessed = IsDemoPreProcessedByKills(spree.demoPath);
+                if (dbProperties.serverNameInKillSpree)
+                {
+                    retVal.isPreProcessed = spree.serverName == "^1^7^1FAKE ^4^7^4DEMO";
+                } else
+                {
+                    retVal.isPreProcessed = IsDemoPreProcessedByKills(spree.demoPath);
+                }
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
@@ -1195,9 +1339,11 @@ namespace DemoCutterGUI
                     truncationOffset = earliestPossibleStart - startTime;
                     startTime = earliestPossibleStart;
                     isTruncated = true;
+                    retVal.demoCutTruncationOffset = truncationOffset;
                 }
 
-                sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
+                sb.Append(DemoCut.truncationPlaceHolder);
+                //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
@@ -1241,9 +1387,11 @@ namespace DemoCutterGUI
                     truncationOffset = earliestPossibleStart - startTime;
                     startTime = earliestPossibleStart;
                     isTruncated = true;
+                    retVal.demoCutTruncationOffset = truncationOffset;
                 }
 
-                sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
+                sb.Append(DemoCut.truncationPlaceHolder);
+                //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
 
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 

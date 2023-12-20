@@ -47,6 +47,7 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? flagTeam { get; set; } = null;
         public INTEGER? capperKills { get; set; } = null;
         public INTEGER? capperRets { get; set; } = null;
+        public BOOLEAN? sameFrameRet { get; set; } = null;
         public INTEGER? redScore { get; set; } = null;
         public INTEGER? blueScore { get; set; } = null;
         public INTEGER? redPlayerCount { get; set; } = null;

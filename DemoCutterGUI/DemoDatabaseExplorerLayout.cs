@@ -21,6 +21,12 @@ using System.Windows.Threading;
 
 namespace DemoCutterGUI
 {
+
+    public class DemoDatabaseProperties
+    {
+        public bool serverNameInKillAngles = false;
+        public bool serverNameInKillSpree = false;
+    }
     public class VisibilityToBooleanConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -207,6 +213,8 @@ namespace DemoCutterGUI
     public partial class DemoDatabaseExplorer
     {
 
+        DemoDatabaseProperties dbProperties = new DemoDatabaseProperties();
+
         bool layoutIsInitialized = false;
         DatabaseFieldInfo[] fieldInfoForSearch = DatabaseFieldInfo.GetDatabaseFieldInfos();
 
@@ -272,6 +280,8 @@ namespace DemoCutterGUI
         Dictionary<DatabaseFieldInfo.FieldCategory, string> sqlPrimaryKeys = new Dictionary<DatabaseFieldInfo.FieldCategory, string>();
         //Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string,SQLite.SQLiteConnection.ColumnInfo>> sqlColumnsMapped = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<string, SQLite.SQLiteConnection.ColumnInfo>>();
 
+        Dictionary<string, DemoMeta> demoMetaCache = new Dictionary<string, DemoMeta>();
+
         private void InitializeLayoutDispatcher()
         {
             lock (dbMutex)
@@ -290,10 +300,51 @@ namespace DemoCutterGUI
 
                     // Kills first.
                     //Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>> sqlColumns = new Dictionary<DatabaseFieldInfo.FieldCategory, List<SQLite.SQLiteConnection.ColumnInfo>>();
-                    sqlColumns.Clear();
+                    sqlColumns.Clear(); 
+                    dbProperties = new DemoDatabaseProperties();
 
                     //var retColumns = dbConn.GetTableInfo("rets");
+                    try
+                    {
+                        List<DemoDatabaseProperty> propsRes = dbConn.Query<DemoDatabaseProperty>($"SELECT ROWID,* FROM demoDatabaseProperties") as List<DemoDatabaseProperty>;
+                        if (propsRes != null)
+                        {
+                            foreach (DemoDatabaseProperty prop in propsRes)
+                            {
+                                switch (prop.propertyName)
+                                {
+                                    case "serverNameInKillAngles":
+                                        dbProperties.serverNameInKillAngles = prop.value == "1";
+                                        break;
+                                    case "serverNameInKillSpree":
+                                        dbProperties.serverNameInKillSpree = prop.value == "1";
+                                        break;
+                                }
+                            }
+                        }
+                    } catch(SQLite.SQLiteException e)
+                    {
+                        // Ignore. Older versions of DemoHighlightFinder don't create this table.
+                        Debug.Print("Database has no demoDatabaseProperties table.");
+                    }
 
+                    demoMetaCache.Clear();
+                    
+                    try
+                    {
+                        List<DemoMeta> propsRes = dbConn.Query<DemoMeta>($"SELECT ROWID,* FROM demoMeta") as List<DemoMeta>;
+                        if (propsRes != null)
+                        {
+                            foreach (DemoMeta demoMeta in propsRes)
+                            {
+                                demoMetaCache[demoMeta.demoPath] = demoMeta;
+                            }
+                        }
+                    } catch(SQLite.SQLiteException e)
+                    {
+                        // Ignore. Older versions of DemoHighlightFinder don't create this table.
+                        Debug.Print("Database has no demoMeta table.");
+                    }
 
 
                     Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>> categorizedFieldInfos = new Dictionary<DatabaseFieldInfo.FieldCategory, Dictionary<DatabaseFieldInfo.FieldSubCategory, List<DatabaseFieldInfo>>>();
