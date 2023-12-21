@@ -220,6 +220,7 @@ namespace DemoCutterGUI
 
 
         Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> categoryPanels = null;
+        Dictionary<DatabaseFieldInfo.FieldCategory, CategorySQLQueryInfo> categorySQLQueryData = new Dictionary<DatabaseFieldInfo.FieldCategory, CategorySQLQueryInfo>();
 
         partial void Constructor()
         {
@@ -231,6 +232,12 @@ namespace DemoCutterGUI
                 { DatabaseFieldInfo.FieldCategory.DefragRuns, new CategoryInfoCollection(){  midPanel=defragMidPanel, sidePanel=defragSidePanel, tableName="defragRuns", dataType=typeof(DefragRun)} },
                 { DatabaseFieldInfo.FieldCategory.Laughs, new CategoryInfoCollection(){  midPanel=laughsMidPanel, sidePanel=laughsSidePanel, tableName="laughs", dataType=typeof(Laughs)} }
             };
+            
+            foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> kvp in categoryPanels)
+            {
+                categorySQLQueryData[kvp.Key] = new CategorySQLQueryInfo();
+                //kvp.Value.midPanel.TheGrid.Loaded += TheGrid_Loaded;
+            }
 
             // Register fields for monitoring whether they are active.
             foreach (DatabaseFieldInfo fieldInfo in fieldInfoForSearch)
@@ -244,6 +251,8 @@ namespace DemoCutterGUI
                 panelSet.Value.midPanel.sortingChanged += MidPanel_sortingChanged;
             }
         }
+
+
         partial void Destructor()
         {
             fieldMan.fieldInfoChanged -= FieldMan_fieldInfoChanged;
@@ -260,7 +269,8 @@ namespace DemoCutterGUI
             //UpdateLayout();
             if (sqlTableItemsSources.ContainsKey(e.Category))
             {
-                sqlTableItemsSources[e.Category]?.Reset();
+                RequestQueryReset(e.Category);
+                //sqlTableItemsSources[e.Category]?.Reset();
                 //retsItemSource?.Reset();
             }
         }
@@ -271,6 +281,15 @@ namespace DemoCutterGUI
             public DatabaseExplorerElements.SidePanel sidePanel;
             public string tableName;
             public Type dataType;
+        }
+
+        class CategorySQLQueryInfo
+        {
+            public bool gridIsLoading = false; // When we reset the items source, we set this to true and it remains true until the grid has finished loading, so we don't reset again earlier, lest we cause issues.
+            public bool resetRequested = false; // If we cannot reset at a given time, just set this to true.
+            public object gridLoadingLock = new object();
+            public string currentQuery; // We reset this once a grid has finished loading. We don't wanna have dynamic queries that change while a grid is loading.
+            public string currentCountQuery;
         }
 
         Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection> sqlTableItemsSources = new Dictionary<DatabaseFieldInfo.FieldCategory, IDataVirtualizingCollection>();
@@ -500,9 +519,94 @@ namespace DemoCutterGUI
 
                     //retsSidePanel.Fields = categorizedFieldInfos[new Tuple<string, string>("Rets", "_all_")].ToArray();
                     //retsSidePanel.Fields = categorizedFieldInfos[DatabaseFieldInfo.FieldCategory.Rets][DatabaseFieldInfo.FieldSubCategory.All].ToArray();
+
+                    UpdateQueries();
                 }
                 layoutIsInitialized = true;
             }
+        }
+
+        private void RequestQueryReset(DatabaseFieldInfo.FieldCategory category)
+        {
+            lock (categorySQLQueryData[category].gridLoadingLock)
+            {
+                if (categorySQLQueryData[category].gridIsLoading)
+                {
+                    categorySQLQueryData[category].resetRequested = true;
+                    AwaitDispatcherIdleness();
+                } else
+                {
+                    UpdateQuery(category);
+                }
+            }
+        }
+        private void AwaitDispatcherIdleness()
+        {
+            Dispatcher.InvokeAsync(()=> { DispatcherIdleHandler(); },DispatcherPriority.ApplicationIdle);
+        }
+
+        private void DispatcherIdleHandler()
+        {
+            // All data loading on grids is finished (WHAT AN UGLY WAY TO DO THIS!!!)
+            foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> kvp in categoryPanels)
+            {
+                bool doReset = false;
+                lock (categorySQLQueryData[kvp.Key].gridLoadingLock)
+                {
+                    categorySQLQueryData[kvp.Key].gridIsLoading = false;
+                    if (categorySQLQueryData[kvp.Key].resetRequested)
+                    {
+                        categorySQLQueryData[kvp.Key].resetRequested = false;
+                        doReset = true;
+                    }
+                }
+                if (doReset)
+                {
+                    UpdateQuery(kvp.Key);
+                }
+            }
+        }
+
+        private void TheGrid_Loaded(object sender, RoutedEventArgs e)
+        {
+            DataGrid grid = sender as DataGrid;
+            if (grid == null) return;
+            foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> kvp in categoryPanels)
+            {
+                if(kvp.Value.midPanel.TheGrid == grid)
+                {
+                    bool doReset = false;
+                    lock (categorySQLQueryData[kvp.Key].gridLoadingLock)
+                    {
+                        categorySQLQueryData[kvp.Key].gridIsLoading = false;
+                        if (categorySQLQueryData[kvp.Key].resetRequested)
+                        {
+                            categorySQLQueryData[kvp.Key].resetRequested = false;
+                            doReset = true;
+                        }
+                    }
+                    if (doReset)
+                    {
+                        UpdateQuery(kvp.Key);
+                    }
+                    break;
+                }
+            }
+        }
+
+        private void UpdateQueries()
+        {
+            foreach (KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> kvp in categoryPanels)
+            {
+                categorySQLQueryData[kvp.Key].currentQuery = MakeSelectQuery(kvp.Key, false);
+                categorySQLQueryData[kvp.Key].currentCountQuery = MakeSelectQuery(kvp.Key, true);
+            }
+        }
+        private void UpdateQuery(DatabaseFieldInfo.FieldCategory category)
+        {
+            categorySQLQueryData[category].currentQuery = MakeSelectQuery(category, false);
+            categorySQLQueryData[category].currentCountQuery = MakeSelectQuery(category, true);
+            sqlTableItemsSources[category].Reset();
         }
 
         private void UpdateLayout()
@@ -686,14 +790,26 @@ namespace DemoCutterGUI
                     .NonTaskBasedFetchers(
                         pageFetcher: (offset, pageSize, ct) =>
                         {
+                            lock (categorySQLQueryData[category].gridLoadingLock)
+                            {
+                                categorySQLQueryData[category].gridIsLoading = true;
+                            }
+                            string query = categorySQLQueryData[category].currentQuery;
                             //List<Ret> res = dbConn.Query<Ret>($"SELECT * FROM rets LIMIT {offset},{pageSize}") as List<Ret>;
-                            List<T> res = dbConn.Query<T>($"{MakeSelectQuery(category, false)} LIMIT {offset},{pageSize}") as List<T>;
+                            //List<T> res = dbConn.Query<T>($"{MakeSelectQuery(category, false)} LIMIT {offset},{pageSize}") as List<T>;
+                            List<T> res = dbConn.Query<T>($"{query} LIMIT {offset},{pageSize}") as List<T>;
                             return res.ToArray();
                         },
                         countFetcher: (ct) =>
                         {
+                            lock (categorySQLQueryData[category].gridLoadingLock)
+                            {
+                                categorySQLQueryData[category].gridIsLoading = true;
+                            }
+                            string countQuery = categorySQLQueryData[category].currentCountQuery;
                             //int res = dbConn.ExecuteScalar<int>($"SELECT COUNT(*) FROM rets");
-                            int res = dbConn.ExecuteScalar<int>($"{MakeSelectQuery(category, true)}");
+                            //int res = dbConn.ExecuteScalar<int>($"{MakeSelectQuery(category, true)}");
+                            int res = dbConn.ExecuteScalar<int>($"{countQuery}");
                             return res;
                         })
                     .ThrottledLifoPageRequests().AsyncIndexAccess((a, b) => {
@@ -704,7 +820,9 @@ namespace DemoCutterGUI
         private Func<T[]> CreateSQLItemsSyncDataFetcher<T>(DatabaseFieldInfo.FieldCategory category) where T : new()
         {
             return () => {
-                List<T> res = dbConn.Query<T>($"{MakeSelectQuery(category, false)}") as List<T>;
+                string query = categorySQLQueryData[category].currentQuery;
+                //List<T> res = dbConn.Query<T>($"{MakeSelectQuery(category, false)}") as List<T>;
+                List<T> res = dbConn.Query<T>(query) as List<T>;
                 return res.ToArray();
             };
         }
@@ -728,7 +846,8 @@ namespace DemoCutterGUI
             }
             //sortField = e.fieldName;
             //sortDescending = e.descending;
-            sqlTableItemsSources[category].Reset();
+            RequestQueryReset(category);
+            //sqlTableItemsSources[category].Reset();
             //retsItemSource.Reset();
         }
 

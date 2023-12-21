@@ -823,6 +823,7 @@ namespace DemoCutterGUI
                         sb.Append("wait\n");
                     }
                     lastCutType = cut.type;
+                    bool noMatch = false;
                     if (cut.type == DemoCutType.CUT)
                     {
                         sb.Append("DemoCutter ");
@@ -866,13 +867,20 @@ namespace DemoCutterGUI
                         {
                             filesToZipAndDelete.Add($"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPathsForMerge[0])}");
                         }
-                    }
-                    if (linuxShellScript)
-                    {
-                        sb.Append(" & \n");
                     } else
                     {
-                        sb.Append("\n");
+                        noMatch = true;
+                    }
+                    if (!noMatch)
+                    {
+                        if (linuxShellScript)
+                        {
+                            sb.Append(" & \n");
+                        }
+                        else
+                        {
+                            sb.Append("\n");
+                        }
                     }
                 }
                 if(filesToZipAndDelete.Count > 0)
