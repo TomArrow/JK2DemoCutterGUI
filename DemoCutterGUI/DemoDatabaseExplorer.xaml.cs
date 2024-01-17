@@ -18,6 +18,7 @@ using System.Windows.Shapes;
 using DemoCutterGUI.TableMappings;
 using System.ComponentModel;
 using DemoCutterGUI.DatabaseExplorerElements;
+using System.Globalization;
 
 namespace DemoCutterGUI
 {
@@ -258,6 +259,12 @@ namespace DemoCutterGUI
 
         private void bspToMinimapBtn_Click(object sender, RoutedEventArgs e)
         {
+            float resMultiplier = 1.0f;
+            string multText = bspToMinimapResolutionMultiplierText.Text;
+            if (!string.IsNullOrWhiteSpace(multText) && !float.TryParse(multText.Replace(',','.'),NumberStyles.Any, CultureInfo.InvariantCulture, out resMultiplier))
+            {
+                resMultiplier = 1.0f;
+            }
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Filter = "BSP maps (*.bsp)|*.bsp";
             if(ofd.ShowDialog() == true)
@@ -265,7 +272,7 @@ namespace DemoCutterGUI
                 try
                 {
 
-                    Tools.BSPToMiniMap.MakeMiniMap(ofd.FileName);
+                    Tools.BSPToMiniMap.MakeMiniMap(ofd.FileName,0.1f* resMultiplier,(int)(4000.0f* resMultiplier),(int)(4000.0f* resMultiplier));
                 } catch(Exception ex)
                 {
                     MessageBox.Show($"Error making minimap: {ex.ToString()}");

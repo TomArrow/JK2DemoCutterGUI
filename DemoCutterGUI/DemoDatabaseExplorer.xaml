@@ -99,7 +99,17 @@
                     <Button x:Name="visibleColumnsPresetSaveBtn" Click="visibleColumnsPresetSaveBtn_Click">Save</Button>
                 </WrapPanel>
             </StackPanel>
-            <Button x:Name="bspToMinimapBtn" Click="bspToMinimapBtn_Click">BSP to Minimap</Button>
+            <GroupBox Header="BSP to minimap">
+                <StackPanel>
+
+                    <WrapPanel>
+                        <Label>Resolution Multiplier</Label>
+                        <TextBox Width="50" x:Name="bspToMinimapResolutionMultiplierText">1.0</TextBox>
+                    </WrapPanel>
+                    <Button x:Name="bspToMinimapBtn" Click="bspToMinimapBtn_Click">BSP to Minimap</Button>
+                </StackPanel>
+            </GroupBox>
+            
             <GroupBox Header="Cutting" x:Name="cuttingGroupBox">
                 <StackPanel>
                     <WrapPanel>
