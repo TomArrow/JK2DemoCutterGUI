@@ -204,7 +204,7 @@ namespace DemoCutterGUI.Tools
                         dsurface_t surf = surfaces[i] = Helpers.ReadBytesAsType<dsurface_t>(br);
                         //if (surf.surfaceType != 2) continue;
                         int surfaceCount = surf.surfaceType == 2 ? ((surf.patchHeight-1) * (surf.patchWidth-0)) * 2 : surf.numIndexes;
-                        if ((surfaceCount % 3) > 0)
+                        if (surf.surfaceType != 2 && (surfaceCount % 3) > 0)
                         {
                             throw new Exception("(surf.numIndexes % 3) > 0");
                         }
@@ -344,15 +344,13 @@ namespace DemoCutterGUI.Tools
                     for(int axis = 0; axis < 3; axis++)
                     {
                         // Do all 3 axes
-
-                        float[] pixelData = new float[xRes * yRes];
-                        float[] pixelDataDivider = new float[xRes * yRes];
-
                         float zValueScale = 1.0f / (maxZ-minZ);
                         float zValueOffset = -minZ;
 
                         int xResHere = xRes;
                         int yResHere = yRes;
+
+
                         float imgMinXHere = imgMinX;
                         float imgMinYHere = imgMinY;
                         float xRangeHere = xRange;
@@ -391,6 +389,9 @@ namespace DemoCutterGUI.Tools
                                 maxAngle = 89.0f;
                                 break;
                         }
+
+                        float[] pixelData = new float[xResHere * yResHere];
+                        float[] pixelDataDivider = new float[xResHere * yResHere];
 
                         Parallel.For(0, yResHere, new ParallelOptions() {MaxDegreeOfParallelism= Environment.ProcessorCount/2 }, (y) =>
                         {
