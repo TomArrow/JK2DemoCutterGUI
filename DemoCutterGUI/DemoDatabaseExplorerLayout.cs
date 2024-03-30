@@ -57,6 +57,10 @@ namespace DemoCutterGUI
                 return null;
             }
             var property = value[0].GetType().GetProperty((value.Length == 3 && value[2] != null && value[2] != DependencyProperty.UnsetValue) ? (string)value[2] : (string)value[1]);
+            if(property == null)
+            {
+                return null;
+            }
             var retVal= property.GetValue(value[0], null);
             if(targetType == typeof(bool?))
             {
