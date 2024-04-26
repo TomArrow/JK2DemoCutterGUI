@@ -8,6 +8,8 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
+using System.Windows;
 
 namespace DemoCutterGUI.Tools
 {
@@ -125,10 +127,26 @@ namespace DemoCutterGUI.Tools
             SKY,
         }
 
+        static JsonSerializerOptions jsonOpts = new JsonSerializerOptions() { NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString | System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals };
+        public static readonly string minimapsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DemoCutter", "minimaps");
 
         public static unsafe void MakeMiniMap(string bspPath, float pixelsPerUnit = 0.1f, int maxWidth = 4000, int maxHeight = 4000, int extraBorderUnits = 100)
         {
-            using(FileStream fs = new FileStream(bspPath, FileMode.Open,FileAccess.Read))
+            string minimapPath = Path.Combine(minimapsPath,Path.GetFileNameWithoutExtension(bspPath).ToLowerInvariant());
+            string propsJsonFilePath = Path.Combine(minimapPath, "meta.json");
+            //string xyPath = Path.Combine(minimapPath, "xy.png");
+            //string xzPath = Path.Combine(minimapPath, "xz.png");
+            //string yzPath = Path.Combine(minimapPath, "yz.png");
+
+            if (File.Exists(propsJsonFilePath))
+            {
+                if (MessageBox.Show("Minimap seems to already exist. Overwrite?","Minimap already exists",MessageBoxButton.YesNo) == MessageBoxResult.No)
+                {
+                    return;
+                }
+            }
+
+            using (FileStream fs = new FileStream(bspPath, FileMode.Open,FileAccess.Read))
             {
                 using(BinaryReader br = new BinaryReader(fs))
                 {
@@ -137,6 +155,8 @@ namespace DemoCutterGUI.Tools
                     {
                         throw new Exception("BSP header version is not 1");
                     }
+
+                    Directory.CreateDirectory(minimapPath);
 
                     lump_t shadersLump = header.GetLump(LUMP_SHADERS);
 
@@ -316,6 +336,14 @@ namespace DemoCutterGUI.Tools
                     float imgMinZ = minZ - extraBorderUnits;
                     float imgMaxZ = maxZ + extraBorderUnits;
 
+                    MiniMapMeta miniMapMeta = new MiniMapMeta();
+                    miniMapMeta.minX = imgMinX;
+                    miniMapMeta.minY = imgMinY;
+                    miniMapMeta.minZ = imgMinZ;
+                    miniMapMeta.maxX = imgMaxX;
+                    miniMapMeta.maxY = imgMaxY;
+                    miniMapMeta.maxZ = imgMaxZ;
+
                     float xRange = imgMaxX - imgMinX;
                     float yRange = imgMaxY - imgMinY;
                     float zRange = imgMaxZ - imgMinZ;
@@ -360,6 +388,7 @@ namespace DemoCutterGUI.Tools
                         int angleExcludeIndex = 2;
                         float minAngle = 0.0f;
                         float maxAngle = 45.0f;
+                        string axisName = "xy";
                         switch (axis)
                         {
                             case 1: // Side1
@@ -372,6 +401,7 @@ namespace DemoCutterGUI.Tools
                                 zValueOffset = -minY;
                                 //minAngle = -89.0f;
                                 maxAngle = 89.0f;
+                                axisName = "xz";
                                 break;
                             case 2: // Side2
                                 xResHere = yRes;
@@ -387,6 +417,7 @@ namespace DemoCutterGUI.Tools
                                 zValueOffset = -minX;
                                 //minAngle = -89.0f;
                                 maxAngle = 89.0f;
+                                axisName = "yz";
                                 break;
                         }
 
@@ -482,10 +513,11 @@ namespace DemoCutterGUI.Tools
                         }
 
                         bitmap = Helpers.ByteArrayToBitmap(img);
-                        bitmap.Save($"{bspPath}_{axis}.png");
+                        bitmap.Save(Path.Combine(minimapPath,$"{axisName}.png"));
                         bitmap.Dispose();
                     }
 
+                    File.WriteAllText(propsJsonFilePath, JsonSerializer.Serialize(miniMapMeta, jsonOpts));
                     Console.WriteLine("hello");
                 }
             }

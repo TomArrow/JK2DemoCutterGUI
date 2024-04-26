@@ -19,6 +19,7 @@ using DemoCutterGUI.TableMappings;
 using System.ComponentModel;
 using DemoCutterGUI.DatabaseExplorerElements;
 using System.Globalization;
+using System.Text.Json;
 
 namespace DemoCutterGUI
 {
@@ -266,20 +267,60 @@ namespace DemoCutterGUI
                 resMultiplier = 1.0f;
             }
             OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Multiselect = true;
             ofd.Filter = "BSP maps (*.bsp)|*.bsp";
             if(ofd.ShowDialog() == true)
             {
-                try
+                StringBuilder errors = new StringBuilder();
+                foreach (string filename in ofd.FileNames)
                 {
-
-                    Tools.BSPToMiniMap.MakeMiniMap(ofd.FileName,0.1f* resMultiplier,(int)(4000.0f* resMultiplier),(int)(4000.0f* resMultiplier));
-                } catch(Exception ex)
+                    try
+                    {
+                        Tools.BSPToMiniMap.MakeMiniMap(filename, 0.1f * resMultiplier, (int)(4000.0f * resMultiplier), (int)(4000.0f * resMultiplier));
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Append($"Error making minimap for {filename}: {ex.ToString()}\n");
+                    }
+                }
+                if(errors.Length > 0)
                 {
-                    MessageBox.Show($"Error making minimap: {ex.ToString()}");
+                    MessageBox.Show(errors.ToString());
                 }
             }
         }
 
+        private void demoMetaShowBtn_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.DefaultExt = "json";
+            ofd.Filter = "Supported demo files (*.dm_14;*.dm_15;*.dm_16;*.dm_25;*.dm_26;*.dm_66;*.dm_67;*.dm_68)|*.dm_14;*.dm_15;*.dm_16;*.dm_25;*.dm_26;*.dm_66;*.dm_67;*.dm_68|All files (*.*)|*.*";
+            if (ofd.ShowDialog() != true)
+            {
+                return;
+            }
+            string jsonMetaData = HiddenMetaStuff.getMetaDataFromDemoFile(ofd.FileName);
+
+            if (jsonMetaData == null)
+            {
+                MessageBox.Show("No metadata found.");
+                return;
+            }
+            JsonSerializerOptions opts = new JsonSerializerOptions();
+            opts.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals | System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
+            try
+            {
+
+                DemoJSONMeta deSerialized = JsonSerializer.Deserialize<DemoJSONMeta>(jsonMetaData, opts);
+                //selectedDemos[0].loadDataFromMeta(deSerialized);
+                //selectedDemos[0].name = Path.GetFileName(ofd.FileName);
+                MessageBox.Show(jsonMetaData);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error parsing JSON metadata of demo: {ex.ToString()}");
+            }
+        }
     }
 
     public class DoSomethingCommand : ICommand

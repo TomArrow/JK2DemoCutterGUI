@@ -107,6 +107,7 @@
                         <TextBox Width="50" x:Name="bspToMinimapResolutionMultiplierText">1.0</TextBox>
                     </WrapPanel>
                     <Button x:Name="bspToMinimapBtn" Click="bspToMinimapBtn_Click">BSP to Minimap</Button>
+                    <Button x:Name="demoMetaShowBtn" Click="demoMetaShowBtn_Click">Show demo meta</Button>
                 </StackPanel>
             </GroupBox>
             
