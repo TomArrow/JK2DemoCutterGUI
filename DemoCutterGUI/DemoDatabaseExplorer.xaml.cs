@@ -274,14 +274,18 @@ namespace DemoCutterGUI
                 StringBuilder errors = new StringBuilder();
                 foreach (string filename in ofd.FileNames)
                 {
+#if !DEBUG
                     try
                     {
+#endif
                         Tools.BSPToMiniMap.MakeMiniMap(filename, 0.1f * resMultiplier, (int)(4000.0f * resMultiplier), (int)(4000.0f * resMultiplier));
+#if !DEBUG
                     }
                     catch (Exception ex)
                     {
                         errors.Append($"Error making minimap for {filename}: {ex.ToString()}\n");
                     }
+#endif
                 }
                 if(errors.Length > 0)
                 {

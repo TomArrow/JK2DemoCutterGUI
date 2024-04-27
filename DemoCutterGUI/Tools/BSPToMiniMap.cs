@@ -254,9 +254,9 @@ namespace DemoCutterGUI.Tools
 
                             for(int index = 0; index < surfaceCount; index+=advance)
                             {
-                                int vertIndex0 = surf.firstVert + indices[surf.firstIndex + index];
-                                int vertIndex1 = surf.firstVert + indices[surf.firstIndex + index+1];
-                                int vertIndex2 = surf.firstVert + indices[surf.firstIndex + index+2];
+                                int vertIndex0;
+                                int vertIndex1;
+                                int vertIndex2;
 
                                 if (surf.surfaceType == 2) // Shitty workaround for patches. Check and fix up some day? Dunno if I'm winding the triangles the right way.
                                 {
@@ -273,6 +273,11 @@ namespace DemoCutterGUI.Tools
                                         vertIndex1 = surf.firstVert + surf.patchWidth + indexHere + 1;
                                         vertIndex2 = surf.firstVert + indexHere + 1;
                                     }
+                                } else
+                                {
+                                    vertIndex0 = surf.firstVert + indices[surf.firstIndex + index];
+                                    vertIndex1 = surf.firstVert + indices[surf.firstIndex + index + 1];
+                                    vertIndex2 = surf.firstVert + indices[surf.firstIndex + index + 2];
                                 }
 
                                 mapVert_t vert1 = verts[vertIndex0];
