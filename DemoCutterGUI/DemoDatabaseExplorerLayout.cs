@@ -234,15 +234,7 @@ namespace DemoCutterGUI
 
         partial void Constructor()
         {
-            var settings = new GLWpfControlSettings
-            {
-                MajorVersion = 2,
-                MinorVersion = 1,
-                RenderContinuously = false,
-
-            };
-            OpenTkControl.Loaded += OpenTkControl_Loaded;
-            OpenTkControl.Start(settings);
+            InitOpenTK();
 
             categoryPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
             {
@@ -281,6 +273,19 @@ namespace DemoCutterGUI
             {
                 panelSet.Value.midPanel.sortingChanged -= MidPanel_sortingChanged;
             }
+        }
+        
+        void InitOpenTK()
+        {
+            var settings = new GLWpfControlSettings
+            {
+                MajorVersion = 2,
+                MinorVersion = 1,
+                RenderContinuously = false,
+
+            };
+            OpenTkControl.Loaded += OpenTkControl_Loaded;
+            OpenTkControl.Start(settings);
         }
 
         Dictionary<string, Tuple<int,MiniMapMeta>> mapMinimapTextures = new Dictionary<string, Tuple<int, MiniMapMeta>>();
@@ -352,7 +357,7 @@ namespace DemoCutterGUI
 
             double timeSinceLast = (DateTime.Now - lastUpdate).TotalMilliseconds;
             //if (timeSinceLast < minTimeDelta) System.Threading.Thread.Sleep((int)(minTimeDelta- timeSinceLast));
-            if (timeSinceLast > minTimeDelta) OpenTkControl.InvalidateVisual();
+            if (timeSinceLast > minTimeDelta) ; //OpenTkControl.InvalidateVisual();
             else return;
             GL.ClearColor(Color4.White);
 
