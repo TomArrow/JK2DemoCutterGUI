@@ -20,6 +20,7 @@ using System.ComponentModel;
 using DemoCutterGUI.DatabaseExplorerElements;
 using System.Globalization;
 using System.Text.Json;
+using OpenTK.Wpf;
 
 namespace DemoCutterGUI
 {
@@ -114,6 +115,7 @@ namespace DemoCutterGUI
             });*/
             this.DataContext = this;
             InitializeComponent();
+
             Constructor();
             Constructor2();
             Constructor3();
@@ -124,6 +126,7 @@ namespace DemoCutterGUI
             Constructor8();
             this.Closed += DemoDatabaseExplorer_Closed;
         }
+
 
         private void DemoDatabaseExplorer_Closed(object sender, EventArgs e)
         {
@@ -325,6 +328,7 @@ namespace DemoCutterGUI
                 MessageBox.Show($"Error parsing JSON metadata of demo: {ex.ToString()}");
             }
         }
+
     }
 
     public class DoSomethingCommand : ICommand

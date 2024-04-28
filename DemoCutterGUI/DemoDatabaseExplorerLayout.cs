@@ -1,6 +1,9 @@
 ﻿using BFF.DataVirtualizingCollection.DataVirtualizingCollection;
 using DemoCutterGUI.DatabaseExplorerElements;
 using DemoCutterGUI.TableMappings;
+using OpenTK.Wpf;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 using Salaros.Configuration;
 using System;
 using System.Collections.Generic;
@@ -18,6 +21,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Threading;
+using System.Collections.Concurrent;
+using StbImageSharp;
 
 namespace DemoCutterGUI
 {
@@ -228,6 +233,16 @@ namespace DemoCutterGUI
 
         partial void Constructor()
         {
+            var settings = new GLWpfControlSettings
+            {
+                MajorVersion = 2,
+                MinorVersion = 1,
+                RenderContinuously = false,
+
+            };
+            OpenTkControl.Loaded += OpenTkControl_Loaded;
+            OpenTkControl.Start(settings);
+
             categoryPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
             {
                 { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret)} },
@@ -267,6 +282,121 @@ namespace DemoCutterGUI
             }
         }
 
+        Dictionary<string, int> mapMinimapTextures = new Dictionary<string, int>();
+
+        int GetMinimapTexture(string mapname)
+        {
+            if (mapMinimapTextures.ContainsKey(mapname))
+            {
+                return mapMinimapTextures[mapname];
+            }
+
+            string miniMapPath = Path.Combine(Tools.BSPToMiniMap.minimapsPath,mapname.ToLowerInvariant());
+            string miniMapMeta = Path.Combine(miniMapPath, "meta.json");
+            string miniMapImage = Path.Combine(miniMapPath, "xy.png");
+
+            if (!File.Exists(miniMapMeta) || !File.Exists(miniMapImage))
+            {
+                Debug.WriteLine($"Minimap meta or image not found for {mapname} minimap texture generation.");
+                return mapMinimapTextures[mapname] = -1;
+            }
+
+            int handle = GL.GenTexture();
+
+            if(handle == (int)ErrorCode.InvalidValue)
+            {
+                Debug.WriteLine($"ErrorCode.InvalidValue gotten on GL.GenTexture for {mapname} minimap texture generation.");
+                return mapMinimapTextures[mapname] = -1;
+            }
+
+            GL.BindTexture(TextureTarget.Texture2D, handle);
+            StbImage.stbi_set_flip_vertically_on_load(1);
+
+            ImageResult img = ImageResult.FromStream(File.OpenRead(miniMapImage),ColorComponents.RedGreenBlueAlpha);
+
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, img.Width, img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, img.Data);
+
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            return mapMinimapTextures[mapname] = handle;
+        }
+
+
+        const double maxFps = 165;
+        const double minTimeDelta = 1000.0 / maxFps;
+        DateTime lastUpdate = DateTime.Now;
+        
+        private void OpenTkControl_Render(TimeSpan obj)
+        {
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
+
+            double timeSinceLast = (DateTime.Now - lastUpdate).TotalMilliseconds;
+            //if (timeSinceLast < minTimeDelta) System.Threading.Thread.Sleep((int)(minTimeDelta- timeSinceLast));
+            if (timeSinceLast > minTimeDelta) OpenTkControl.InvalidateVisual();
+            else return;
+            GL.ClearColor(Color4.White);
+
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            double actualWidth = OpenTkControl.ActualWidth;
+
+            DatabaseFieldInfo.FieldCategory? category = GetActiveTabCategory();
+            if (category != DatabaseFieldInfo.FieldCategory.Rets && category != DatabaseFieldInfo.FieldCategory.Captures) return;
+
+            System.Collections.IList selectedItems = categoryPanels[category.Value].midPanel.TheGrid.SelectedItems;
+
+            List<Vector3> positions = new List<Vector3>();
+
+            string map = null; // we will simply draw the map of the first item. if other kills are from other maps, too bad!
+
+            foreach(object selectedItem in selectedItems)
+            {
+                if (selectedItem is Ret)
+                {
+                    Ret ret = selectedItem as Ret;
+                    if (!ret.positionX.HasValue || !ret.positionY.HasValue || !ret.positionZ.HasValue) continue;
+                    positions.Add(new Vector3() { X= (float)ret.positionX.Value, Y= (float)ret.positionY.Value, Z= (float)ret.positionZ.Value });
+                    if(map is null && !string.IsNullOrWhiteSpace(ret.map))
+                    {
+                        map = ret.map;
+                    }
+                } else if (selectedItem is TableMappings.Capture)
+                {
+                    TableMappings.Capture cap = selectedItem as TableMappings.Capture;
+                    if (!cap.positionX.HasValue || !cap.positionY.HasValue || !cap.positionZ.HasValue) continue;
+                    positions.Add(new Vector3() { X= (float)cap.positionX.Value, Y= (float)cap.positionY.Value, Z= (float)cap.positionZ.Value }); 
+                    if (cap is null && !string.IsNullOrWhiteSpace(cap.map))
+                    {
+                        map = cap.map;
+                    }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(map)) return;
+
+            //if (!File.Exists())
+            //{
+
+            //}
+
+            int textureHandle = GetMinimapTexture(map);
+
+
+            lastUpdate = DateTime.Now;
+
+        }
+
+        private void OpenTkControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            // var ifc = new InstalledFontCollection();
+
+
+        }
+        private void updateMinimapBtn_Click(object sender, RoutedEventArgs e)
+        {
+            OpenTkControl.InvalidateVisual();
+        }
 
         private void FieldMan_fieldInfoChanged(object sender, DatabaseFieldInfo e)
         {

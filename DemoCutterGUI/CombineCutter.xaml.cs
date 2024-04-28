@@ -172,9 +172,9 @@ namespace DemoCutterGUI
             else return;
             GL.ClearColor(Color4.White);
 
-            double width = OpenTkControl.ActualWidth;
-            int maxValue = (int)Math.Max(10, width); // Picked random minimum number
-            float divider = (float)maxValue / 2.0f;
+            //double width = OpenTkControl.ActualWidth;
+            //int maxValue = (int)Math.Max(10, width); // Picked random minimum number
+            //float divider = (float)maxValue / 2.0f;
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 

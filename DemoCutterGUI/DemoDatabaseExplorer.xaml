@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DemoCutterGUI"
         xmlns:dee="clr-namespace:DemoCutterGUI.DatabaseExplorerElements"
+        xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         mc:Ignorable="d"
         d:DataContext="{StaticResource ResourceKey=ExampleData}"
         Title="DemoDatabaseExplorer" Height="820" Width="1550">
@@ -86,30 +87,45 @@
 
                 <Button x:Name="prepareBtn" Click="prepareBtn_Click">Prepare (clean, merge, index)</Button>
             </StackPanel>
-            <StackPanel>
-                <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=retsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=killMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
-                <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=capsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=capsMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
-                <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=killSpreesMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=killSpreesMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
-                <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=defragMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=defragMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
-                <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=laughsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=laughsMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
-                
-                <WrapPanel>
-                    <ComboBox x:Name="visibleColumnsPresetComboBox" IsEditable="True" SelectedValue="default" MinWidth="100"></ComboBox>
-                    <Button x:Name="visibleColumnsPresetLoadBtn" Click="visibleColumnsPresetLoadBtn_Click">Load</Button>
-                    <Button x:Name="visibleColumnsPresetSaveBtn" Click="visibleColumnsPresetSaveBtn_Click">Save</Button>
-                </WrapPanel>
-            </StackPanel>
-            <GroupBox Header="BSP to minimap">
-                <StackPanel>
+            <TabControl>
+                <TabItem Header="Minimap">
+                    <StackPanel>
+                        <glWpfControl:GLWpfControl Height="300"
+                            x:Name="OpenTkControl" 
+                            Render="OpenTkControl_Render"/>
+                        <Button x:Name="updateMinimapBtn" Click="updateMinimapBtn_Click">Update minimap</Button>
+                    </StackPanel>
+                </TabItem>
+                <TabItem Header="Whatever">
+                    <StackPanel>
+                        <StackPanel>
+                            <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=retsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=killMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
+                            <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=capsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=capsMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
+                            <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=killSpreesMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=killSpreesMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
+                            <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=defragMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=defragMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
+                            <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=laughsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=laughsMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
 
-                    <WrapPanel>
-                        <Label>Resolution Multiplier</Label>
-                        <TextBox Width="50" x:Name="bspToMinimapResolutionMultiplierText">1.0</TextBox>
-                    </WrapPanel>
-                    <Button x:Name="bspToMinimapBtn" Click="bspToMinimapBtn_Click">BSP to Minimap</Button>
-                    <Button x:Name="demoMetaShowBtn" Click="demoMetaShowBtn_Click">Show demo meta</Button>
-                </StackPanel>
-            </GroupBox>
+                            <WrapPanel>
+                                <ComboBox x:Name="visibleColumnsPresetComboBox" IsEditable="True" SelectedValue="default" MinWidth="100"></ComboBox>
+                                <Button x:Name="visibleColumnsPresetLoadBtn" Click="visibleColumnsPresetLoadBtn_Click">Load</Button>
+                                <Button x:Name="visibleColumnsPresetSaveBtn" Click="visibleColumnsPresetSaveBtn_Click">Save</Button>
+                            </WrapPanel>
+                        </StackPanel>
+                        <GroupBox Header="BSP to minimap">
+                            <StackPanel>
+
+                                <WrapPanel>
+                                    <Label>Resolution Multiplier</Label>
+                                    <TextBox Width="50" x:Name="bspToMinimapResolutionMultiplierText">1.0</TextBox>
+                                </WrapPanel>
+                                <Button x:Name="bspToMinimapBtn" Click="bspToMinimapBtn_Click">BSP to Minimap</Button>
+                                <Button x:Name="demoMetaShowBtn" Click="demoMetaShowBtn_Click">Show demo meta</Button>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </TabItem>
+            </TabControl>
+            
             
             <GroupBox Header="Cutting" x:Name="cuttingGroupBox">
                 <StackPanel>
