@@ -23,6 +23,7 @@ using System.Windows.Data;
 using System.Windows.Threading;
 using System.Collections.Concurrent;
 using StbImageSharp;
+using DemoCutterGUI.Tools;
 
 namespace DemoCutterGUI
 {
@@ -282,23 +283,25 @@ namespace DemoCutterGUI
             }
         }
 
-        Dictionary<string, int> mapMinimapTextures = new Dictionary<string, int>();
+        Dictionary<string, Tuple<int,MiniMapMeta>> mapMinimapTextures = new Dictionary<string, Tuple<int, MiniMapMeta>>();
 
-        int GetMinimapTexture(string mapname)
+        int GetMinimapTexture(string mapname,ref MiniMapMeta miniMapMeta)
         {
             if (mapMinimapTextures.ContainsKey(mapname))
             {
-                return mapMinimapTextures[mapname];
+                miniMapMeta = mapMinimapTextures[mapname].Item2;
+                return mapMinimapTextures[mapname].Item1;
             }
 
             string miniMapPath = Path.Combine(Tools.BSPToMiniMap.minimapsPath,mapname.ToLowerInvariant());
-            string miniMapMeta = Path.Combine(miniMapPath, "meta.json");
+            string miniMapMetaFile = Path.Combine(miniMapPath, "meta.json");
             string miniMapImage = Path.Combine(miniMapPath, "xy.png");
 
-            if (!File.Exists(miniMapMeta) || !File.Exists(miniMapImage))
+            if (!File.Exists(miniMapMetaFile) || !File.Exists(miniMapImage))
             {
                 Debug.WriteLine($"Minimap meta or image not found for {mapname} minimap texture generation.");
-                return mapMinimapTextures[mapname] = -1;
+                miniMapMeta = null;
+                return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(-1,null)).Item1;
             }
 
             int handle = GL.GenTexture();
@@ -306,7 +309,17 @@ namespace DemoCutterGUI
             if(handle == (int)ErrorCode.InvalidValue)
             {
                 Debug.WriteLine($"ErrorCode.InvalidValue gotten on GL.GenTexture for {mapname} minimap texture generation.");
-                return mapMinimapTextures[mapname] = -1;
+                miniMapMeta = null;
+                return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(-1, null)).Item1;
+            }
+
+            miniMapMeta = BSPToMiniMap.DecodeMiniMapMeta(File.ReadAllText(miniMapMetaFile));
+            
+            if(miniMapMeta is null)
+            {
+                Debug.WriteLine($"Failed decoding metadata for {mapname} minimap texture generation.");
+                miniMapMeta = null;
+                return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(-1, null)).Item1;
             }
 
             GL.BindTexture(TextureTarget.Texture2D, handle);
@@ -314,11 +327,16 @@ namespace DemoCutterGUI
 
             ImageResult img = ImageResult.FromStream(File.OpenRead(miniMapImage),ColorComponents.RedGreenBlueAlpha);
 
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,(int)TextureMinFilter.LinearMipmapLinear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,(int)TextureMinFilter.LinearMipmapLinear);
+
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, img.Width, img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, img.Data);
+
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
             GL.BindTexture(TextureTarget.Texture2D, 0);
 
-            return mapMinimapTextures[mapname] = handle;
+            return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(handle, miniMapMeta)).Item1;
         }
 
 
@@ -328,6 +346,7 @@ namespace DemoCutterGUI
         
         private void OpenTkControl_Render(TimeSpan obj)
         {
+            
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
 
@@ -380,7 +399,33 @@ namespace DemoCutterGUI
 
             //}
 
-            int textureHandle = GetMinimapTexture(map);
+            MiniMapMeta miniMapMeta = null;
+            int textureHandle = GetMinimapTexture(map, ref miniMapMeta);
+
+            if (textureHandle < 0 || miniMapMeta is null) return; // No minimap texture found
+
+            GL.Enable(EnableCap.Texture2D);
+
+            GL.BindTexture(TextureTarget.Texture2D, textureHandle);
+
+            GL.Begin(PrimitiveType.Quads);
+
+            GL.TexCoord2(1.0, 1.0);
+            GL.Vertex2(1.0,1.0);
+
+            GL.TexCoord2(1.0, 0.0);
+            GL.Vertex2(1.0,-1.0);
+
+            GL.TexCoord2(0.0, 0.0);
+            GL.Vertex2(-1.0,-1.0);
+
+            GL.TexCoord2(0.0, 1.0);
+            GL.Vertex2(-1.0,1.0);
+            GL.End();
+
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            GL.Disable(EnableCap.Texture2D);
 
 
             lastUpdate = DateTime.Now;

@@ -130,6 +130,11 @@ namespace DemoCutterGUI.Tools
         static JsonSerializerOptions jsonOpts = new JsonSerializerOptions() { NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString | System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals };
         public static readonly string minimapsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DemoCutter", "minimaps");
 
+        public static MiniMapMeta DecodeMiniMapMeta(string data)
+        {
+            return JsonSerializer.Deserialize<MiniMapMeta>(data, jsonOpts);
+        }
+
         public static unsafe void MakeMiniMap(string bspPath, float pixelsPerUnit = 0.1f, int maxWidth = 4000, int maxHeight = 4000, int extraBorderUnits = 100)
         {
             string minimapPath = Path.Combine(minimapsPath,Path.GetFileNameWithoutExtension(bspPath).ToLowerInvariant());
