@@ -27,6 +27,7 @@ namespace DemoCutterGUI
         {
             InitializeComponent();
             OpenExplorer();
+            //OpenCutter();
             /*Thread ccThread = new Thread(() => {
 
                 CombineCutter combineCutter = new CombineCutter();

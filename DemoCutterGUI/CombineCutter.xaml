@@ -36,7 +36,10 @@
         </Grid.ColumnDefinitions>
         <glWpfControl:GLWpfControl Grid.RowSpan="2" Grid.Column="1"
             x:Name="OpenTkControl" 
-            Render="OpenTkControl_OnRender"/>
+            Render="OpenTkControl_OnRender"
+            RegisterToEventsDirectly="False"
+            CanInvokeOnHandledEvents="False"
+                                   />
         <WrapPanel Grid.Row="0" Grid.Column="2">
             <CheckBox x:Name="speedPreserveCheck" ToolTip="With this, deleting elements tries to preserve the speed of the following element, adjusting all elements after. This does not take into account the more advanced interpolation and is very simplistic" Checked="UpdateSettingsFromGUI" Unchecked="UpdateSettingsFromGUI">Speed preservation mode</CheckBox>
             <CheckBox x:Name="speedChangeDemoTimeModeCheck" ToolTip="When changing by speed, should we change demoTime instead of time?" Checked="UpdateSettingsFromGUI" Unchecked="UpdateSettingsFromGUI" IsEnabled="{Binding ElementName=speedPreserveCheck,Path=IsChecked}" IsChecked="True">DemoTime mode</CheckBox>

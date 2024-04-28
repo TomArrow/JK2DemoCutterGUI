@@ -92,7 +92,10 @@
                     <StackPanel>
                         <glWpfControl:GLWpfControl Height="300"
                             x:Name="OpenTkControl" 
-                            Render="OpenTkControl_Render"/>
+                            Render="OpenTkControl_Render"
+                            RegisterToEventsDirectly="False"
+                            CanInvokeOnHandledEvents="False"
+                                                   />
                         <Button x:Name="updateMinimapBtn" Click="updateMinimapBtn_Click">Update minimap</Button>
                     </StackPanel>
                 </TabItem>
