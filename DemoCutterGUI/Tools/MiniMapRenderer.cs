@@ -106,6 +106,20 @@ namespace DemoCutterGUI.Tools
             return corners;
         }
 
+        public void DrawBorder(float lineThickness=2)
+        {
+            GL.LineWidth(lineThickness);
+            GL.Color4(1f, 1f, 1f, 1f); // Line color
+            GL.Begin(PrimitiveType.LineStrip);
+
+            GL.Vertex2(_quadCorners[0]);
+            GL.Vertex2(_quadCorners[1]);
+            GL.Vertex2(_quadCorners[2]);
+            GL.Vertex2(_quadCorners[3]);
+            GL.Vertex2(_quadCorners[0]);
+            GL.End();
+        }
+
         public void DrawMiniMap(int textureHandle)
         {
             GL.Enable(EnableCap.Texture2D);
@@ -203,7 +217,7 @@ namespace DemoCutterGUI.Tools
             OpenTkControl.Start(settings);
         }
 
-        Dictionary<string, Tuple<int, MiniMapMeta>> mapMinimapTextures = new Dictionary<string, Tuple<int, MiniMapMeta>>();
+        Dictionary<string, Tuple<int[], MiniMapMeta>> mapMinimapTextures = new Dictionary<string, Tuple<int[], MiniMapMeta>>();
 
         bool isEnded = false;
         void ClearMiniMapTextures()
@@ -213,14 +227,52 @@ namespace DemoCutterGUI.Tools
                 isEnded = true;
                 foreach (var kvp in mapMinimapTextures)
                 {
-                    GL.DeleteTexture(kvp.Value.Item1);
+                    if(!(kvp.Value.Item1 is null))
+                    {
+                        foreach(int textureHandle in kvp.Value.Item1)
+                        {
+                            GL.DeleteTexture(textureHandle);
+                        }
+                    }
                 }
                 mapMinimapTextures.Clear();
                 OpenTkControl.Render -= OpenTkControl_Render;
             }
         }
 
-        int GetMinimapTexture(string mapname, ref MiniMapMeta miniMapMeta)
+        int MakeMiniMapTexture(string filename)
+        {
+
+            int handle = GL.GenTexture();
+
+            if (handle == (int)ErrorCode.InvalidValue)
+            {
+                Debug.WriteLine($"ErrorCode.InvalidValue gotten on GL.GenTexture for {filename} minimap texture generation.");
+                return -1;
+            }
+
+
+            GL.BindTexture(TextureTarget.Texture2D, handle);
+            StbImage.stbi_set_flip_vertically_on_load(1);
+
+            ImageResult img = ImageResult.FromStream(File.OpenRead(filename), ColorComponents.RedGreenBlueAlpha);
+
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.LinearMipmapLinear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Clamp);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Clamp);
+
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, img.Width, img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, img.Data);
+
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+
+            return handle;
+        }
+
+        int[] GetMinimapTextures(string mapname, ref MiniMapMeta miniMapMeta)
         {
             lock (mapMinimapTextures) { 
                 if (mapMinimapTextures.ContainsKey(mapname))
@@ -231,22 +283,15 @@ namespace DemoCutterGUI.Tools
 
                 string miniMapPath = Path.Combine(Tools.BSPToMiniMap.minimapsPath, mapname.ToLowerInvariant());
                 string miniMapMetaFile = Path.Combine(miniMapPath, "meta.json");
-                string miniMapImage = Path.Combine(miniMapPath, "xy.png");
+                string miniMapImageXY = Path.Combine(miniMapPath, "xy.png");
+                string miniMapImageXZ = Path.Combine(miniMapPath, "xz.png");
+                string miniMapImageYZ = Path.Combine(miniMapPath, "yz.png");
 
-                if (!File.Exists(miniMapMetaFile) || !File.Exists(miniMapImage))
+                if (!File.Exists(miniMapMetaFile) || !File.Exists(miniMapImageXY) || !File.Exists(miniMapImageXZ) || !File.Exists(miniMapImageYZ))
                 {
                     Debug.WriteLine($"Minimap meta or image not found for {mapname} minimap texture generation.");
                     miniMapMeta = null;
-                    return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(-1, null)).Item1;
-                }
-
-                int handle = GL.GenTexture();
-
-                if (handle == (int)ErrorCode.InvalidValue)
-                {
-                    Debug.WriteLine($"ErrorCode.InvalidValue gotten on GL.GenTexture for {mapname} minimap texture generation.");
-                    miniMapMeta = null;
-                    return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(-1, null)).Item1;
+                    return (mapMinimapTextures[mapname] = new Tuple<int[], MiniMapMeta>(null, null)).Item1;
                 }
 
                 miniMapMeta = BSPToMiniMap.DecodeMiniMapMeta(File.ReadAllText(miniMapMetaFile));
@@ -255,26 +300,24 @@ namespace DemoCutterGUI.Tools
                 {
                     Debug.WriteLine($"Failed decoding metadata for {mapname} minimap texture generation.");
                     miniMapMeta = null;
-                    return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(-1, null)).Item1;
+                    return (mapMinimapTextures[mapname] = new Tuple<int[], MiniMapMeta>(null, null)).Item1;
                 }
 
-                GL.BindTexture(TextureTarget.Texture2D, handle);
-                StbImage.stbi_set_flip_vertically_on_load(1);
+                int[] textureHandles = new int[]
+                {
+                    MakeMiniMapTexture(miniMapImageXY),
+                    MakeMiniMapTexture(miniMapImageXZ),
+                    MakeMiniMapTexture(miniMapImageYZ),
+                };
 
-                ImageResult img = ImageResult.FromStream(File.OpenRead(miniMapImage), ColorComponents.RedGreenBlueAlpha);
+                if (textureHandles[0] == -1 || textureHandles[1] == -1 || textureHandles[2] == -1)
+                {
+                    textureHandles = null;
+                    miniMapMeta = null;
+                }
 
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.LinearMipmapLinear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Clamp);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Clamp);
+                return (mapMinimapTextures[mapname] = new Tuple<int[], MiniMapMeta>(textureHandles, miniMapMeta)).Item1;
 
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, img.Width, img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, img.Data);
-
-                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-                GL.BindTexture(TextureTarget.Texture2D, 0);
-
-                return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(handle, miniMapMeta)).Item1;
             }
         }
 
@@ -319,9 +362,9 @@ namespace DemoCutterGUI.Tools
             //}
 
             MiniMapMeta miniMapMeta = null;
-            int textureHandle = GetMinimapTexture(map, ref miniMapMeta);
+            int[] textureHandles = GetMinimapTextures(map, ref miniMapMeta);
 
-            if (textureHandle < 0 || miniMapMeta is null) return; // No minimap texture found
+            if (textureHandles is null || miniMapMeta is null) return; // No minimap texture found
 
             MiniMapPoint[] points = items.ToArray();
 
@@ -330,8 +373,8 @@ namespace DemoCutterGUI.Tools
 
             Vector3 boundsRanges = bounds.maxs - bounds.mins;
             float xyRange = Math.Max(Math.Max(boundsRanges.X,boundsRanges.Y) + 100.0f, 2000.0f);
-            float xzRange = Math.Max(Math.Max(boundsRanges.X,boundsRanges.Z) + 100.0f, 1000.0f);
-            float yzRange = Math.Max(Math.Max(boundsRanges.Y,boundsRanges.Z) + 100.0f, 1000.0f);
+            float xzRange = Math.Max(Math.Max(boundsRanges.X,boundsRanges.Z) + 100.0f, 500.0f);
+            float yzRange = Math.Max(Math.Max(boundsRanges.Y,boundsRanges.Z) + 100.0f, 500.0f);
 
 
             Vector2[] xyQuadCorners = new Vector2[]
@@ -359,27 +402,19 @@ namespace DemoCutterGUI.Tools
 
             Vector3 xyRangeHalfVec = Vector3.One * xyRange * 0.5f;
             float xyRangeHalf = xyRange * 0.5f;
-            /*
-            Vector3[] xyCorners = new Vector3[] {
-                center + xyRangeHalfVec, // top right
-                center + new Vector3() { X = xyRangeHalf, Y = -xyRangeHalf },// bottom right
-                center- xyRangeHalfVec, // bottom left
-                center + new Vector3() { X = -xyRangeHalf, Y = xyRangeHalf } // top left
-            };
 
-            Vector2[] xyTextureCoords = new Vector2[] {
-                miniMapMeta.GetTexturePositionXY(xyCorners[0]),
-                miniMapMeta.GetTexturePositionXY(xyCorners[1]),
-                miniMapMeta.GetTexturePositionXY(xyCorners[2]),
-                miniMapMeta.GetTexturePositionXY(xyCorners[3]),
-            };*/
-
-
-            //MiniMapSubSquare xySquare = new MiniMapSubSquare(xyQuadCorners[3], xyQuadCorners[1], xyCorners[3], xyCorners[1],(float)actualWidth, (float)actualHeight);
             MiniMapSubSquare xySquare = new MiniMapSubSquare(xyQuadCorners, center,0,1, xyRange, (float)actualWidth, (float)actualHeight,miniMapMeta);
-            //var xyTextureCoords = xySquare.getCornerTextureCoords();
+            MiniMapSubSquare xzSquare = new MiniMapSubSquare(xzQuadCorners, center,0,2, xzRange, (float)actualWidth, (float)actualHeight,miniMapMeta);
+            MiniMapSubSquare yzSquare = new MiniMapSubSquare(yzQuadCorners, center,1,2, yzRange, (float)actualWidth, (float)actualHeight,miniMapMeta);
 
-            xySquare.DrawMiniMap(textureHandle);
+
+            xySquare.DrawMiniMap(textureHandles[0]);
+            xzSquare.DrawMiniMap(textureHandles[1]);
+            yzSquare.DrawMiniMap(textureHandles[2]);
+
+            xySquare.DrawBorder();
+            xzSquare.DrawBorder();
+            yzSquare.DrawBorder();
 
             GL.LineWidth(2);
             GL.Color4(1f, 0f, 0f, 1f); // Line color
@@ -388,7 +423,21 @@ namespace DemoCutterGUI.Tools
             Vector2 crossSize = xySquare.getUnitVec()*10.0f;
             foreach (var point in points)
             {
-                Vector2 position = xySquare.GetSquarePosition(point.position,0,1);
+                Vector2 position = xySquare.GetSquarePosition(point.position);
+
+                GL.Vertex3(position.X, position.Y- crossSize.Y, 0);
+                GL.Vertex3(position.X, position.Y+ crossSize.Y, 0);
+                GL.Vertex3(position.X - crossSize.X, position.Y, 0);
+                GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+
+                position = xzSquare.GetSquarePosition(point.position);
+
+                GL.Vertex3(position.X, position.Y- crossSize.Y, 0);
+                GL.Vertex3(position.X, position.Y+ crossSize.Y, 0);
+                GL.Vertex3(position.X - crossSize.X, position.Y, 0);
+                GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+
+                position = yzSquare.GetSquarePosition(point.position);
 
                 GL.Vertex3(position.X, position.Y- crossSize.Y, 0);
                 GL.Vertex3(position.X, position.Y+ crossSize.Y, 0);
