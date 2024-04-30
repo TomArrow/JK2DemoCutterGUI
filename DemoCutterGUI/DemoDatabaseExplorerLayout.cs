@@ -310,7 +310,7 @@ namespace DemoCutterGUI
                         map = ret.map;
                     }
                 }
-                else if (selectedItem is TableMappings.Capture)
+                /*else if (selectedItem is TableMappings.Capture)
                 {
                     TableMappings.Capture cap = selectedItem as TableMappings.Capture;
                     if (!cap.positionX.HasValue || !cap.positionY.HasValue || !cap.positionZ.HasValue) continue;
@@ -319,7 +319,7 @@ namespace DemoCutterGUI
                     {
                         map = cap.map;
                     }
-                }
+                }*/
             }
 
             miniMapRenderer.items.Clear();

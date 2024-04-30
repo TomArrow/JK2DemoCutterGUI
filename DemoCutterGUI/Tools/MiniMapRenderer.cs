@@ -16,6 +16,38 @@ using System.Windows;
 namespace DemoCutterGUI.Tools
 {
 
+    class MiniMapSubSquare
+    {
+        Vector2 topLeftCorner, bottomRightCorner;
+        Vector3 topLeftPosition, bottomRightPosition;
+        float totalWidth, totalHeight;
+        public MiniMapSubSquare(Vector2 topLeftCornerA, Vector2 bottomRightCornerA, Vector3 topLeftPositionA, Vector3 bottomRightPositionA, float totalWidthA, float totalHeightA)
+        {
+            topLeftCorner = topLeftCornerA;
+            bottomRightCorner = bottomRightCornerA;
+            topLeftPosition = topLeftPositionA;
+            bottomRightPosition = bottomRightPositionA;
+            totalWidth = totalWidthA;
+            totalHeight = totalHeightA;
+        }
+        public Vector2 GetSquarePositionXY(Vector3 position)
+        {
+            Vector2 proportionalPosition = new Vector2() { X = (position.X - topLeftPosition.X) / (bottomRightPosition.X - topLeftPosition.X), Y = (position.Y - bottomRightPosition.Y) / (topLeftPosition.Y - bottomRightPosition.Y) };
+            Vector2 finalPos = new Vector2() { X = topLeftCorner.X + proportionalPosition.X*(bottomRightCorner.X - topLeftCorner.X), Y = bottomRightCorner.Y+proportionalPosition.Y *(topLeftCorner.Y - bottomRightCorner.Y) };
+            return finalPos;
+        }
+
+        public Vector2 getUnitVec()
+        {
+            return new Vector2() {
+                X= 2.0f/ totalWidth,
+                Y= 2.0f / totalHeight
+            };
+
+        }
+
+    }
+
     class MiniMapPoint {
         public Vector3 position;
         public bool main;
@@ -183,10 +215,12 @@ namespace DemoCutterGUI.Tools
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            double actualWidth = OpenTkControl.ActualWidth;
             
 
             if (string.IsNullOrWhiteSpace(map)) return;
+
+            double actualWidth = OpenTkControl.ActualWidth;
+            double actualHeight = OpenTkControl.ActualHeight;
 
             //if (!File.Exists())
             //{
@@ -211,36 +245,51 @@ namespace DemoCutterGUI.Tools
             Vector3 xyRangeHalfVec = Vector3.One * xyRange * 0.5f;
             float xyRangeHalf = xyRange * 0.5f;
 
-            Vector2 topRightPos = miniMapMeta.GetTexturePositionXY(center + xyRangeHalfVec);
-            Vector2 bottomRightPos = miniMapMeta.GetTexturePositionXY(center + new Vector3() { X = xyRangeHalf, Y = -xyRangeHalf });
-            Vector2 bottomLeftPos = miniMapMeta.GetTexturePositionXY(center- xyRangeHalfVec);
-            Vector2 topLeftPos = miniMapMeta.GetTexturePositionXY(center + new Vector3() { X = -xyRangeHalf, Y = xyRangeHalf });
+            Vector3[] xyCorners = new Vector3[] {
+                center + xyRangeHalfVec, // top right
+                center + new Vector3() { X = xyRangeHalf, Y = -xyRangeHalf },// bottom right
+                center- xyRangeHalfVec, // bottom left
+                center + new Vector3() { X = -xyRangeHalf, Y = xyRangeHalf } // top left
+            };
 
+            Vector2[] xyTextureCoords = new Vector2[] {
+                miniMapMeta.GetTexturePositionXY(xyCorners[0]),
+                miniMapMeta.GetTexturePositionXY(xyCorners[1]),
+                miniMapMeta.GetTexturePositionXY(xyCorners[2]),
+                miniMapMeta.GetTexturePositionXY(xyCorners[3]),
+            };
+
+            Vector2[] xyQuadCorners = new Vector2[]
+            {
+                new Vector2(1.0f,1.0f),
+                new Vector2(1.0f,-0.3333333f),
+                new Vector2(-1.0f,-0.3333333f),
+                new Vector2(-1.0f,1.0f),
+            };
+
+            MiniMapSubSquare xySquare = new MiniMapSubSquare(xyQuadCorners[3], xyQuadCorners[1], xyCorners[3], xyCorners[1],(float)actualWidth, (float)actualHeight);
 
             GL.Enable(EnableCap.Texture2D);
             GL.Enable(EnableCap.Blend);
 
+            GL.Color4(1f, 1f, 1f, 1f); // Line color
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             GL.BindTexture(TextureTarget.Texture2D, textureHandle);
 
             GL.Begin(PrimitiveType.Quads);
 
-            //GL.TexCoord2(1.0, 1.0);
-            GL.TexCoord2(topRightPos);
-            GL.Vertex2(1.0, 1.0);
+            GL.TexCoord2(xyTextureCoords[0]);
+            GL.Vertex2(xyQuadCorners[0]);
 
-            //GL.TexCoord2(1.0, 0.0);
-            GL.TexCoord2(bottomRightPos);
-            GL.Vertex2(1.0, -1.0);
+            GL.TexCoord2(xyTextureCoords[1]);
+            GL.Vertex2(xyQuadCorners[1]);
 
-            //GL.TexCoord2(0.0, 0.0);
-            GL.TexCoord2(bottomLeftPos);
-            GL.Vertex2(-1.0, -1.0);
+            GL.TexCoord2(xyTextureCoords[2]);
+            GL.Vertex2(xyQuadCorners[2]);
 
-            //GL.TexCoord2(0.0, 1.0);
-            GL.TexCoord2(topLeftPos);
-            GL.Vertex2(-1.0, 1.0);
+            GL.TexCoord2(xyTextureCoords[3]);
+            GL.Vertex2(xyQuadCorners[3]);
             GL.End();
 
             GL.BindTexture(TextureTarget.Texture2D, 0);
@@ -248,6 +297,21 @@ namespace DemoCutterGUI.Tools
             GL.Disable(EnableCap.Texture2D);
             GL.Disable(EnableCap.Blend);
 
+            GL.LineWidth(2);
+            GL.Color4(1f, 0f, 0f, 1f); // Line color
+            GL.Begin(PrimitiveType.Lines);
+
+            Vector2 crossSize = xySquare.getUnitVec()*10.0f;
+            foreach (var point in points)
+            {
+                Vector2 position = xySquare.GetSquarePositionXY(point.position);
+
+                GL.Vertex3(position.X, position.Y- crossSize.Y, 0);
+                GL.Vertex3(position.X, position.Y+ crossSize.Y, 0);
+                GL.Vertex3(position.X - crossSize.X, position.Y, 0);
+                GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+            }
+            GL.End();
 
             lastUpdate = DateTime.Now;
 
