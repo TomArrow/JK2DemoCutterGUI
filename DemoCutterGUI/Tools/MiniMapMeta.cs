@@ -20,5 +20,21 @@ namespace DemoCutterGUI.Tools
         {
             return new Vector2() { X = (position.X - minX) / (maxX - minX), Y = (position.Y - minY) / (maxY - minY) };
         }
+        public Vector2 GetTexturePosition(Vector3 position, int xIndex, int yIndex)
+        {
+            float minXHere = xIndex == 0 ? minX : (xIndex == 1 ? minY : minZ);
+            float maxXHere = xIndex == 0 ? maxX : (xIndex == 1 ? maxY : maxZ);
+            float minYHere = yIndex == 0 ? minX : (yIndex == 1 ? minY : minZ);
+            float maxYHere = yIndex == 0 ? maxX : (yIndex == 1 ? maxY : maxZ);
+            return new Vector2() { X = (position[xIndex] - minXHere) / (maxXHere - minXHere), Y = (position[yIndex] - minYHere) / (maxYHere - minYHere) };
+        }
+        public Vector2 GetTexturePosition(Vector2 position, int xIndex, int yIndex)
+        {
+            float minXHere = xIndex == 0 ? minX : (xIndex == 1 ? minY : minZ);
+            float maxXHere = xIndex == 0 ? maxX : (xIndex == 1 ? maxY : maxZ);
+            float minYHere = yIndex == 0 ? minX : (yIndex == 1 ? minY : minZ);
+            float maxYHere = yIndex == 0 ? maxX : (yIndex == 1 ? maxY : maxZ);
+            return new Vector2() { X = (position.X - minXHere) / (maxXHere - minXHere), Y = (position.Y - minYHere) / (maxYHere - minYHere) };
+        }
     }
 }

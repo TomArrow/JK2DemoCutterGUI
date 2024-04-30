@@ -18,10 +18,11 @@ namespace DemoCutterGUI.Tools
 
     class MiniMapSubSquare
     {
+        Vector2[] _quadCorners;
         Vector2 topLeftCorner, bottomRightCorner;
-        Vector3 topLeftPosition, bottomRightPosition;
+        Vector2 topLeftPosition, bottomRightPosition;
         float totalWidth, totalHeight;
-        public MiniMapSubSquare(Vector2 topLeftCornerA, Vector2 bottomRightCornerA, Vector3 topLeftPositionA, Vector3 bottomRightPositionA, float totalWidthA, float totalHeightA)
+        /*public MiniMapSubSquare(Vector2 topLeftCornerA, Vector2 bottomRightCornerA, Vector3 topLeftPositionA, Vector3 bottomRightPositionA, float totalWidthA, float totalHeightA)
         {
             topLeftCorner = topLeftCornerA;
             bottomRightCorner = bottomRightCornerA;
@@ -29,10 +30,60 @@ namespace DemoCutterGUI.Tools
             bottomRightPosition = bottomRightPositionA;
             totalWidth = totalWidthA;
             totalHeight = totalHeightA;
+        }*/
+
+        Vector2[] corners;
+        Vector2[] textureCoords;
+        int _xIndex;
+        int _yIndex;
+        public MiniMapSubSquare(Vector2[] quadCorners, Vector3 centerA, int xIndex, int yIndex, float range, float totalWidthA, float totalHeightA, MiniMapMeta miniMapMeta)
+        {
+            _quadCorners = quadCorners;
+            topLeftCorner = quadCorners[3];
+            bottomRightCorner = quadCorners[1];
+            totalWidth = totalWidthA;
+            totalHeight = totalHeightA;
+            float halfRange = range * 0.5f;
+            Vector2 rangeHalfVec = Vector2.One * halfRange;
+            Vector2 center = new Vector2 { X= centerA[xIndex], Y=centerA[yIndex] };
+            corners = new Vector2[] {
+                center + rangeHalfVec, // top right
+                center + new Vector2() { X = halfRange, Y = -halfRange },// bottom right
+                center- rangeHalfVec, // bottom left
+                center + new Vector2() { X = -halfRange, Y = halfRange } // top left
+            };
+            textureCoords = new Vector2[] {
+                miniMapMeta.GetTexturePosition(corners[0],xIndex,yIndex),
+                miniMapMeta.GetTexturePosition(corners[1],xIndex,yIndex),
+                miniMapMeta.GetTexturePosition(corners[2],xIndex,yIndex),
+                miniMapMeta.GetTexturePosition(corners[3],xIndex,yIndex),
+            };
+            topLeftPosition = corners[3];
+            bottomRightPosition = corners[1];
+            _xIndex = xIndex;
+            _yIndex = yIndex;
         }
-        public Vector2 GetSquarePositionXY(Vector3 position)
+        /*public Vector2 GetSquarePositionXY(Vector3 position)
         {
             Vector2 proportionalPosition = new Vector2() { X = (position.X - topLeftPosition.X) / (bottomRightPosition.X - topLeftPosition.X), Y = (position.Y - bottomRightPosition.Y) / (topLeftPosition.Y - bottomRightPosition.Y) };
+            Vector2 finalPos = new Vector2() { X = topLeftCorner.X + proportionalPosition.X*(bottomRightCorner.X - topLeftCorner.X), Y = bottomRightCorner.Y+proportionalPosition.Y *(topLeftCorner.Y - bottomRightCorner.Y) };
+            return finalPos;
+        }*/
+        public Vector2 GetSquarePosition(Vector2 position)
+        {
+            Vector2 proportionalPosition = new Vector2() { X = (position.X - topLeftPosition.X) / (bottomRightPosition.X - topLeftPosition.X), Y = (position.Y - bottomRightPosition.Y) / (topLeftPosition.Y - bottomRightPosition.Y) };
+            Vector2 finalPos = new Vector2() { X = topLeftCorner.X + proportionalPosition.X*(bottomRightCorner.X - topLeftCorner.X), Y = bottomRightCorner.Y+proportionalPosition.Y *(topLeftCorner.Y - bottomRightCorner.Y) };
+            return finalPos;
+        }
+        public Vector2 GetSquarePosition(Vector3 position, int xIndex, int yIndex)
+        {
+            Vector2 proportionalPosition = new Vector2() { X = (position[xIndex] - topLeftPosition.X) / (bottomRightPosition.X - topLeftPosition.X), Y = (position[yIndex] - bottomRightPosition.Y) / (topLeftPosition.Y - bottomRightPosition.Y) };
+            Vector2 finalPos = new Vector2() { X = topLeftCorner.X + proportionalPosition.X*(bottomRightCorner.X - topLeftCorner.X), Y = bottomRightCorner.Y+proportionalPosition.Y *(topLeftCorner.Y - bottomRightCorner.Y) };
+            return finalPos;
+        }
+        public Vector2 GetSquarePosition(Vector3 position)
+        {
+            Vector2 proportionalPosition = new Vector2() { X = (position[_xIndex] - topLeftPosition.X) / (bottomRightPosition.X - topLeftPosition.X), Y = (position[_yIndex] - bottomRightPosition.Y) / (topLeftPosition.Y - bottomRightPosition.Y) };
             Vector2 finalPos = new Vector2() { X = topLeftCorner.X + proportionalPosition.X*(bottomRightCorner.X - topLeftCorner.X), Y = bottomRightCorner.Y+proportionalPosition.Y *(topLeftCorner.Y - bottomRightCorner.Y) };
             return finalPos;
         }
@@ -44,6 +95,46 @@ namespace DemoCutterGUI.Tools
                 Y= 2.0f / totalHeight
             };
 
+        }
+
+        public Vector2[] getCornerTextureCoords()
+        {
+            return textureCoords;
+        }
+        public Vector2[] getCorners()
+        {
+            return corners;
+        }
+
+        public void DrawMiniMap(int textureHandle)
+        {
+            GL.Enable(EnableCap.Texture2D);
+            GL.Enable(EnableCap.Blend);
+
+            GL.Color4(1f, 1f, 1f, 1f); // Line color
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            GL.BindTexture(TextureTarget.Texture2D, textureHandle);
+
+            GL.Begin(PrimitiveType.Quads);
+
+            GL.TexCoord2(textureCoords[0]);
+            GL.Vertex2(_quadCorners[0]);
+
+            GL.TexCoord2(textureCoords[1]);
+            GL.Vertex2(_quadCorners[1]);
+
+            GL.TexCoord2(textureCoords[2]);
+            GL.Vertex2(_quadCorners[2]);
+
+            GL.TexCoord2(textureCoords[3]);
+            GL.Vertex2(_quadCorners[3]);
+            GL.End();
+
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            GL.Disable(EnableCap.Texture2D);
+            GL.Disable(EnableCap.Blend);
         }
 
     }
@@ -239,12 +330,36 @@ namespace DemoCutterGUI.Tools
 
             Vector3 boundsRanges = bounds.maxs - bounds.mins;
             float xyRange = Math.Max(Math.Max(boundsRanges.X,boundsRanges.Y) + 100.0f, 2000.0f);
-            float xzRange = Math.Max(Math.Max(boundsRanges.X,boundsRanges.Z) + 100.0f, 2000.0f);
-            float yzRange = Math.Max(Math.Max(boundsRanges.Y,boundsRanges.Z) + 100.0f, 2000.0f);
+            float xzRange = Math.Max(Math.Max(boundsRanges.X,boundsRanges.Z) + 100.0f, 1000.0f);
+            float yzRange = Math.Max(Math.Max(boundsRanges.Y,boundsRanges.Z) + 100.0f, 1000.0f);
+
+
+            Vector2[] xyQuadCorners = new Vector2[]
+            {
+                new Vector2(1.0f,1.0f),
+                new Vector2(1.0f,-0.3333333f),
+                new Vector2(-1.0f,-0.3333333f),
+                new Vector2(-1.0f,1.0f),
+            };
+
+            Vector2[] xzQuadCorners = new Vector2[]
+            {
+                new Vector2(0.0f,-0.3333333f),
+                new Vector2(0.0f,-1f),
+                new Vector2(-1.0f,-1f),
+                new Vector2(-1.0f,-0.3333333f),
+            };
+            Vector2[] yzQuadCorners = new Vector2[]
+            {
+                new Vector2(1.0f,-0.3333333f),
+                new Vector2(1.0f,-1f),
+                new Vector2(0.0f,-1f),
+                new Vector2(0.0f,-0.3333333f),
+            };
 
             Vector3 xyRangeHalfVec = Vector3.One * xyRange * 0.5f;
             float xyRangeHalf = xyRange * 0.5f;
-
+            /*
             Vector3[] xyCorners = new Vector3[] {
                 center + xyRangeHalfVec, // top right
                 center + new Vector3() { X = xyRangeHalf, Y = -xyRangeHalf },// bottom right
@@ -257,45 +372,14 @@ namespace DemoCutterGUI.Tools
                 miniMapMeta.GetTexturePositionXY(xyCorners[1]),
                 miniMapMeta.GetTexturePositionXY(xyCorners[2]),
                 miniMapMeta.GetTexturePositionXY(xyCorners[3]),
-            };
+            };*/
 
-            Vector2[] xyQuadCorners = new Vector2[]
-            {
-                new Vector2(1.0f,1.0f),
-                new Vector2(1.0f,-0.3333333f),
-                new Vector2(-1.0f,-0.3333333f),
-                new Vector2(-1.0f,1.0f),
-            };
 
-            MiniMapSubSquare xySquare = new MiniMapSubSquare(xyQuadCorners[3], xyQuadCorners[1], xyCorners[3], xyCorners[1],(float)actualWidth, (float)actualHeight);
+            //MiniMapSubSquare xySquare = new MiniMapSubSquare(xyQuadCorners[3], xyQuadCorners[1], xyCorners[3], xyCorners[1],(float)actualWidth, (float)actualHeight);
+            MiniMapSubSquare xySquare = new MiniMapSubSquare(xyQuadCorners, center,0,1, xyRange, (float)actualWidth, (float)actualHeight,miniMapMeta);
+            //var xyTextureCoords = xySquare.getCornerTextureCoords();
 
-            GL.Enable(EnableCap.Texture2D);
-            GL.Enable(EnableCap.Blend);
-
-            GL.Color4(1f, 1f, 1f, 1f); // Line color
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
-            GL.BindTexture(TextureTarget.Texture2D, textureHandle);
-
-            GL.Begin(PrimitiveType.Quads);
-
-            GL.TexCoord2(xyTextureCoords[0]);
-            GL.Vertex2(xyQuadCorners[0]);
-
-            GL.TexCoord2(xyTextureCoords[1]);
-            GL.Vertex2(xyQuadCorners[1]);
-
-            GL.TexCoord2(xyTextureCoords[2]);
-            GL.Vertex2(xyQuadCorners[2]);
-
-            GL.TexCoord2(xyTextureCoords[3]);
-            GL.Vertex2(xyQuadCorners[3]);
-            GL.End();
-
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            GL.Disable(EnableCap.Texture2D);
-            GL.Disable(EnableCap.Blend);
+            xySquare.DrawMiniMap(textureHandle);
 
             GL.LineWidth(2);
             GL.Color4(1f, 0f, 0f, 1f); // Line color
@@ -304,7 +388,7 @@ namespace DemoCutterGUI.Tools
             Vector2 crossSize = xySquare.getUnitVec()*10.0f;
             foreach (var point in points)
             {
-                Vector2 position = xySquare.GetSquarePositionXY(point.position);
+                Vector2 position = xySquare.GetSquarePosition(point.position,0,1);
 
                 GL.Vertex3(position.X, position.Y- crossSize.Y, 0);
                 GL.Vertex3(position.X, position.Y+ crossSize.Y, 0);
