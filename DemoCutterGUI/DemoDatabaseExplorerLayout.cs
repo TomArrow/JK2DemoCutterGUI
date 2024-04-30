@@ -234,8 +234,7 @@ namespace DemoCutterGUI
 
         partial void Constructor()
         {
-            InitOpenTK();
-
+            InitMiniMap();
             categoryPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
             {
                 { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret)} },
@@ -264,6 +263,13 @@ namespace DemoCutterGUI
             }
         }
 
+        MiniMapRenderer miniMapRenderer = null;
+
+        void InitMiniMap()
+        {
+            miniMapRenderer = new MiniMapRenderer(OpenTkControl);
+
+        }
 
         partial void Destructor()
         {
@@ -275,96 +281,14 @@ namespace DemoCutterGUI
             }
         }
         
-        void InitOpenTK()
+        private void updateMinimapBtn_Click(object sender, RoutedEventArgs e)
         {
-            var settings = new GLWpfControlSettings
-            {
-                MajorVersion = 2,
-                MinorVersion = 1,
-                RenderContinuously = false,
-
-            };
-            OpenTkControl.Loaded += OpenTkControl_Loaded;
-            OpenTkControl.Start(settings);
+            UpdateMiniMap();
         }
 
-        Dictionary<string, Tuple<int,MiniMapMeta>> mapMinimapTextures = new Dictionary<string, Tuple<int, MiniMapMeta>>();
-
-        int GetMinimapTexture(string mapname,ref MiniMapMeta miniMapMeta)
-        {
-            if (mapMinimapTextures.ContainsKey(mapname))
-            {
-                miniMapMeta = mapMinimapTextures[mapname].Item2;
-                return mapMinimapTextures[mapname].Item1;
-            }
-
-            string miniMapPath = Path.Combine(Tools.BSPToMiniMap.minimapsPath,mapname.ToLowerInvariant());
-            string miniMapMetaFile = Path.Combine(miniMapPath, "meta.json");
-            string miniMapImage = Path.Combine(miniMapPath, "xy.png");
-
-            if (!File.Exists(miniMapMetaFile) || !File.Exists(miniMapImage))
-            {
-                Debug.WriteLine($"Minimap meta or image not found for {mapname} minimap texture generation.");
-                miniMapMeta = null;
-                return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(-1,null)).Item1;
-            }
-
-            int handle = GL.GenTexture();
-
-            if(handle == (int)ErrorCode.InvalidValue)
-            {
-                Debug.WriteLine($"ErrorCode.InvalidValue gotten on GL.GenTexture for {mapname} minimap texture generation.");
-                miniMapMeta = null;
-                return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(-1, null)).Item1;
-            }
-
-            miniMapMeta = BSPToMiniMap.DecodeMiniMapMeta(File.ReadAllText(miniMapMetaFile));
-            
-            if(miniMapMeta is null)
-            {
-                Debug.WriteLine($"Failed decoding metadata for {mapname} minimap texture generation.");
-                miniMapMeta = null;
-                return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(-1, null)).Item1;
-            }
-
-            GL.BindTexture(TextureTarget.Texture2D, handle);
-            StbImage.stbi_set_flip_vertically_on_load(1);
-
-            ImageResult img = ImageResult.FromStream(File.OpenRead(miniMapImage),ColorComponents.RedGreenBlueAlpha);
-
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,(int)TextureMinFilter.LinearMipmapLinear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,(int)TextureMinFilter.LinearMipmapLinear);
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, img.Width, img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, img.Data);
-
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            return (mapMinimapTextures[mapname] = new Tuple<int, MiniMapMeta>(handle, miniMapMeta)).Item1;
-        }
-
-
-        const double maxFps = 165;
-        const double minTimeDelta = 1000.0 / maxFps;
-        DateTime lastUpdate = DateTime.Now;
-        
-        private void OpenTkControl_Render(TimeSpan obj)
+        void UpdateMiniMap()
         {
             
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.LoadIdentity();
-
-            double timeSinceLast = (DateTime.Now - lastUpdate).TotalMilliseconds;
-            //if (timeSinceLast < minTimeDelta) System.Threading.Thread.Sleep((int)(minTimeDelta- timeSinceLast));
-            if (timeSinceLast > minTimeDelta) ; //OpenTkControl.InvalidateVisual();
-            else return;
-            GL.ClearColor(Color4.White);
-
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            double actualWidth = OpenTkControl.ActualWidth;
-
             DatabaseFieldInfo.FieldCategory? category = GetActiveTabCategory();
             if (category != DatabaseFieldInfo.FieldCategory.Rets && category != DatabaseFieldInfo.FieldCategory.Captures) return;
 
@@ -374,22 +298,23 @@ namespace DemoCutterGUI
 
             string map = null; // we will simply draw the map of the first item. if other kills are from other maps, too bad!
 
-            foreach(object selectedItem in selectedItems)
+            foreach (object selectedItem in selectedItems)
             {
                 if (selectedItem is Ret)
                 {
                     Ret ret = selectedItem as Ret;
                     if (!ret.positionX.HasValue || !ret.positionY.HasValue || !ret.positionZ.HasValue) continue;
-                    positions.Add(new Vector3() { X= (float)ret.positionX.Value, Y= (float)ret.positionY.Value, Z= (float)ret.positionZ.Value });
-                    if(map is null && !string.IsNullOrWhiteSpace(ret.map))
+                    positions.Add(new Vector3() { X = (float)ret.positionX.Value, Y = (float)ret.positionY.Value, Z = (float)ret.positionZ.Value });
+                    if (map is null && !string.IsNullOrWhiteSpace(ret.map))
                     {
                         map = ret.map;
                     }
-                } else if (selectedItem is TableMappings.Capture)
+                }
+                else if (selectedItem is TableMappings.Capture)
                 {
                     TableMappings.Capture cap = selectedItem as TableMappings.Capture;
                     if (!cap.positionX.HasValue || !cap.positionY.HasValue || !cap.positionZ.HasValue) continue;
-                    positions.Add(new Vector3() { X= (float)cap.positionX.Value, Y= (float)cap.positionY.Value, Z= (float)cap.positionZ.Value }); 
+                    positions.Add(new Vector3() { X = (float)cap.positionX.Value, Y = (float)cap.positionY.Value, Z = (float)cap.positionZ.Value });
                     if (cap is null && !string.IsNullOrWhiteSpace(cap.map))
                     {
                         map = cap.map;
@@ -397,55 +322,16 @@ namespace DemoCutterGUI
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(map)) return;
+            miniMapRenderer.items.Clear();
 
-            //if (!File.Exists())
-            //{
+            foreach (Vector3 position in positions)
+            {
+                miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position});
+            }
 
-            //}
+            miniMapRenderer.map = map;
 
-            MiniMapMeta miniMapMeta = null;
-            int textureHandle = GetMinimapTexture(map, ref miniMapMeta);
-
-            if (textureHandle < 0 || miniMapMeta is null) return; // No minimap texture found
-
-            GL.Enable(EnableCap.Texture2D);
-
-            GL.BindTexture(TextureTarget.Texture2D, textureHandle);
-
-            GL.Begin(PrimitiveType.Quads);
-
-            GL.TexCoord2(1.0, 1.0);
-            GL.Vertex2(1.0,1.0);
-
-            GL.TexCoord2(1.0, 0.0);
-            GL.Vertex2(1.0,-1.0);
-
-            GL.TexCoord2(0.0, 0.0);
-            GL.Vertex2(-1.0,-1.0);
-
-            GL.TexCoord2(0.0, 1.0);
-            GL.Vertex2(-1.0,1.0);
-            GL.End();
-
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            GL.Disable(EnableCap.Texture2D);
-
-
-            lastUpdate = DateTime.Now;
-
-        }
-
-        private void OpenTkControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            // var ifc = new InstalledFontCollection();
-
-
-        }
-        private void updateMinimapBtn_Click(object sender, RoutedEventArgs e)
-        {
-            OpenTkControl.InvalidateVisual();
+            miniMapRenderer.Update();
         }
 
         private void FieldMan_fieldInfoChanged(object sender, DatabaseFieldInfo e)

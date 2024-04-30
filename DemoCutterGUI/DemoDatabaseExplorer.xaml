@@ -92,7 +92,6 @@
                     <StackPanel>
                         <glWpfControl:GLWpfControl Height="300"
                             x:Name="OpenTkControl" 
-                            Render="OpenTkControl_Render"
                             RegisterToEventsDirectly="False"
                             CanInvokeOnHandledEvents="False"
                                                    />
