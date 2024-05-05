@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 
 namespace DemoCutterGUI.Tools
 {
@@ -241,6 +242,8 @@ namespace DemoCutterGUI.Tools
             OpenTkControl = control;
             OpenTkControl.Render += OpenTkControl_Render;
             InitOpenTK();
+            //OpenTkControl.Cursor = Cursors.SizeWE;
+            //System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.SizeNS;
         }
 
         ~MiniMapRenderer()
@@ -307,6 +310,17 @@ namespace DemoCutterGUI.Tools
         Vector3 dragMins = dragMinsDefault;
         Vector3 dragMaxs = dragMaxsDefault;
         bool dragMinMaxesSet = false;
+
+        enum DragStartMode {
+            Default,
+            NorthEast,
+            SouthEast,
+            SouthWest,
+            NorthWest
+        }
+
+        DragStartMode dragStartMode = DragStartMode.Default;
+        Vector2 dragStartPos = new Vector2();
 
         private void UpdateMousePosition(System.Windows.Input.MouseEventArgs e)
         {
@@ -383,6 +397,106 @@ namespace DemoCutterGUI.Tools
             }
         }
 
+        // Unit being 1 pixel
+        private Vector2 getUnitVec()
+        {
+            return new Vector2((float)(2.0/OpenTkControl.ActualWidth),(float)(2.0/OpenTkControl.ActualHeight));
+        }
+
+        /// <summary>
+        /// multiply with this to convert relative vector from opengl coords to pixels
+        /// </summary>
+        /// <returns></returns>
+        private Vector2 getInverseUnitVec() 
+        {
+            return new Vector2((float)(OpenTkControl.ActualWidth/ 2.0),(float)(OpenTkControl.ActualHeight/ 2.0));
+        }
+
+        private float openglDistanceInPixels(Vector2 a,Vector2 b)
+        {
+            return ((a-b)*getInverseUnitVec()).Length; // does the multiplication thing work? uh
+        }
+
+        private void handleMouseCursor()
+        {
+            lock (dragLock)
+            {
+                if (isDragging)
+                {
+                    dragStartMode = DragStartMode.Default;
+                    OpenTkControl.Cursor = default;
+                    return;
+                }
+
+                OpenGLPerfectRectangle mousePositionRectangle = getContainingRectangle(mousePositionRelative);
+
+                if (dragMinMaxesSet && !(xySquare is null || xzSquare is null || yzSquare is null || mousePositionRectangle is null))
+                {
+                    Vector2[][] dragMinMax = getDragMinMaxsRectangles();
+                    Vector2[] rectangle = null;
+                    dragMinMaxesSet = true;
+
+                    if(!(dragMinMax is null))
+                    {
+
+                        if (mousePositionRectangle == xyQuadCorners)
+                        {
+                            rectangle = dragMinMax[0];
+                        }
+                        else if (mousePositionRectangle == xzQuadCorners)
+                        {
+                            rectangle = dragMinMax[1];
+                        }
+                        else if (mousePositionRectangle == yzQuadCorners)
+                        {
+                            rectangle = dragMinMax[2];
+                        }
+                    }
+
+                    if(!(rectangle is null))
+                    {
+                        Vector2 cornerTopLeft = new Vector2(rectangle[0].X,rectangle[1].Y);
+                        Vector2 cornerBottomRight = new Vector2(rectangle[1].X,rectangle[0].Y);
+                        if (openglDistanceInPixels(mousePositionRelative, rectangle[0]) < 5f)
+                        {
+                            OpenTkControl.Cursor = Cursors.ScrollSW;
+                            dragStartMode = DragStartMode.SouthWest;
+                            dragStartPos = rectangle[1];
+                        } else if (openglDistanceInPixels(mousePositionRelative, rectangle[1]) < 5f)
+                        {
+                            OpenTkControl.Cursor = Cursors.ScrollNE;
+                            dragStartMode = DragStartMode.NorthEast;
+                            dragStartPos = rectangle[0];
+                        }  else if (openglDistanceInPixels(mousePositionRelative, cornerTopLeft) < 5f)
+                        {
+                            OpenTkControl.Cursor = Cursors.ScrollNW;
+                            dragStartMode = DragStartMode.NorthWest;
+                            dragStartPos = cornerBottomRight;
+                        }  else if (openglDistanceInPixels(mousePositionRelative, cornerBottomRight) < 5f)
+                        {
+                            OpenTkControl.Cursor = Cursors.ScrollSE;
+                            dragStartMode = DragStartMode.SouthEast;
+                            dragStartPos = cornerTopLeft;
+                        } else
+                        {
+                            dragStartMode = DragStartMode.Default;
+                            OpenTkControl.Cursor = default;
+                        }
+                    } else
+                    {
+
+                        dragStartMode = DragStartMode.Default;
+                        OpenTkControl.Cursor = default;
+                    }
+                }
+                else
+                {
+                    dragStartMode = DragStartMode.Default;
+                    OpenTkControl.Cursor = default;
+                }
+            }
+        }
+        
         private void updateDrag(bool isStarting = false)
         {
             lock (dragLock)
@@ -475,6 +589,40 @@ namespace DemoCutterGUI.Tools
             }
         }
 
+        // in opengl coords
+        private Vector2[][] getDragMinMaxsRectangles()
+        {
+            if (xySquare is null || xzSquare is null || yzSquare is null/* || draggingRectangle is null*/)
+            {
+                return null;
+            }
+
+            Vector3[] dragMinMax = getDragMinMaxs();
+
+            if (dragMinMax is null)
+            {
+                return null;
+            }
+
+            List<Vector2[]> rects = new List<Vector2[]>();
+
+            Vector2[] dragRectangle = new Vector2[] { xySquare.GetSquarePosition(dragMinMax[0], true), xySquare.GetSquarePosition(dragMinMax[1], true) };
+            for (int i = 0; i < 3; i++)
+            {
+                switch (i)
+                {
+                    case 1:
+                        dragRectangle = new Vector2[] { xzSquare.GetSquarePosition(dragMinMax[0], true), xzSquare.GetSquarePosition(dragMinMax[1], true) };
+                        break;
+                    case 2:
+                        dragRectangle = new Vector2[] { yzSquare.GetSquarePosition(dragMinMax[0], true), yzSquare.GetSquarePosition(dragMinMax[1], true) };
+                        break;
+                }
+                rects.Add(dragRectangle);
+            }
+            return rects.ToArray();
+        }
+
         private void OpenTkControl_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             UpdateMousePosition(e);
@@ -484,6 +632,7 @@ namespace DemoCutterGUI.Tools
         private void OpenTkControl_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
             UpdateMousePosition(e);
+            handleMouseCursor();
             updateDrag();
             setDraggingPositionEnd(mousePositionRelative);
             updateDrag(false);
@@ -499,7 +648,14 @@ namespace DemoCutterGUI.Tools
         {
             UpdateMousePosition(e);
             setDragging(true);
-            setDraggingPositionStart(mousePositionRelative);
+            if(dragStartMode == DragStartMode.Default)
+            {
+                setDraggingPositionStart(mousePositionRelative);
+            }
+            else
+            {
+                setDraggingPositionStart(dragStartPos);
+            }
             setDraggingPositionEnd(mousePositionRelative);
             updateDrag(true);
         }
@@ -709,38 +865,16 @@ namespace DemoCutterGUI.Tools
                 GL.Vertex3(position.X + crossSize.X, position.Y, 0);
             }
             GL.End();
-
-            /*Vector2[] dragRectangle = getDragRectangle();
-            if(dragRectangle != null)
-            {
-                GL.LineWidth(2);
-                GL.Color4(0f, 1f, 0f, 1f); // Line color
-                GL.Begin(PrimitiveType.LineStrip);
-
-                GL.Vertex3(dragRectangle[0].X, dragRectangle[0].Y, 0);
-                GL.Vertex3(dragRectangle[1].X, dragRectangle[0].Y, 0);
-                GL.Vertex3(dragRectangle[1].X, dragRectangle[1].Y, 0);
-                GL.Vertex3(dragRectangle[0].X, dragRectangle[1].Y, 0);
-                GL.Vertex3(dragRectangle[0].X, dragRectangle[0].Y, 0);
-                GL.End();
-            }*/
-            Vector3[] dragMinMax = getDragMinMaxs();
+            
+            Vector2[][] dragMinMax = getDragMinMaxsRectangles();
             if(dragMinMax != null)
             {
                 GL.LineWidth(2);
                 GL.Color4(0f, 1f, 0f, 1f); // Line color
 
-                Vector2[] dragRectangle = new Vector2[] { xySquare.GetSquarePosition(dragMinMax[0], true), xySquare.GetSquarePosition(dragMinMax[1],true) };
                 for (int i = 0; i < 3; i++)
                 {
-                    switch (i) {
-                        case 1:
-                            dragRectangle = new Vector2[] { xzSquare.GetSquarePosition(dragMinMax[0], true), xzSquare.GetSquarePosition(dragMinMax[1], true) };
-                            break;
-                        case 2:
-                            dragRectangle = new Vector2[] { yzSquare.GetSquarePosition(dragMinMax[0], true), yzSquare.GetSquarePosition(dragMinMax[1], true) };
-                            break;
-                    }
+                    Vector2[] dragRectangle = dragMinMax[i];
                     GL.Begin(PrimitiveType.LineStrip);
                     GL.Vertex3(dragRectangle[0].X, dragRectangle[0].Y, 0);
                     GL.Vertex3(dragRectangle[1].X, dragRectangle[0].Y, 0);
