@@ -29,6 +29,7 @@ namespace DemoCutterGUI.Tools
         int _xIndex;
         int _yIndex;
         MiniMapMeta _miniMapMeta;
+        public bool isLocked = false; // Just a note to the renderer to not automatically adjust area on this based on selected items, for example when we zoomed or moved around or sth.
         public MiniMapSubSquare(Vector2[] quadCorners, Vector3 centerA, int xIndex, int yIndex, float range, float totalWidthA, float totalHeightA, MiniMapMeta miniMapMeta)
         {
             _quadCorners = quadCorners;
@@ -36,27 +37,55 @@ namespace DemoCutterGUI.Tools
             bottomRightCorner = quadCorners[1];
             totalWidth = totalWidthA;
             totalHeight = totalHeightA;
+            
+            _xIndex = xIndex;
+            _yIndex = yIndex;
+            _miniMapMeta = miniMapMeta;
+
+            setArea(centerA, range);
+        }
+        public void setMap(MiniMapMeta miniMapMeta)
+        {
+            _miniMapMeta = miniMapMeta;
+            CalculateTextureCoords();
+        }
+
+        public void setArea(Vector3 centerA, float range)
+        {
+
             float halfRange = range * 0.5f;
             Vector2 rangeHalfVec = Vector2.One * halfRange;
-            Vector2 center = new Vector2 { X= centerA[xIndex], Y=centerA[yIndex] };
+            Vector2 center = new Vector2 { X = centerA[_xIndex], Y = centerA[_yIndex] };
             corners = new Vector2[] {
                 center + rangeHalfVec, // top right
                 center + new Vector2() { X = halfRange, Y = -halfRange },// bottom right
                 center- rangeHalfVec, // bottom left
                 center + new Vector2() { X = -halfRange, Y = halfRange } // top left
             };
-            textureCoords = new Vector2[] {
-                miniMapMeta.GetTexturePosition(corners[0],xIndex,yIndex),
-                miniMapMeta.GetTexturePosition(corners[1],xIndex,yIndex),
-                miniMapMeta.GetTexturePosition(corners[2],xIndex,yIndex),
-                miniMapMeta.GetTexturePosition(corners[3],xIndex,yIndex),
-            };
             topLeftPosition = corners[3];
             bottomRightPosition = corners[1];
-            _xIndex = xIndex;
-            _yIndex = yIndex;
-            _miniMapMeta = miniMapMeta;
+            CalculateTextureCoords();
         }
+        public void setArea(Vector2[] cornersA)
+        {
+
+            corners = cornersA;
+            topLeftPosition = corners[3];
+            bottomRightPosition = corners[1];
+            CalculateTextureCoords();
+        }
+
+        private void CalculateTextureCoords()
+        {
+
+            textureCoords = new Vector2[] {
+                _miniMapMeta.GetTexturePosition(corners[0],_xIndex,_yIndex),
+                _miniMapMeta.GetTexturePosition(corners[1],_xIndex,_yIndex),
+                _miniMapMeta.GetTexturePosition(corners[2],_xIndex,_yIndex),
+                _miniMapMeta.GetTexturePosition(corners[3],_xIndex,_yIndex),
+            };
+        }
+
         /*public Vector2 GetSquarePositionXY(Vector3 position)
         {
             Vector2 proportionalPosition = new Vector2() { X = (position.X - topLeftPosition.X) / (bottomRightPosition.X - topLeftPosition.X), Y = (position.Y - bottomRightPosition.Y) / (topLeftPosition.Y - bottomRightPosition.Y) };
@@ -111,6 +140,21 @@ namespace DemoCutterGUI.Tools
             return retVal;
             //return _miniMapMeta.GetPositionFromTexturePosition(texPos,_xIndex,_yIndex);
         }
+        
+        public Vector2 positionFromOpenGLCoords2D(Vector2 position)
+        {
+            Vector2 texPos = new Vector2() {
+                X = (position.X - _quadCorners[2].X) / (_quadCorners[0].X - _quadCorners[2].X),
+                Y = (position.Y - _quadCorners[2].Y) / (_quadCorners[0].Y - _quadCorners[2].Y),
+            };
+            //Vector2 texPos = (position - glToTexOffset) / 2.0f;
+            Vector2 retVal = new Vector2();
+            Vector2 range = corners[0] - corners[2];
+            retVal.X = corners[2].X + texPos.X * range.X;
+            retVal.Y = corners[2].Y + texPos.Y * range.Y;
+            return retVal;
+            //return _miniMapMeta.GetPositionFromTexturePosition(texPos,_xIndex,_yIndex);
+        }
 
         public Vector2[] getCornerTextureCoords()
         {
@@ -121,10 +165,17 @@ namespace DemoCutterGUI.Tools
             return corners;
         }
 
-        public void DrawBorder(float lineThickness=2)
+        public void DrawBorder(float lineThickness=2, Vector4? color = null )
         {
             GL.LineWidth(lineThickness);
-            GL.Color4(1f, 1f, 1f, 1f); // Line color
+            if (color.HasValue)
+            {
+                GL.Color4(color.Value); // Line color
+            }
+            else
+            {
+                GL.Color4(1f, 1f, 1f, 1f); // Line color
+            }
             GL.Begin(PrimitiveType.LineStrip);
 
             GL.Vertex2(_quadCorners[0]);
@@ -248,6 +299,7 @@ namespace DemoCutterGUI.Tools
 
         ~MiniMapRenderer()
         {
+            UnloadOpenTK();
             ClearMiniMapTextures();
         }
 
@@ -291,11 +343,73 @@ namespace DemoCutterGUI.Tools
 
             };
             OpenTkControl.Loaded += OpenTkControl_Loaded;
-            OpenTkControl.MouseDown += OpenTkControl_MouseDown;
+            OpenTkControl.MouseLeftButtonDown += OpenTkControl_MouseDown;
+            OpenTkControl.MouseLeftButtonUp += OpenTkControl_MouseUp;
             OpenTkControl.MouseLeave += OpenTkControl_MouseLeave;
             OpenTkControl.MouseMove += OpenTkControl_MouseMove;
-            OpenTkControl.MouseUp += OpenTkControl_MouseUp; ;
+            OpenTkControl.MouseWheel += OpenTkControl_MouseWheel;
             OpenTkControl.Start(settings);
+        }
+
+
+        void UnloadOpenTK()
+        {
+            OpenTkControl.Loaded -= OpenTkControl_Loaded;
+            OpenTkControl.MouseLeftButtonDown -= OpenTkControl_MouseDown;
+            OpenTkControl.MouseLeftButtonUp -= OpenTkControl_MouseUp;
+            OpenTkControl.MouseLeave -= OpenTkControl_MouseLeave;
+            OpenTkControl.MouseMove -= OpenTkControl_MouseMove;
+            OpenTkControl.MouseWheel -= OpenTkControl_MouseWheel;
+        }
+        private void OpenTkControl_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            float multiplier = 1.1f;
+            if(e.Delta > 0)
+            {
+                multiplier = 1f / multiplier;
+            }
+            lock (dragLock)
+            {
+                OpenGLPerfectRectangle mousePositionRectangle = getContainingRectangle(mousePositionRelative);
+
+                if (!(xySquare is null || xzSquare is null || yzSquare is null || mousePositionRectangle is null))
+                {
+                    MiniMapSubSquare subSquare = null;
+
+                    if (mousePositionRectangle == xyQuadCorners)
+                    {
+                        subSquare = xySquare;
+                    }
+                    else if (mousePositionRectangle == xzQuadCorners)
+                    {
+                        subSquare = xzSquare;
+                    }
+                    else if (mousePositionRectangle == yzQuadCorners)
+                    {
+                        subSquare = yzSquare;
+                    }
+
+                    subSquare.isLocked = true;
+                    Vector2[] corners = subSquare.getCorners();
+                    Vector2 ourPos = subSquare.positionFromOpenGLCoords2D(mousePositionRelative);
+                    Vector2 newTopRight = corners[0];
+                    Vector2 newBottomLeft = corners[2];
+                    Vector2 topRightDelta = newTopRight - ourPos;
+                    Vector2 bottomLeftDelta = ourPos- newBottomLeft;
+                    topRightDelta *= multiplier;
+                    bottomLeftDelta *= multiplier;
+                    Vector2[] newCorners = new Vector2[]
+                    {
+                        ourPos+topRightDelta,
+                        new Vector2(ourPos.X+topRightDelta.X,ourPos.Y-bottomLeftDelta.Y),
+                        ourPos-bottomLeftDelta,
+                        new Vector2(ourPos.X-bottomLeftDelta.X,ourPos.Y+topRightDelta.Y),
+                    };
+                    subSquare.setArea(newCorners);
+                    OpenTkControl.InvalidateVisual();
+                }
+            }
+            Debug.WriteLine(e.Delta);
         }
 
         Vector2 mousePositionRelative = new Vector2();
@@ -823,18 +937,38 @@ namespace DemoCutterGUI.Tools
             Vector3 xyRangeHalfVec = Vector3.One * xyRange * 0.5f;
             float xyRangeHalf = xyRange * 0.5f;
 
-            xySquare = new MiniMapSubSquare(xyQuadCorners.corners, center,0,1, xyRange, (float)actualWidth, (float)actualHeight,miniMapMeta);
-            xzSquare = new MiniMapSubSquare(xzQuadCorners.corners, center,0,2, xzRange, (float)actualWidth, (float)actualHeight,miniMapMeta);
-            yzSquare = new MiniMapSubSquare(yzQuadCorners.corners, center,1,2, yzRange, (float)actualWidth, (float)actualHeight,miniMapMeta);
+            if(xySquare is null || !xySquare.isLocked)
+            {
+                xySquare = new MiniMapSubSquare(xyQuadCorners.corners, center, 0, 1, xyRange, (float)actualWidth, (float)actualHeight, miniMapMeta);
+            } else
+            {
+                xySquare.setMap(miniMapMeta);
+            }
+            if(xzSquare is null || !xzSquare.isLocked)
+            {
+                xzSquare = new MiniMapSubSquare(xzQuadCorners.corners, center, 0, 2, xzRange, (float)actualWidth, (float)actualHeight, miniMapMeta);
+            }
+            else
+            {
+                xzSquare.setMap(miniMapMeta);
+            }
+            if (yzSquare is null || !yzSquare.isLocked)
+            {
+                yzSquare = new MiniMapSubSquare(yzQuadCorners.corners, center, 1, 2, yzRange, (float)actualWidth, (float)actualHeight, miniMapMeta);
+            }
+            else
+            {
+                yzSquare.setMap(miniMapMeta);
+            }
 
 
             xySquare.DrawMiniMap(textureHandles[0]);
             xzSquare.DrawMiniMap(textureHandles[1]);
             yzSquare.DrawMiniMap(textureHandles[2]);
 
-            xySquare.DrawBorder();
-            xzSquare.DrawBorder();
-            yzSquare.DrawBorder();
+            xySquare.DrawBorder(default, xySquare.isLocked ? new Vector4(0, 0, 1, 1) : default);
+            xzSquare.DrawBorder(default, xzSquare.isLocked ? new Vector4(0, 0, 1, 1) : default);
+            yzSquare.DrawBorder(default, yzSquare.isLocked ? new Vector4(0, 0, 1, 1) : default);
 
             GL.LineWidth(2);
             GL.Color4(1f, 0f, 0f, 1f); // Line color
