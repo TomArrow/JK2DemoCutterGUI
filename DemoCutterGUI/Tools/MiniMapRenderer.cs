@@ -69,7 +69,7 @@ namespace DemoCutterGUI.Tools
         public void setArea(Vector2[] cornersA)
         {
 
-            corners = cornersA;
+            corners = (Vector2[])cornersA.Clone();
             topLeftPosition = corners[3];
             bottomRightPosition = corners[1];
             CalculateTextureCoords();
@@ -162,7 +162,7 @@ namespace DemoCutterGUI.Tools
         }
         public Vector2[] getCorners()
         {
-            return corners;
+            return (Vector2[])corners.Clone();
         }
 
         public void DrawBorder(float lineThickness=2, Vector4? color = null )
@@ -345,6 +345,8 @@ namespace DemoCutterGUI.Tools
             OpenTkControl.Loaded += OpenTkControl_Loaded;
             OpenTkControl.MouseLeftButtonDown += OpenTkControl_MouseDown;
             OpenTkControl.MouseLeftButtonUp += OpenTkControl_MouseUp;
+            OpenTkControl.MouseRightButtonDown += OpenTkControl_MouseDownRight;
+            OpenTkControl.MouseRightButtonUp += OpenTkControl_MouseUpRight;
             OpenTkControl.MouseLeave += OpenTkControl_MouseLeave;
             OpenTkControl.MouseMove += OpenTkControl_MouseMove;
             OpenTkControl.MouseWheel += OpenTkControl_MouseWheel;
@@ -357,6 +359,8 @@ namespace DemoCutterGUI.Tools
             OpenTkControl.Loaded -= OpenTkControl_Loaded;
             OpenTkControl.MouseLeftButtonDown -= OpenTkControl_MouseDown;
             OpenTkControl.MouseLeftButtonUp -= OpenTkControl_MouseUp;
+            OpenTkControl.MouseRightButtonDown -= OpenTkControl_MouseDownRight;
+            OpenTkControl.MouseRightButtonUp -= OpenTkControl_MouseUpRight;
             OpenTkControl.MouseLeave -= OpenTkControl_MouseLeave;
             OpenTkControl.MouseMove -= OpenTkControl_MouseMove;
             OpenTkControl.MouseWheel -= OpenTkControl_MouseWheel;
@@ -419,6 +423,10 @@ namespace DemoCutterGUI.Tools
         bool isDragging = false;
         bool dragRectangleValid = false;
 
+        Vector2 positionDragRelativeMousePositionStartPos = new Vector2();
+        Vector2 positionDragStartPos = new Vector2();
+        bool isPositionDragging = false;
+
         static readonly Vector3 dragMinsDefault = new Vector3() { X=float.NegativeInfinity, Y = float.NegativeInfinity, Z = float.NegativeInfinity };
         static readonly Vector3 dragMaxsDefault = new Vector3() { X = float.PositiveInfinity, Y = float.PositiveInfinity, Z = float.PositiveInfinity };
         Vector3 dragMins = dragMinsDefault;
@@ -443,6 +451,17 @@ namespace DemoCutterGUI.Tools
             mousePositionRelative.Y = -(float)(2.0*position.Y / OpenTkControl.ActualHeight-1.0);
         }
 
+        private void setPositionDragging(bool dragging)
+        {
+            lock (dragLock)
+            {
+                if(dragging != isPositionDragging)
+                {
+                    isPositionDragging = dragging;
+                    OpenTkControl.InvalidateVisual();
+                }
+            }
+        }
         private void setDragging(bool dragging)
         {
             lock (dragLock)
@@ -460,6 +479,40 @@ namespace DemoCutterGUI.Tools
             {
                 dragMins = dragMinsDefault; 
                 dragMaxs = dragMaxsDefault;
+            }
+        }
+        private void setPositionDraggingPositionStart(Vector2 position)
+        {
+            lock (dragLock)
+            {
+                if (isPositionDragging)
+                {
+                    if (positionDragRelativeMousePositionStartPos != position)
+                    {
+                        positionDragRelativeMousePositionStartPos = position;
+                        OpenGLPerfectRectangle dragStartRectangle = getContainingRectangle(positionDragRelativeMousePositionStartPos);
+                        if (!(xySquare is null || xzSquare is null || yzSquare is null || dragStartRectangle is null))
+                        {
+                            MiniMapSubSquare subSquare = null;
+
+                            if (dragStartRectangle == xyQuadCorners)
+                            {
+                                subSquare = xySquare;
+                            }
+                            else if (dragStartRectangle == xzQuadCorners)
+                            {
+                                subSquare = xzSquare;
+                            }
+                            else if (dragStartRectangle == yzQuadCorners)
+                            {
+                                subSquare = yzSquare;
+                            }
+
+                            subSquare.isLocked = true;
+                            positionDragStartPos = subSquare.positionFromOpenGLCoords2D(mousePositionRelative);
+                        }
+                    }
+                }
             }
         }
         private void setDraggingPositionStart(Vector2 position)
@@ -674,6 +727,52 @@ namespace DemoCutterGUI.Tools
                 }
             }
         }
+        
+        private void updatePositionDrag()
+        {
+            lock (dragLock)
+            {
+                if (isPositionDragging)
+                {
+                    OpenGLPerfectRectangle dragStartRectangle = getContainingRectangle(positionDragRelativeMousePositionStartPos);
+                    if (!(xySquare is null || xzSquare is null || yzSquare is null || dragStartRectangle is null))
+                    {
+                        MiniMapSubSquare subSquare = null;
+
+                        if (dragStartRectangle == xyQuadCorners)
+                        {
+                            subSquare = xySquare;
+                        }
+                        else if (dragStartRectangle == xzQuadCorners)
+                        {
+                            subSquare = xzSquare;
+                        }
+                        else if (dragStartRectangle == yzQuadCorners)
+                        {
+                            subSquare = yzSquare;
+                        }
+
+
+                        subSquare.isLocked = true;
+                        Vector2 ourPos = subSquare.positionFromOpenGLCoords2D(mousePositionRelative);
+
+                        Vector2 delta = ourPos - positionDragStartPos;
+
+
+                        Vector2[] corners = subSquare.getCorners();
+                        for (int i = 0; i < 4; i++)
+                        {
+                            corners[i] -= delta;
+                        }
+
+                        //positionDragStartPos = ourPos;
+
+                        subSquare.setArea(corners);
+                        OpenTkControl.InvalidateVisual();
+                    }
+                }
+            }
+        }
 
         private Vector2[] getDragRectangle()
         {
@@ -742,11 +841,17 @@ namespace DemoCutterGUI.Tools
             UpdateMousePosition(e);
             setDragging(false);
         }
+        private void OpenTkControl_MouseUpRight(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            UpdateMousePosition(e);
+            setPositionDragging(false);
+        }
 
         private void OpenTkControl_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
             UpdateMousePosition(e);
             handleMouseCursor();
+            updatePositionDrag();
             updateDrag();
             setDraggingPositionEnd(mousePositionRelative);
             updateDrag(false);
@@ -772,6 +877,13 @@ namespace DemoCutterGUI.Tools
             }
             setDraggingPositionEnd(mousePositionRelative);
             updateDrag(true);
+        }
+        private void OpenTkControl_MouseDownRight(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            UpdateMousePosition(e);
+            setPositionDragging(true);
+            setPositionDraggingPositionStart(mousePositionRelative);
+            updatePositionDrag();
         }
 
         Dictionary<string, Tuple<int[], MiniMapMeta>> mapMinimapTextures = new Dictionary<string, Tuple<int[], MiniMapMeta>>();
