@@ -347,12 +347,13 @@ namespace DemoCutterGUI.Tools
             OpenTkControl.MouseLeftButtonUp += OpenTkControl_MouseUp;
             OpenTkControl.MouseRightButtonDown += OpenTkControl_MouseDownRight;
             OpenTkControl.MouseRightButtonUp += OpenTkControl_MouseUpRight;
+            OpenTkControl.MouseDown += OpenTkControl_MouseDown1;
+            OpenTkControl.MouseUp += OpenTkControl_MouseUp1;
             OpenTkControl.MouseLeave += OpenTkControl_MouseLeave;
             OpenTkControl.MouseMove += OpenTkControl_MouseMove;
             OpenTkControl.MouseWheel += OpenTkControl_MouseWheel;
             OpenTkControl.Start(settings);
         }
-
 
         void UnloadOpenTK()
         {
@@ -361,10 +362,51 @@ namespace DemoCutterGUI.Tools
             OpenTkControl.MouseLeftButtonUp -= OpenTkControl_MouseUp;
             OpenTkControl.MouseRightButtonDown -= OpenTkControl_MouseDownRight;
             OpenTkControl.MouseRightButtonUp -= OpenTkControl_MouseUpRight;
+            OpenTkControl.MouseDown -= OpenTkControl_MouseDown1;
+            OpenTkControl.MouseUp -= OpenTkControl_MouseUp1;
             OpenTkControl.MouseLeave -= OpenTkControl_MouseLeave;
             OpenTkControl.MouseMove -= OpenTkControl_MouseMove;
             OpenTkControl.MouseWheel -= OpenTkControl_MouseWheel;
         }
+
+        private void OpenTkControl_MouseUp1(object sender, MouseButtonEventArgs e)
+        {
+            //throw new NotImplementedException();
+        }
+
+        private void OpenTkControl_MouseDown1(object sender, MouseButtonEventArgs e)
+        {
+            //throw new NotImplementedException();
+            if(e.ChangedButton == MouseButton.Middle) // middle button resets view
+            {
+                lock (dragLock)
+                {
+                    OpenGLPerfectRectangle mousePositionRectangle = getContainingRectangle(mousePositionRelative);
+
+                    if (!(xySquare is null || xzSquare is null || yzSquare is null || mousePositionRectangle is null))
+                    {
+                        MiniMapSubSquare subSquare = null;
+
+                        if (mousePositionRectangle == xyQuadCorners)
+                        {
+                            subSquare = xySquare;
+                        }
+                        else if (mousePositionRectangle == xzQuadCorners)
+                        {
+                            subSquare = xzSquare;
+                        }
+                        else if (mousePositionRectangle == yzQuadCorners)
+                        {
+                            subSquare = yzSquare;
+                        }
+
+                        subSquare.isLocked = false;
+                        OpenTkControl.InvalidateVisual();
+                    }
+                }
+            }
+        }
+
         private void OpenTkControl_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             float multiplier = 1.1f;
@@ -728,6 +770,23 @@ namespace DemoCutterGUI.Tools
             }
         }
         
+        public void ResetView()
+        {
+            lock (dragLock)
+            {
+                if (!isPositionDragging)
+                {
+                    if (!(xySquare is null || xzSquare is null || yzSquare is null))
+                    {
+                        xySquare.isLocked = false;
+                        xzSquare.isLocked = false;
+                        yzSquare.isLocked = false;
+                        OpenTkControl.InvalidateVisual();
+                    }
+                }
+            }
+        }
+
         private void updatePositionDrag()
         {
             lock (dragLock)

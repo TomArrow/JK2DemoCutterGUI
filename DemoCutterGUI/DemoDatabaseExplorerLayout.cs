@@ -286,6 +286,17 @@ namespace DemoCutterGUI
             UpdateMiniMap();
         }
 
+
+        private void resetMinimapBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+            miniMapRenderer.ResetView();
+        }
+
+        private void applyMinimapRangeBtn_Click(object sender, RoutedEventArgs e)
+        {
+        }
+
         void UpdateMiniMap()
         {
             
