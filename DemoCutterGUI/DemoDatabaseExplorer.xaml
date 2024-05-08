@@ -100,6 +100,19 @@
                             <Button x:Name="updateMinimapBtn" Click="updateMinimapBtn_Click">Update</Button>
                             <Button x:Name="applyMinimapRangeBtn" Click="applyMinimapRangeBtn_Click">Apply range</Button>
                         </WrapPanel>
+                        <GroupBox Header="Stored points">
+                            <StackPanel>
+                                <WrapPanel>
+                                    <Button x:Name="saveVisiblePointsBtn" Click="saveVisiblePointsBtn_Click">Store visible</Button>
+                                    <Button x:Name="resetSavedPointsBtn" Click="resetSavedPointsBtn_Click">Reset</Button>
+                                </WrapPanel>
+                                <WrapPanel>
+                                    <ComboBox x:Name="savedPointsCombo" IsEditable="True" SelectedValue="default" MinWidth="100"></ComboBox>
+                                    <Button x:Name="savedPointsLoadBtn" Click="savedPointsLoadBtn_Click">Load</Button>
+                                    <Button x:Name="savedPointsSaveBtn" Click="savedPointsSaveBtn_Click">Save</Button>
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
                     </StackPanel>
                 </TabItem>
                 <TabItem Header="Whatever">

@@ -211,6 +211,101 @@ namespace DemoCutterGUI
             return (visibleGridColumnsFound ? visibleGridColumns : null, visibleGridColumnsConfig);
         }
     }
+    
+    static class SavedPointsManager
+    {
+
+        static string savedPointsConfigPath = "configs/savedPoints";
+        static object savedPointsConfigLock = new object();
+
+        public static string[] GetListOfSavedPointsPresets()
+        {
+            if (!Directory.Exists(savedPointsConfigPath)) return new string[] { "default" };
+            string[] files = Directory.GetFiles(savedPointsConfigPath,"*.ini");
+            List<string> presets = new List<string> ();
+            foreach(string file in files)
+            {
+                presets.Add(Path.GetFileNameWithoutExtension(file));
+            }
+            return presets.ToArray();
+        }
+
+        public static Vector3[] GetSavedPoints(string presetName = "default")
+        {
+            string filePath = Path.Combine(savedPointsConfigPath, presetName)+".ini";
+            List<Vector3> points = new List<Vector3>();
+            lock (savedPointsConfigLock)
+            {
+                if (File.Exists(filePath))
+                {
+                    ConfigParser cfg = new ConfigParser(filePath);
+
+                    string pointStringsString = cfg.GetValue("points","points","");
+                    string[] pointStrings = pointStringsString.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    if (pointStrings is null || pointStrings.Length == 0) return null;
+                    foreach (string pointString in pointStrings)
+                    {
+                        string[] floatParts = pointString.Split(';',StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries);
+                        if(floatParts.Length >= 3)
+                        {
+                            Vector3 position = new Vector3();
+                            bool success = float.TryParse(floatParts[0], out position.X);
+                            success = success && float.TryParse(floatParts[1], out position.Y);
+                            success = success && float.TryParse(floatParts[2], out position.Z);
+                            if (success)
+                            {
+                                points.Add(position);
+                            }
+                        }
+                    }
+                    if(points.Count > 0)
+                    {
+                        return points.ToArray();
+                    }
+                }
+            }
+            return null;
+        }
+        public static void SetSavedPoints(string presetName, Vector3[] points)
+        {
+            if (points is null || points.Length == 0) return;
+
+            ConfigParser cfg = null;
+
+            string filePath = Path.Combine(savedPointsConfigPath, presetName) + ".ini";
+
+            lock (savedPointsConfigLock)
+            {
+                if (File.Exists(filePath))
+                {
+                    cfg = new ConfigParser(filePath);
+                }
+            }
+
+            if (cfg == null)
+            {
+                cfg = new ConfigParser();
+            }
+
+            List<string> pointStrings = new List<string>();
+
+            foreach(var point in points)
+            {
+                pointStrings.Add($"{point.X.ToString()};{point.Y.ToString()};{point.Z.ToString()}");
+            }
+
+            string pointStringsString = string.Join('|', pointStrings);
+
+            cfg.SetValue("points","points", pointStringsString);
+
+            lock (savedPointsConfigLock)
+            {
+                Directory.CreateDirectory(savedPointsConfigPath);
+                cfg.Save(filePath);
+            }
+
+        }
+    }
 
 
     public struct SortingInfo
@@ -366,9 +461,16 @@ namespace DemoCutterGUI
 
             miniMapRenderer.items.Clear();
 
+            lock (savedPoints)
+            {
+                foreach (Vector3 position in savedPoints)
+                {
+                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position });
+                }
+            }
             foreach (Vector3 position in positions)
             {
-                miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position});
+                miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position});
             }
 
             miniMapRenderer.map = map;
@@ -427,6 +529,8 @@ namespace DemoCutterGUI
                     visibleColumnsPresetComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
                     visibleColumnsPresetComboBox.SelectedValue = "default";
 
+                    savedPointsCombo.ItemsSource = SavedPointsManager.GetListOfSavedPointsPresets();
+                    savedPointsCombo.SelectedValue = "default";
 
 
                     // Kills first.
@@ -1045,6 +1149,80 @@ namespace DemoCutterGUI
             visibleColumnsPresetComboBox.ItemsSource = visibleGridColumnsConfig.ToArray();
             visibleColumnsPresetComboBox.SelectedValue = "default";
 
+        }
+
+        List<Vector3> savedPoints = new List<Vector3>();
+        private void savedPointsLoadBtn_Click(object sender, RoutedEventArgs e)
+        {
+            lock (savedPoints) { 
+                if(savedPoints.Count > 0)
+                {
+                    if (MessageBox.Show("Loading preset, but points exist. Replace?","Existing points",MessageBoxButton.OKCancel) == MessageBoxResult.Cancel)
+                    {
+                        return;
+                    }
+                }
+                Vector3[] result = SavedPointsManager.GetSavedPoints(savedPointsCombo.Text);
+
+                if(result is null || result.Length == 0)
+                {
+                    MessageBox.Show("Preset contains no points.");
+                    return;
+                }
+                savedPoints.Clear();
+                savedPoints.AddRange(result);
+                savedPointsCombo.ItemsSource = SavedPointsManager.GetListOfSavedPointsPresets();
+                savedPointsCombo.SelectedValue = "default";
+                UpdateMiniMap();
+            }
+        }
+
+        private void savedPointsSaveBtn_Click(object sender, RoutedEventArgs e)
+        {
+            lock (savedPoints)
+            {
+                if (savedPoints.Count == 0)
+                {
+                    if (MessageBox.Show("Saving preset, but no saved points. Save empty preset?", "No point(s)", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel)
+                    {
+                        return;
+                    }
+                }
+
+                SavedPointsManager.SetSavedPoints(savedPointsCombo.Text, savedPoints.ToArray());
+
+                savedPointsCombo.ItemsSource = SavedPointsManager.GetListOfSavedPointsPresets();
+                savedPointsCombo.SelectedValue = "default";
+            }
+        }
+
+
+        private void saveVisiblePointsBtn_Click(object sender, RoutedEventArgs e)
+        {
+            lock (savedPoints)
+            {
+                MiniMapRenderer renderer = miniMapRenderer;
+                if (renderer is null) return;
+
+                MiniMapPoint[] points = renderer.items.ToArray();
+
+                if (points is null || points.Length == 0) return;
+                foreach (var point in points)
+                {
+                    savedPoints.Add(point.position);
+                }
+                UpdateMiniMap();
+            }
+        }
+
+
+        private void resetSavedPointsBtn_Click(object sender, RoutedEventArgs e)
+        {
+            lock (savedPoints)
+            {
+                savedPoints.Clear();
+                UpdateMiniMap();
+            }
         }
     }
 

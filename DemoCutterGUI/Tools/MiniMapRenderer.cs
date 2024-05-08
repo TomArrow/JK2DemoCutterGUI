@@ -232,13 +232,14 @@ namespace DemoCutterGUI.Tools
             }
         }
 
-        public static Bounds GetBounds(MiniMapPoint[] points)
+        public static Bounds GetBounds(MiniMapPoint[] points, bool onlyMain = true)
         {
             if (points is null || points.Length == 0) return null;
             Vector3 maxs = new Vector3() { X=float.NegativeInfinity,Y=float.NegativeInfinity,Z=float.NegativeInfinity };
             Vector3 mins = new Vector3() { X=float.PositiveInfinity,Y=float.PositiveInfinity, Z=float.PositiveInfinity };
             foreach(MiniMapPoint point in points)
             {
+                if (onlyMain && !point.main) continue;
                 maxs = Vector3.ComponentMax(maxs, point.position);
                 mins = Vector3.ComponentMin(mins, point.position);
             }
@@ -455,7 +456,7 @@ namespace DemoCutterGUI.Tools
                     OpenTkControl.InvalidateVisual();
                 }
             }
-            Debug.WriteLine(e.Delta);
+            //Debug.WriteLine(e.Delta);
         }
 
         Vector2 mousePositionRelative = new Vector2();
@@ -1142,32 +1143,47 @@ namespace DemoCutterGUI.Tools
             yzSquare.DrawBorder(default, yzSquare.isLocked ? new Vector4(0, 0, 1, 1) : default);
 
             GL.LineWidth(2);
-            GL.Color4(1f, 0f, 0f, 1f); // Line color
             GL.Begin(PrimitiveType.Lines);
 
             Vector2 crossSize = xySquare.getUnitVec()*10.0f;
             foreach (var point in points)
             {
+                if (point.main)
+                {
+
+                    GL.Color4(1f, 0f, 0f, 1f); // Line color
+                }
+                else
+                {
+                    GL.Color4(1f, 1f, 0f, 1f); // Line color
+                }
                 Vector2 position = xySquare.GetSquarePosition(point.position);
 
-                GL.Vertex3(position.X, position.Y- crossSize.Y, 0);
-                GL.Vertex3(position.X, position.Y+ crossSize.Y, 0);
-                GL.Vertex3(position.X - crossSize.X, position.Y, 0);
-                GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                if (xyQuadCorners.InRectangle(position))
+                {
+                    GL.Vertex3(position.X, position.Y - crossSize.Y, 0);
+                    GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
+                    GL.Vertex3(position.X - crossSize.X, position.Y, 0);
+                    GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                }
 
                 position = xzSquare.GetSquarePosition(point.position);
-
-                GL.Vertex3(position.X, position.Y- crossSize.Y, 0);
-                GL.Vertex3(position.X, position.Y+ crossSize.Y, 0);
-                GL.Vertex3(position.X - crossSize.X, position.Y, 0);
-                GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                if (xzQuadCorners.InRectangle(position))
+                {
+                    GL.Vertex3(position.X, position.Y - crossSize.Y, 0);
+                    GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
+                    GL.Vertex3(position.X - crossSize.X, position.Y, 0);
+                    GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                }
 
                 position = yzSquare.GetSquarePosition(point.position);
-
-                GL.Vertex3(position.X, position.Y- crossSize.Y, 0);
-                GL.Vertex3(position.X, position.Y+ crossSize.Y, 0);
-                GL.Vertex3(position.X - crossSize.X, position.Y, 0);
-                GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                if (yzQuadCorners.InRectangle(position))
+                {
+                    GL.Vertex3(position.X, position.Y - crossSize.Y, 0);
+                    GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
+                    GL.Vertex3(position.X - crossSize.X, position.Y, 0);
+                    GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                }
             }
             GL.End();
             
