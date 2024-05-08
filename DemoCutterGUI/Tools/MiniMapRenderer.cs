@@ -847,7 +847,7 @@ namespace DemoCutterGUI.Tools
                 }
             }
         }
-        private Vector3[] getDragMinMaxs()
+        public Vector3[] getDragMinMaxs()
         {
             lock (dragLock)
             {

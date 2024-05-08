@@ -295,6 +295,37 @@ namespace DemoCutterGUI
 
         private void applyMinimapRangeBtn_Click(object sender, RoutedEventArgs e)
         {
+            Vector3[] minMaxs = miniMapRenderer.getDragMinMaxs();
+            DatabaseFieldInfo.FieldCategory? category = GetActiveTabCategory();
+            if (category != DatabaseFieldInfo.FieldCategory.Rets || minMaxs is null) return;
+            //
+            foreach(var fieldInfo in fieldInfoForSearch)
+            {
+                if(fieldInfo.Category == category && fieldInfo.FieldName== "positionX")
+                {
+                    if(!float.IsInfinity(minMaxs[0].X) && !float.IsInfinity(minMaxs[1].X) && !float.IsNaN(minMaxs[0].X) && !float.IsNaN(minMaxs[1].X))
+                    {
+                        fieldInfo.Content = minMaxs[0].X.ToString("0.##") + "-" + minMaxs[1].X.ToString("0.##");
+                        fieldInfo.Active = true;
+                    }
+                } else if(fieldInfo.Category == category && fieldInfo.FieldName== "positionY")
+                {
+
+                    if (!float.IsInfinity(minMaxs[0].Y) && !float.IsInfinity(minMaxs[1].Y) && !float.IsNaN(minMaxs[0].Y) && !float.IsNaN(minMaxs[1].Y))
+                    {
+                        fieldInfo.Content = minMaxs[0].Y.ToString("0.##") + "-" + minMaxs[1].Y.ToString("0.##");
+                        fieldInfo.Active = true;
+                    }
+                } else if(fieldInfo.Category == category && fieldInfo.FieldName== "positionZ")
+                {
+
+                    if (!float.IsInfinity(minMaxs[0].Z) && !float.IsInfinity(minMaxs[1].Z) && !float.IsNaN(minMaxs[0].Z) && !float.IsNaN(minMaxs[1].Z))
+                    {
+                        fieldInfo.Content = minMaxs[0].Z.ToString("0.##") + "-" + minMaxs[1].Z.ToString("0.##");
+                        fieldInfo.Active = true;
+                    }
+                }
+            }
         }
 
         void UpdateMiniMap()
