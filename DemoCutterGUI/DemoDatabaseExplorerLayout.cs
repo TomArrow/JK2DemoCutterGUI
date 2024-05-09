@@ -461,16 +461,17 @@ namespace DemoCutterGUI
 
             miniMapRenderer.items.Clear();
 
+            int index = 0;
             lock (savedPoints)
             {
                 foreach (Vector3 position in savedPoints)
                 {
-                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position });
+                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position, index= index++ });
                 }
             }
             foreach (Vector3 position in positions)
             {
-                miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position});
+                miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position, index = index++ });
             }
 
             miniMapRenderer.map = map;
@@ -1205,6 +1206,8 @@ namespace DemoCutterGUI
                 if (renderer is null) return;
 
                 MiniMapPoint[] points = renderer.items.ToArray();
+
+                Array.Sort(points, (a, b) => { return a.index.CompareTo(b.index); });
 
                 if (points is null || points.Length == 0) return;
                 foreach (var point in points)
