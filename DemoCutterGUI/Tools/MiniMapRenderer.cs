@@ -1,4 +1,7 @@
-﻿using DemoCutterGUI.TableMappings;
+﻿using BitmapFontLibrary;
+using BitmapFontLibrary.Model;
+using DemoCutterGUI.TableMappings;
+using Ninject;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Wpf;
@@ -287,6 +290,8 @@ namespace DemoCutterGUI.Tools
 
         public ConcurrentBag<MiniMapPoint> items = new ConcurrentBag<MiniMapPoint>();
         public string map = null;
+
+        BitmapFont font = null;
 
         GLWpfControl OpenTkControl = null;
         public MiniMapRenderer(GLWpfControl control)
@@ -1064,6 +1069,15 @@ namespace DemoCutterGUI.Tools
                     return;
                 }
             }
+
+            if (font == null)
+            {
+
+                IKernel kernel = new StandardKernel(new BitmapFontModule());
+                font = kernel.Get<BitmapFont>();
+                font.Initialize("data/mph-2b-damase128.fnt");
+            }
+
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
 
@@ -1142,50 +1156,127 @@ namespace DemoCutterGUI.Tools
             xzSquare.DrawBorder(default, xzSquare.isLocked ? new Vector4(0, 0, 1, 1) : default);
             yzSquare.DrawBorder(default, yzSquare.isLocked ? new Vector4(0, 0, 1, 1) : default);
 
-            GL.LineWidth(2);
-            GL.Begin(PrimitiveType.Lines);
+            //int style = 2; // 1 = crosses, 2= numbers
 
-            Vector2 crossSize = xySquare.getUnitVec()*10.0f;
-            foreach (var point in points)
+            //if(style == 1)
             {
-                if (point.main)
-                {
+                GL.LineWidth(2);
+                GL.Begin(PrimitiveType.Lines);
 
-                    GL.Color4(1f, 0f, 0f, 1f); // Line color
-                }
-                else
+                Vector2 crossSize = xySquare.getUnitVec() * 10.0f;
+                foreach (var point in points)
                 {
-                    GL.Color4(1f, 1f, 0f, 1f); // Line color
-                }
-                Vector2 position = xySquare.GetSquarePosition(point.position);
+                    if (point.main)
+                    {
 
-                if (xyQuadCorners.InRectangle(position))
-                {
-                    GL.Vertex3(position.X, position.Y - crossSize.Y, 0);
-                    GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
-                    GL.Vertex3(position.X - crossSize.X, position.Y, 0);
-                    GL.Vertex3(position.X + crossSize.X, position.Y, 0);
-                }
+                        GL.Color4(1f, 0f, 0f, 1f); // Line color
+                    }
+                    else
+                    {
+                        GL.Color4(1f, 1f, 0f, 1f); // Line color
+                    }
+                    Vector2 position = xySquare.GetSquarePosition(point.position);
 
-                position = xzSquare.GetSquarePosition(point.position);
-                if (xzQuadCorners.InRectangle(position))
-                {
-                    GL.Vertex3(position.X, position.Y - crossSize.Y, 0);
-                    GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
-                    GL.Vertex3(position.X - crossSize.X, position.Y, 0);
-                    GL.Vertex3(position.X + crossSize.X, position.Y, 0);
-                }
+                    if (xyQuadCorners.InRectangle(position))
+                    {
+                        GL.Vertex3(position.X, position.Y - crossSize.Y, 0);
+                        GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
+                        GL.Vertex3(position.X - crossSize.X, position.Y, 0);
+                        GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                    }
 
-                position = yzSquare.GetSquarePosition(point.position);
-                if (yzQuadCorners.InRectangle(position))
-                {
-                    GL.Vertex3(position.X, position.Y - crossSize.Y, 0);
-                    GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
-                    GL.Vertex3(position.X - crossSize.X, position.Y, 0);
-                    GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                    position = xzSquare.GetSquarePosition(point.position);
+                    if (xzQuadCorners.InRectangle(position))
+                    {
+                        GL.Vertex3(position.X, position.Y - crossSize.Y, 0);
+                        GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
+                        GL.Vertex3(position.X - crossSize.X, position.Y, 0);
+                        GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                    }
+
+                    position = yzSquare.GetSquarePosition(point.position);
+                    if (yzQuadCorners.InRectangle(position))
+                    {
+                        GL.Vertex3(position.X, position.Y - crossSize.Y, 0);
+                        GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
+                        GL.Vertex3(position.X - crossSize.X, position.Y, 0);
+                        GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                    }
                 }
+                GL.End();
+            } //else
+            {
+                // Text
+                GL.Enable(EnableCap.Blend);
+                GL.Color4(1f, 1f, 1f, 1f);
+                GL.BlendColor(0f, 0f, 0f, 1.0f);
+                GL.BlendFunc(BlendingFactor.ConstantColor, BlendingFactor.OneMinusSrcColor);
+                //GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
+                GL.MatrixMode(MatrixMode.Projection);
+                GL.LoadIdentity();
+                double verticalScale = 1000.0;
+                double horizontalScale = 1000.0 * actualWidth / actualHeight;
+                GL.Ortho(-horizontalScale, horizontalScale, -1000.0, 1000.0, -1.0, 1.0);
+                double fontHeight = 20;
+                double relativeFontHeight = 2.0 * fontHeight / actualHeight;
+                double fontSize = relativeFontHeight * 1000.0;
+                int index = 0; 
+                Vector2 onePixel = xySquare.getUnitVec();
+                foreach (var point in points)
+                {
+                    if (point.main)
+                    {
+
+                        GL.BlendColor(1f, 0f, 0f, 1f); // Line color
+                    }
+                    else
+                    {
+                        GL.BlendColor(1f, 1f, 0f, 1f); // Line color
+                    }
+                    Vector2 position = xySquare.GetSquarePosition(point.position);
+
+                    if (xyQuadCorners.InRectangle(position))
+                    {
+
+                        double textXLeft = position.X + onePixel.X * 3.0f ;
+                        font.Draw((index).ToString(), (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)position.Y), 0.0f, new TextConfiguration
+                        {
+                            SizeInPixels = (uint)fontSize,
+                            MaximalWidth = 1000,
+                            Alignment = BitmapFontLibrary.Model.TextAlignment.LeftAligned
+                        });
+                    }
+
+                    position = xzSquare.GetSquarePosition(point.position);
+                    if (xzQuadCorners.InRectangle(position))
+                    {
+                        double textXLeft = position.X + onePixel.X * 3.0f;
+                        font.Draw((index).ToString(), (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)position.Y), 0.0f, new TextConfiguration
+                        {
+                            SizeInPixels = (uint)fontSize,
+                            MaximalWidth = 1000,
+                            Alignment = BitmapFontLibrary.Model.TextAlignment.LeftAligned
+                        });
+                    }
+
+                    position = yzSquare.GetSquarePosition(point.position);
+                    if (yzQuadCorners.InRectangle(position))
+                    {
+                        double textXLeft = position.X + onePixel.X * 3.0f;
+                        font.Draw((index).ToString(), (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)position.Y), 0.0f, new TextConfiguration
+                        {
+                            SizeInPixels = (uint)fontSize,
+                            MaximalWidth = 1000,
+                            Alignment = BitmapFontLibrary.Model.TextAlignment.LeftAligned
+                        });
+                    }
+
+                    index++;
+                }
+                GL.Disable(EnableCap.Blend);
+                GL.LoadIdentity();
             }
-            GL.End();
+            
             
             Vector2[][] dragMinMax = getDragMinMaxsRectangles();
             if(dragMinMax != null)

@@ -1209,6 +1209,7 @@ namespace DemoCutterGUI
                 if (points is null || points.Length == 0) return;
                 foreach (var point in points)
                 {
+                    if (!point.main) continue;
                     savedPoints.Add(point.position);
                 }
                 UpdateMiniMap();
