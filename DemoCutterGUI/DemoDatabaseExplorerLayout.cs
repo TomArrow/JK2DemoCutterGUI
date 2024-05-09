@@ -24,10 +24,38 @@ using System.Windows.Threading;
 using System.Collections.Concurrent;
 using StbImageSharp;
 using DemoCutterGUI.Tools;
+using System.Text.Json;
 
 namespace DemoCutterGUI
 {
+    public class MiniMapPointLogical
+    {
+        public struct PersistVector3{
+            public float X { get; set; }
+            public float Y { get; set; }
+            public float Z { get; set; }
+        }
+        public PersistVector3 persistPosition
+        {
+            get
+            {
+                return new PersistVector3() { X=position.X,Y=position.Y,Z=position.Z };
+            }
+            set
+            {
+                position = new Vector3() { X = value.X, Y = value.Y, Z = value.Z };
 
+            }
+        }
+        public Vector3 position;
+        public int index { get; set; }
+        public string note { get; set; }
+        public Ret ret { get; set; } = null;
+        public object getObject()
+        {
+            return ret;
+        }
+    }
     public class DemoDatabaseProperties
     {
         public bool serverNameInKillAngles = false;
@@ -211,9 +239,14 @@ namespace DemoCutterGUI
             return (visibleGridColumnsFound ? visibleGridColumns : null, visibleGridColumnsConfig);
         }
     }
-    
-    static class SavedPointsManager
+
+    public static class SavedPointsManager
     {
+
+        public class SavedPoints
+        {
+            public MiniMapPointLogical[] points { get; set; }
+        }
 
         static string savedPointsConfigPath = "configs/savedPoints";
         static object savedPointsConfigLock = new object();
@@ -221,18 +254,18 @@ namespace DemoCutterGUI
         public static string[] GetListOfSavedPointsPresets()
         {
             if (!Directory.Exists(savedPointsConfigPath)) return new string[] { "default" };
-            string[] files = Directory.GetFiles(savedPointsConfigPath,"*.ini");
-            List<string> presets = new List<string> ();
-            foreach(string file in files)
+            string[] files = Directory.GetFiles(savedPointsConfigPath, "*.json");
+            List<string> presets = new List<string>();
+            foreach (string file in files)
             {
                 presets.Add(Path.GetFileNameWithoutExtension(file));
             }
             return presets.ToArray();
         }
 
-        public static Vector3[] GetSavedPoints(string presetName = "default")
+        /*public static Vector3[] GetSavedPointsIni(string presetName = "default")
         {
-            string filePath = Path.Combine(savedPointsConfigPath, presetName)+".ini";
+            string filePath = Path.Combine(savedPointsConfigPath, presetName) + ".ini";
             List<Vector3> points = new List<Vector3>();
             lock (savedPointsConfigLock)
             {
@@ -240,13 +273,13 @@ namespace DemoCutterGUI
                 {
                     ConfigParser cfg = new ConfigParser(filePath);
 
-                    string pointStringsString = cfg.GetValue("points","points","");
+                    string pointStringsString = cfg.GetValue("points", "points", "");
                     string[] pointStrings = pointStringsString.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                     if (pointStrings is null || pointStrings.Length == 0) return null;
                     foreach (string pointString in pointStrings)
                     {
-                        string[] floatParts = pointString.Split(';',StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries);
-                        if(floatParts.Length >= 3)
+                        string[] floatParts = pointString.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        if (floatParts.Length >= 3)
                         {
                             Vector3 position = new Vector3();
                             bool success = float.TryParse(floatParts[0], out position.X);
@@ -258,15 +291,85 @@ namespace DemoCutterGUI
                             }
                         }
                     }
-                    if(points.Count > 0)
+                    if (points.Count > 0)
                     {
                         return points.ToArray();
                     }
                 }
             }
             return null;
+        }*/
+        static JsonSerializerOptions opts = new JsonSerializerOptions()
+        {NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals | System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString };
+
+        public static MiniMapPointLogical[] GetSavedPoints(string presetName = "default")
+        {
+            string filePath = Path.Combine(savedPointsConfigPath, presetName)+".json";
+            List<MiniMapPointLogical> points = new List<MiniMapPointLogical>();
+            lock (savedPointsConfigLock)
+            {
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        SavedPoints retVal = JsonSerializer.Deserialize<SavedPoints>(File.ReadAllText(filePath),opts);
+                        if (retVal is null) return null;
+                        return retVal.points;
+                    } catch(Exception e)
+                    {
+                        // 
+                        return null;
+                    }
+                }
+            }
+            return null;
         }
-        public static void SetSavedPoints(string presetName, Vector3[] points)
+        public static void SetSavedPoints(string presetName, MiniMapPointLogical[] points)
+        {
+            if (points is null || points.Length == 0) return;
+
+            SavedPoints savedPoints = null;
+
+            string filePath = Path.Combine(savedPointsConfigPath, presetName) + ".json";
+
+            lock (savedPointsConfigLock)
+            {
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        savedPoints = JsonSerializer.Deserialize<SavedPoints>(File.ReadAllText(filePath), opts);
+                    }
+                    catch (Exception e)
+                    {
+                    }
+                }
+            }
+
+            if (savedPoints == null)
+            {
+                savedPoints = new SavedPoints();
+            }
+
+            savedPoints.points = points;
+
+
+            lock (savedPointsConfigLock)
+            {
+                Directory.CreateDirectory(savedPointsConfigPath);
+                try
+                {
+                    string jsonText = JsonSerializer.Serialize(savedPoints, opts);
+                    File.WriteAllText(filePath, jsonText);
+                }catch(Exception e)
+                {
+                    Debug.WriteLine(e.ToString());
+                }
+            }
+
+        }
+        /*
+        public static void SetSavedPointsIni(string presetName, Vector3[] points)
         {
             if (points is null || points.Length == 0) return;
 
@@ -304,7 +407,7 @@ namespace DemoCutterGUI
                 cfg.Save(filePath);
             }
 
-        }
+        }*/
     }
 
 
@@ -423,6 +526,8 @@ namespace DemoCutterGUI
             }
         }
 
+        List<MiniMapPointLogical> currentPoints = new List<MiniMapPointLogical>();
+
         void UpdateMiniMap()
         {
             
@@ -431,7 +536,7 @@ namespace DemoCutterGUI
 
             System.Collections.IList selectedItems = categoryPanels[category.Value].midPanel.TheGrid.SelectedItems;
 
-            List<Vector3> positions = new List<Vector3>();
+            List<MiniMapPointLogical> positions = new List<MiniMapPointLogical>();
 
             string map = null; // we will simply draw the map of the first item. if other kills are from other maps, too bad!
 
@@ -441,7 +546,10 @@ namespace DemoCutterGUI
                 {
                     Ret ret = selectedItem as Ret;
                     if (!ret.positionX.HasValue || !ret.positionY.HasValue || !ret.positionZ.HasValue) continue;
-                    positions.Add(new Vector3() { X = (float)ret.positionX.Value, Y = (float)ret.positionY.Value, Z = (float)ret.positionZ.Value });
+                    positions.Add(new MiniMapPointLogical() { 
+                        position= new Vector3() { X = (float)ret.positionX.Value, Y = (float)ret.positionY.Value, Z = (float)ret.positionZ.Value },
+                        ret = ret,
+                    });
                     if (map is null && !string.IsNullOrWhiteSpace(ret.map))
                     {
                         map = ret.map;
@@ -461,17 +569,30 @@ namespace DemoCutterGUI
 
             miniMapRenderer.items.Clear();
 
-            int index = 0;
+            int maxIndex = -1;
             lock (savedPoints)
             {
-                foreach (Vector3 position in savedPoints)
+                foreach (MiniMapPointLogical position in savedPoints)
                 {
-                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position, index= index++ });
+                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, index= position.index });
+                    maxIndex = Math.Max(maxIndex, position.index);
                 }
             }
-            foreach (Vector3 position in positions)
+            int index = maxIndex+1;
+            lock (currentPoints)
             {
-                miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position, index = index++ });
+                currentPoints.Clear();
+                foreach (MiniMapPointLogical position in positions)
+                {
+                    miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position.position, index = index });
+                    currentPoints.Add(new MiniMapPointLogical()
+                    {
+                        position = position.position,
+                        ret = position.ret,
+                        index = index
+                    });
+                    index++;
+                }
             }
 
             miniMapRenderer.map = map;
@@ -1152,7 +1273,7 @@ namespace DemoCutterGUI
 
         }
 
-        List<Vector3> savedPoints = new List<Vector3>();
+        List<MiniMapPointLogical> savedPoints = new List<MiniMapPointLogical>();
         private void savedPointsLoadBtn_Click(object sender, RoutedEventArgs e)
         {
             lock (savedPoints) { 
@@ -1163,7 +1284,7 @@ namespace DemoCutterGUI
                         return;
                     }
                 }
-                Vector3[] result = SavedPointsManager.GetSavedPoints(savedPointsCombo.Text);
+                MiniMapPointLogical[] result = SavedPointsManager.GetSavedPoints(savedPointsCombo.Text);
 
                 if(result is null || result.Length == 0)
                 {
@@ -1205,15 +1326,15 @@ namespace DemoCutterGUI
                 MiniMapRenderer renderer = miniMapRenderer;
                 if (renderer is null) return;
 
-                MiniMapPoint[] points = renderer.items.ToArray();
+                //MiniMapPoint[] points = renderer.items.ToArray();
 
-                Array.Sort(points, (a, b) => { return a.index.CompareTo(b.index); });
+                //Array.Sort(points, (a, b) => { return a.index.CompareTo(b.index); });
 
-                if (points is null || points.Length == 0) return;
-                foreach (var point in points)
+                lock (currentPoints)
                 {
-                    if (!point.main) continue;
-                    savedPoints.Add(point.position);
+                    //if (currentPoints is null || currentPoints.Count == 0) return;
+                    //savedPoints.Clear();
+                    savedPoints.AddRange(currentPoints);
                 }
                 UpdateMiniMap();
             }
