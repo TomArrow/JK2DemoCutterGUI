@@ -25,6 +25,7 @@ using System.Collections.Concurrent;
 using StbImageSharp;
 using DemoCutterGUI.Tools;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DemoCutterGUI
 {
@@ -35,6 +36,7 @@ namespace DemoCutterGUI
             public float Y { get; set; }
             public float Z { get; set; }
         }
+        [JsonPropertyName("position")]
         public PersistVector3 persistPosition
         {
             get

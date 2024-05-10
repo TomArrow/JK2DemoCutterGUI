@@ -173,6 +173,7 @@
                     </GroupBox>
                     <Button x:Name="EnqueueCurrentViewEntriesBtn" Click="EnqueueCurrentViewEntriesBtn_Click">Enqueue entries in current view</Button>
                     <Button x:Name="EnqueueSelectedEntriesBtn" Click="EnqueueSelectedEntriesBtn_Click">Enqueue selected entries</Button>
+                    <Button x:Name="EnqueueStoredPointsBtn" Click="EnqueueStoredPointsBtn_Click">Enqueue stored points</Button>
                     <Button x:Name="ShowEntryDemoNameBtn" Click="ShowEntryDemoNameBtn_Click">Preview file name</Button>
                     <WrapPanel>
                         <Label Margin="3 0 3 0"  Padding="0">Queued items:</Label>

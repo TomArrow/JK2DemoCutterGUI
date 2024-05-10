@@ -107,8 +107,14 @@ namespace DemoCutterGUI
 
                 foreach (var otherItem in availableObjectPool)
                 {
+
                     Ret otherRet = otherItem as Ret;
+                    if(otherRet is null && otherItem is MiniMapPointLogical)
+                    {
+                        otherRet = (otherItem as MiniMapPointLogical)?.ret;
+                    }
                     if (otherRet == ret) continue;
+                    if (otherRet is null) continue;
                     if(otherRet.hash == ret.hash)
                     {
                         otherItems.Add(otherItem);
@@ -149,6 +155,7 @@ namespace DemoCutterGUI
                 {
                     Capture otherCap = otherItem as Capture;
                     if (otherCap == cap) continue;
+                    if (otherCap is null) continue;
                     if (otherCap.IsLikelySameCapture(cap))
                     {
                         otherItems.Add(otherItem);
@@ -222,6 +229,7 @@ namespace DemoCutterGUI
                 {
                     Laughs otherLaugh = otherItem as Laughs;
                     if (otherLaugh == laughs) continue;
+                    if (otherLaugh is null) continue;
                     if (otherLaugh.IsLikelySameLaugh(laughs))
                     {
                         otherItems.Add(otherItem);
@@ -299,6 +307,7 @@ namespace DemoCutterGUI
                 {
                     DefragRun otherRun = otherItem as DefragRun;
                     if (otherRun == run) continue;
+                    if (otherRun is null) continue;
                     if (otherRun.IsLikelySameRun(run))
                     {
                         otherItems.Add(otherItem);
@@ -351,7 +360,8 @@ namespace DemoCutterGUI
                 {
                     KillSpree otherSpree = otherItem as KillSpree;
                     if (otherSpree == spree) continue;
-                    if(otherSpree.hash == spree.hash)
+                    if (otherSpree is null) continue;
+                    if (otherSpree.hash == spree.hash)
                     {
                         otherItems.Add(otherItem);
                         initialSourceDemoFiles.Add(otherSpree.demoPath);
@@ -456,10 +466,24 @@ namespace DemoCutterGUI
                 DemoCutGroup newGroup = new DemoCutGroup();
                 List<DemoCut> originalCuts = new List<DemoCut>();
                 object mainItem = items[0];
+                items.Remove(mainItem);
                 DemoCut mainCut = MakeDemoName(mainItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
+                if(mainCut is null)
+                {
+                    continue;
+                }
+                if (mainItem is MiniMapPointLogical)
+                {
+                    //mainCut.indexPrefix = (mainItem as MiniMapPointLogical)?.index;
+                    //mainCut.note = (mainItem as MiniMapPointLogical)?.note;
+                    mainItem = (mainItem as MiniMapPointLogical)?.ret;
+                    if ((mainItem as Ret) is null)
+                    {
+                        continue;
+                    }
+                }
                 originalCuts.Add(mainCut);
                 newGroup.demoCuts.Add(mainCut);
-                items.Remove(mainItem);
 
                 if(CutSettings.discardProcessedDemos && mainCut.isPreProcessed)
                 {
@@ -477,6 +501,8 @@ namespace DemoCutterGUI
                     {
                         Tuple<DemoCut, DemoCutGroup> previousCut = originalDemoOutputPaths[mainCut.GetFinalName(true)];
                         bool removeOld = false;
+
+                        previousCut.Item1.MergeNoteIndex(mainCut);
 
                         // Compare the two.
                         if (demoMetaCache.Count > 0)
@@ -541,6 +567,8 @@ namespace DemoCutterGUI
                     {
                         DemoCut otherAngleCut = MakeDemoName(otherItem, CutSettings.preBufferTime, CutSettings.postBufferTime);
 
+                        otherAngleCut.MergeNoteIndex(mainCut);
+
                         if (CutSettings.discardProcessedDemos && otherAngleCut.isPreProcessed)
                         {
                             // This is a demo that was already reframed/merged before. We don't wanna use those as source usually.
@@ -554,6 +582,8 @@ namespace DemoCutterGUI
 
                             Tuple<DemoCut, DemoCutGroup> previousCut = originalDemoOutputPaths[otherAngleCut.GetFinalName(true)];
                             bool removeOld = false;
+
+                            previousCut.Item1.MergeNoteIndex(otherAngleCut);
 
                             // Compare the two.
                             if (demoMetaCache.Count > 0)
@@ -665,7 +695,7 @@ namespace DemoCutterGUI
                     }
                     if (bestBaseName != null)
                     {
-                        newGroup.demoCuts.Add(new DemoCut()
+                        DemoCut mergeCut = new DemoCut()
                         {
                             originalDemoPathsForMerge = sourceCutOutputNames.ToArray(),
                             demoRecorderClientNums = recorderClientNums.ToArray(),
@@ -673,7 +703,9 @@ namespace DemoCutterGUI
                             type = DemoCutType.MERGE,
                             reframeClientNum = reframeClientNum,
                             interpolate = CutSettings.interpolate
-                        });
+                        };
+                        mergeCut.MergeNoteIndex(mainCut);
+                        newGroup.demoCuts.Add(mergeCut);
                     }
                 }
 
@@ -743,6 +775,17 @@ namespace DemoCutterGUI
 
             List<object> items = new List<object>();
             items.AddRange(sqlTableSyncDataFetchers[category.Value]());
+
+            EnqueueCutEntries(items);
+        }
+        private void EnqueueStoredPointsBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+            List<object> items = new List<object>();
+            lock (savedPoints)
+            {
+                items.AddRange(savedPoints);
+            }
 
             EnqueueCutEntries(items);
         }
@@ -1037,18 +1080,49 @@ namespace DemoCutterGUI
             public bool isFakeFind = false;
             public bool interpolate = false;
             public bool isPreProcessed = false;
-            public string GetFinalName(bool genericTrim = false)
+            public int? indexPrefix = null;
+            public string note = null;
+            public string GetFinalName(bool genericComparableName = false)
             {
+                string prefix = "";
+                if (!genericComparableName)
+                {
+                    if (indexPrefix.HasValue)
+                    {
+                        prefix += indexPrefix.Value.ToString("0000")+ "_";
+                    }
+                    if (!string.IsNullOrWhiteSpace(note))
+                    {
+                        prefix += $"{note}_";
+                    }
+                }
                 switch (type)
                 {
                     default:
                         return "WEIRD DEMONAME WTF SPECIFY THE TAPE YOU ANIMAL";
                     case DemoCutType.CUT:
-                        return Helpers.DemoCuttersanitizeFilename(demoName?.Replace(recorderClientNumPlaceHolder, demoRecorderClientNum.Value.ToString())?.Replace(truncationPlaceHolder, genericTrim ? "" : (demoCutTruncationOffset.HasValue? $"_tr{demoCutTruncationOffset.Value.ToString()}" : "")),false);
+                        return Helpers.DemoCuttersanitizeFilename(prefix+demoName?.Replace(recorderClientNumPlaceHolder, demoRecorderClientNum.Value.ToString())?.Replace(truncationPlaceHolder, genericComparableName ? "" : (demoCutTruncationOffset.HasValue? $"_tr{demoCutTruncationOffset.Value.ToString()}" : "")),false);
                     case DemoCutType.REFRAME:
-                        return Helpers.DemoCuttersanitizeFilename(demoName,false);
+                        return Helpers.DemoCuttersanitizeFilename(prefix+demoName, false);
                     case DemoCutType.MERGE:
-                        return Helpers.DemoCuttersanitizeFilename(demoName?.Replace(recorderClientNumPlaceHolder, string.Join('_', demoRecorderClientNums))?.Replace(truncationPlaceHolder, genericTrim ? "" : (demoCutTruncationOffset.HasValue ? $"_tr{demoCutTruncationOffset.Value.ToString()}" : "")), false);
+                        return Helpers.DemoCuttersanitizeFilename(prefix+demoName?.Replace(recorderClientNumPlaceHolder, string.Join('_', demoRecorderClientNums))?.Replace(truncationPlaceHolder, genericComparableName ? "" : (demoCutTruncationOffset.HasValue ? $"_tr{demoCutTruncationOffset.Value.ToString()}" : "")), false);
+                }
+            }
+
+            public void MergeNoteIndex(DemoCut otherDemoCut)
+            {
+                MergeNoteIndexPrivate(otherDemoCut);
+                otherDemoCut.MergeNoteIndexPrivate(this);
+            }
+            private void MergeNoteIndexPrivate(DemoCut otherDemoCut)
+            {
+                if(string.IsNullOrWhiteSpace(this.note) && !string.IsNullOrWhiteSpace(otherDemoCut.note))
+                {
+                    this.note = otherDemoCut.note;
+                }
+                if(!this.indexPrefix.HasValue && otherDemoCut.indexPrefix.HasValue)
+                {
+                    this.indexPrefix = otherDemoCut.indexPrefix;
                 }
             }
         }
@@ -1074,6 +1148,18 @@ namespace DemoCutterGUI
             // BIG TODO: Do the meta events as well!
 
             DemoCut retVal = new DemoCut() { type = DemoCutType.CUT };
+
+            if (entry is MiniMapPointLogical)
+            {
+                retVal.indexPrefix = (entry as MiniMapPointLogical)?.index;
+                retVal.note = (entry as MiniMapPointLogical)?.note;
+                entry = (entry as MiniMapPointLogical)?.ret;
+                if ((entry as Ret) is null)
+                {
+                    return null;
+                }
+            }
+
 
             if(!(entry is null))
             {
