@@ -878,6 +878,11 @@ namespace DemoCutterGUI
                         {
                             filesToZipAndDelete.Add($"{cut.GetFinalName()}{Path.GetExtension(cut.originalDemoPath)}");
                         }
+                        if(!string.IsNullOrWhiteSpace(cut.metaEventsReformatted))
+                        {
+                            string metaEscaped = cut.metaEventsReformatted.Replace("\"", "\\\"");
+                            sb.Append($" --meta \"{metaEscaped}\"");
+                        }
                     } else if (cut.type == DemoCutType.REFRAME && cut.reframeClientNum.GetValueOrDefault(-1) >= 0 && cut.reframeClientNum.GetValueOrDefault(-1) < 64) // TODO dynamic for demo type?
                     {
                         sb.Append("DemoReframer ");
@@ -1082,6 +1087,9 @@ namespace DemoCutterGUI
             public bool isPreProcessed = false;
             public int? indexPrefix = null;
             public string note = null;
+            public Int64 bufferTimeReal = 0;
+            public string metaEventsRaw = null;
+            public string metaEventsReformatted = null;
             public string GetFinalName(bool genericComparableName = false)
             {
                 string prefix = "";
@@ -1213,6 +1221,10 @@ namespace DemoCutterGUI
                     retVal.demoCutTruncationOffset = truncationOffset;
                 }
 
+                retVal.metaEventsRaw = ret.metaEvents;
+                retVal.bufferTimeReal = demoTime - startTime;
+                retVal.metaEventsReformatted = TableMappings.TableMapping.reformatMetaEvents(retVal.metaEventsRaw, retVal.bufferTimeReal);
+
                 sb.Append(DemoCut.truncationPlaceHolder);
                 //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
                 sb.Append("_");
@@ -1294,6 +1306,10 @@ namespace DemoCutterGUI
                     retVal.demoCutTruncationOffset = truncationOffset;
                 }
 
+                retVal.metaEventsRaw = cap.metaEvents;
+                retVal.bufferTimeReal = demoTime - startTime;
+                retVal.metaEventsReformatted = TableMappings.TableMapping.reformatMetaEvents(retVal.metaEventsRaw, retVal.bufferTimeReal);
+
                 sb.Append(DemoCut.truncationPlaceHolder);
                 //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
 
@@ -1364,6 +1380,10 @@ namespace DemoCutterGUI
                     isTruncated = true;
                     retVal.demoCutTruncationOffset = truncationOffset;
                 }
+
+                retVal.metaEventsRaw = spree.metaEvents;
+                retVal.bufferTimeReal = demoTime - startTime;
+                retVal.metaEventsReformatted = TableMappings.TableMapping.reformatMetaEvents(retVal.metaEventsRaw, retVal.bufferTimeReal);
 
                 sb.Append(DemoCut.truncationPlaceHolder);
                 //sb.Append(isTruncated ? $"_tr{truncationOffset}": "");
@@ -1436,6 +1456,10 @@ namespace DemoCutterGUI
                     retVal.demoCutTruncationOffset = truncationOffset;
                 }
 
+                //retVal.metaEventsRaw = run.metaEvents;
+                retVal.bufferTimeReal = demoTime - startTime;
+                //retVal.metaEventsReformatted = TableMappings.TableMapping.reformatMetaEvents(retVal.metaEventsRaw, retVal.bufferTimeReal);
+
                 sb.Append(DemoCut.truncationPlaceHolder);
                 //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
 
@@ -1483,6 +1507,10 @@ namespace DemoCutterGUI
                     isTruncated = true;
                     retVal.demoCutTruncationOffset = truncationOffset;
                 }
+
+                //retVal.metaEventsRaw = laughs.metaEvents;
+                retVal.bufferTimeReal = demoTime - startTime;
+                //retVal.metaEventsReformatted = TableMappings.TableMapping.reformatMetaEvents(retVal.metaEventsRaw, retVal.bufferTimeReal);
 
                 sb.Append(DemoCut.truncationPlaceHolder);
                 //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");

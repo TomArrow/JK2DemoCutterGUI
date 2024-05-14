@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DemoCutterGUI.TableMappings
@@ -35,5 +36,87 @@ namespace DemoCutterGUI.TableMappings
             retVal.IsCopiedEntry = true;
             return retVal;
         }
+
+
+        static JsonSerializerOptions opts = new JsonSerializerOptions()
+        { NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals | System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString };
+        public static string reformatMetaEvents(string metaEventsField, Int64 bufferTimeReal)
+        {
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{\"hl\":");
+            sb.Append(bufferTimeReal);
+            sb.Append(",\"me\":");
+            if (string.IsNullOrWhiteSpace(metaEventsField))
+            {
+                sb.Append("null");
+            } else
+            {
+                try
+                {
+                    MetaEventsField metaEvents = JsonSerializer.Deserialize<MetaEventsField>(metaEventsField, opts);
+                    string[] events = metaEvents.me.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    if(events.Length > 0)
+                    {
+                        sb.Append("\"");
+                        int index = 0;
+                        foreach (string ev in events)
+                        {
+                            if (string.IsNullOrWhiteSpace(ev)) continue;
+                            int letters = 0;
+                            for(int i = 0; i < ev.Length; i++)
+                            {
+                                if(ev[i] >= 'a' && ev[i] <= 'z' || ev[i] >= 'A' && ev[i] <= 'Z')
+                                {
+                                    letters++;
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+                            if (letters == ev.Length) continue;
+                            string eventType = ev.Substring(0, letters);
+                            string number = ev.Substring(letters);
+                            //string[] parts = ev.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                            //if (parts.Length != 2) continue;
+
+                            Int64 num;
+                            if(Int64.TryParse(number, out num))
+                            {
+                                if (index != 0)
+                                {
+                                    sb.Append(",");
+                                }
+                                sb.Append(eventType); // meta events type
+                                //sb.Append("-");
+
+                                sb.Append(bufferTimeReal + num);
+                                index++;
+                            }
+
+                        }
+                        sb.Append("\"");
+                    } else
+                    {
+                        sb.Append("null");
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    sb.Append("null");
+                }
+            }
+            sb.Append("}");
+            return sb.ToString();
+        }
     }
+
+
+    public class MetaEventsField
+    {
+        public string me { get; set; }
+    }
+
 }
