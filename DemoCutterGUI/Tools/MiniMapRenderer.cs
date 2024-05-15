@@ -227,6 +227,10 @@ namespace DemoCutterGUI.Tools
         public bool main;
         public int index;
 
+        // for clicked callback
+        public object callbackReferenceObject;
+        public Action<object> clickedCallback;
+
         public class Bounds {
             public Vector3 mins;
             public Vector3 maxs;
@@ -633,6 +637,8 @@ namespace DemoCutterGUI.Tools
             return ((a-b)*getInverseUnitVec()).Length; // does the multiplication thing work? uh
         }
 
+        MiniMapPoint hoveredClickablePoint = null;
+
         private void handleMouseCursor()
         {
             lock (dragLock)
@@ -645,6 +651,51 @@ namespace DemoCutterGUI.Tools
                 }
 
                 OpenGLPerfectRectangle mousePositionRectangle = getContainingRectangle(mousePositionRelative);
+
+                bool hoveringNearPoint = false;
+                hoveredClickablePoint = null;
+                // Check for points that have click callback
+                if (!(xySquare is null || xzSquare is null || yzSquare is null || mousePositionRectangle is null))
+                {
+                    MiniMapSubSquare subSquare = null;
+                    // Point has a click callback. Are we near?
+                    if (mousePositionRectangle == xyQuadCorners)
+                    {
+                        subSquare = xySquare;
+                    }
+                    else if (mousePositionRectangle == xzQuadCorners)
+                    {
+                        subSquare = xzSquare;
+                    }
+                    else if (mousePositionRectangle == yzQuadCorners)
+                    {
+                        subSquare = yzSquare;
+                    }
+
+                    if(subSquare != null)
+                    {
+                        foreach (MiniMapPoint point in items)
+                        {
+                            if (!(point.clickedCallback is null))
+                            {
+                                Vector2 position = subSquare.GetSquarePosition(point.position);
+                                if (openglDistanceInPixels(mousePositionRelative, position) < 5f)
+                                {
+                                    hoveredClickablePoint = point;
+                                    OpenTkControl.Cursor = Cursors.Pen;
+                                    hoveringNearPoint = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+                if (hoveringNearPoint)
+                {
+                    return;
+                }
 
                 if (dragMinMaxesSet && !(xySquare is null || xzSquare is null || yzSquare is null || mousePositionRectangle is null))
                 {
@@ -939,6 +990,11 @@ namespace DemoCutterGUI.Tools
         private void OpenTkControl_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             UpdateMousePosition(e);
+            if (hoveredClickablePoint != null)
+            {
+                hoveredClickablePoint?.clickedCallback?.Invoke(hoveredClickablePoint?.callbackReferenceObject);
+                return;
+            }
             setDragging(true);
             if(dragStartMode == DragStartMode.Default)
             {

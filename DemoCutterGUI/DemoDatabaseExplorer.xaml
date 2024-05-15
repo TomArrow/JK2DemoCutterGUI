@@ -8,7 +8,7 @@
         xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         mc:Ignorable="d"
         d:DataContext="{StaticResource ResourceKey=ExampleData}"
-        Title="DemoDatabaseExplorer" Height="820" Width="1550">
+        Title="DemoDatabaseExplorer" Height="920" Width="1550">
     <Window.InputBindings>
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding CopyFieldCommand}"></KeyBinding>
     </Window.InputBindings>
@@ -100,6 +100,13 @@
                             <Button x:Name="updateMinimapBtn" Click="updateMinimapBtn_Click">Update</Button>
                             <Button x:Name="applyMinimapRangeBtn" Click="applyMinimapRangeBtn_Click">Apply range</Button>
                         </WrapPanel>
+                        <GroupBox x:Name="miniMapPointEditor"  Header="Point edit" Visibility="Collapsed" d:Visibility="Visible">
+                            <WrapPanel >
+                                <Label>Note</Label>
+                                <TextBox Width="100" x:Name="miniMapPointEditorNoteTxt"></TextBox>
+                                <Button x:Name="miniMapPointEditorOkBtn" Click="miniMapPointEditorOkBtn_Click">Ok</Button>
+                            </WrapPanel>
+                        </GroupBox>
                         <GroupBox Header="Stored points">
                             <StackPanel>
                                 <WrapPanel>

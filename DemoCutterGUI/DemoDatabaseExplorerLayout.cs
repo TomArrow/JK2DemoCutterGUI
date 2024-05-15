@@ -576,7 +576,11 @@ namespace DemoCutterGUI
             {
                 foreach (MiniMapPointLogical position in savedPoints)
                 {
-                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, index= position.index });
+                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, index= position.index, callbackReferenceObject=position,clickedCallback=
+                        (object o) => {
+                            editMiniMapPointNote(o as MiniMapPointLogical);
+                        }
+                        });
                     maxIndex = Math.Max(maxIndex, position.index);
                 }
             }
@@ -600,6 +604,27 @@ namespace DemoCutterGUI
             miniMapRenderer.map = map;
 
             miniMapRenderer.Update();
+        }
+
+        MiniMapPointLogical miniMapPointEditorPoint = null;
+        private void editMiniMapPointNote(MiniMapPointLogical position)
+        {
+            miniMapPointEditorPoint = position;
+            Dispatcher.Invoke(()=> {
+                miniMapPointEditor.Visibility = Visibility.Visible;
+                miniMapPointEditorNoteTxt.Text = miniMapPointEditorPoint.note ?? "";
+            });
+        }
+
+        private void miniMapPointEditorOkBtn_Click(object sender, RoutedEventArgs e)
+        {
+            MiniMapPointLogical position = miniMapPointEditorPoint;
+            miniMapPointEditorPoint = null;
+            miniMapPointEditor.Visibility = Visibility.Collapsed;
+            string editedNote = miniMapPointEditorNoteTxt.Text;
+            miniMapPointEditorNoteTxt.Text = "";
+            if (position is null) return;
+            position.note = editedNote;
         }
 
         private void FieldMan_fieldInfoChanged(object sender, DatabaseFieldInfo e)
