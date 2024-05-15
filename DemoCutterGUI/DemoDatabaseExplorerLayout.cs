@@ -465,10 +465,46 @@ namespace DemoCutterGUI
 
         MiniMapRenderer miniMapRenderer = null;
 
+        ConcurrentDictionary<MiniMapRendererWindow,int> miniMapWindows = new ConcurrentDictionary<MiniMapRendererWindow,int>(); // using dictionary as it allows us to easily remove stuff again which concurrentbag doesnt. dumb, ik.
+
         void InitMiniMap()
         {
             miniMapRenderer = new MiniMapRenderer(OpenTkControl);
 
+        }
+
+
+        private void newMiniMapWindowBtn_Click(object sender, RoutedEventArgs e)
+        {
+            MiniMapRendererWindow wnd = new MiniMapRendererWindow();
+            miniMapWindows.TryAdd(wnd,1);
+            wnd.Closed += Wnd_Closed;
+            wnd.RangeAppliedButtonPressed += Wnd_RangeAppliedButtonPressed;
+            wnd.MiniMapPointEdited += Wnd_MiniMapPointEdited;
+            wnd.Show();
+        }
+
+        private void Wnd_MiniMapPointEdited(object sender, EventArgs e)
+        {
+            UpdateMiniMap();
+        }
+
+        private void Wnd_RangeAppliedButtonPressed(object sender, EventArgs e)
+        {
+            MiniMapRendererWindow wnd = sender as MiniMapRendererWindow;
+            if (wnd is null) return;
+            Vector3[] minMaxs = wnd.miniMapRenderer.getDragMinMaxs();
+            ApplyMinMaxsRange(minMaxs);
+        }
+
+        private void Wnd_Closed(object sender, EventArgs e)
+        {
+            MiniMapRendererWindow wnd = sender as MiniMapRendererWindow;
+            if (wnd is null) return;
+            miniMapWindows.TryRemove(wnd, out _); 
+            wnd.Closed -= Wnd_Closed;
+            wnd.RangeAppliedButtonPressed -= Wnd_RangeAppliedButtonPressed;
+            wnd.MiniMapPointEdited -= Wnd_MiniMapPointEdited;
         }
 
         partial void Destructor()
@@ -496,19 +532,25 @@ namespace DemoCutterGUI
         private void applyMinimapRangeBtn_Click(object sender, RoutedEventArgs e)
         {
             Vector3[] minMaxs = miniMapRenderer.getDragMinMaxs();
+            ApplyMinMaxsRange(minMaxs);
+        }
+
+        private void ApplyMinMaxsRange(Vector3[] minMaxs)
+        {
             DatabaseFieldInfo.FieldCategory? category = GetActiveTabCategory();
             if (category != DatabaseFieldInfo.FieldCategory.Rets || minMaxs is null) return;
             //
-            foreach(var fieldInfo in fieldInfoForSearch)
+            foreach (var fieldInfo in fieldInfoForSearch)
             {
-                if(fieldInfo.Category == category && fieldInfo.FieldName== "positionX")
+                if (fieldInfo.Category == category && fieldInfo.FieldName == "positionX")
                 {
-                    if(!float.IsInfinity(minMaxs[0].X) && !float.IsInfinity(minMaxs[1].X) && !float.IsNaN(minMaxs[0].X) && !float.IsNaN(minMaxs[1].X))
+                    if (!float.IsInfinity(minMaxs[0].X) && !float.IsInfinity(minMaxs[1].X) && !float.IsNaN(minMaxs[0].X) && !float.IsNaN(minMaxs[1].X))
                     {
                         fieldInfo.Content = minMaxs[0].X.ToString("0.##") + "-" + minMaxs[1].X.ToString("0.##");
                         fieldInfo.Active = true;
                     }
-                } else if(fieldInfo.Category == category && fieldInfo.FieldName== "positionY")
+                }
+                else if (fieldInfo.Category == category && fieldInfo.FieldName == "positionY")
                 {
 
                     if (!float.IsInfinity(minMaxs[0].Y) && !float.IsInfinity(minMaxs[1].Y) && !float.IsNaN(minMaxs[0].Y) && !float.IsNaN(minMaxs[1].Y))
@@ -516,7 +558,8 @@ namespace DemoCutterGUI
                         fieldInfo.Content = minMaxs[0].Y.ToString("0.##") + "-" + minMaxs[1].Y.ToString("0.##");
                         fieldInfo.Active = true;
                     }
-                } else if(fieldInfo.Category == category && fieldInfo.FieldName== "positionZ")
+                }
+                else if (fieldInfo.Category == category && fieldInfo.FieldName == "positionZ")
                 {
 
                     if (!float.IsInfinity(minMaxs[0].Z) && !float.IsInfinity(minMaxs[1].Z) && !float.IsNaN(minMaxs[0].Z) && !float.IsNaN(minMaxs[1].Z))
@@ -570,17 +613,31 @@ namespace DemoCutterGUI
             }
 
             miniMapRenderer.items.Clear();
+            foreach(var wnd in miniMapWindows)
+            {
+                wnd.Key.miniMapRenderer.items.Clear();
+            }
 
             int maxIndex = -1;
             lock (savedPoints)
             {
                 foreach (MiniMapPointLogical position in savedPoints)
                 {
-                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, index= position.index, callbackReferenceObject=position,clickedCallback=
+                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, index= position.index, note=position.note, callbackReferenceObject=position,clickedCallback=
                         (object o) => {
                             editMiniMapPointNote(o as MiniMapPointLogical);
                         }
                         });
+
+                    foreach (var wnd in miniMapWindows)
+                    {
+                        MiniMapRendererWindow thisWndLocal = wnd.Key;
+                        wnd.Key.miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, index= position.index, note=position.note, callbackReferenceObject=position,clickedCallback=
+                        (object o) => {
+                            thisWndLocal.editMiniMapPointNote(o as MiniMapPointLogical);
+                        }
+                        });
+                    }
                     maxIndex = Math.Max(maxIndex, position.index);
                 }
             }
@@ -591,6 +648,10 @@ namespace DemoCutterGUI
                 foreach (MiniMapPointLogical position in positions)
                 {
                     miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position.position, index = index });
+                    foreach (var wnd in miniMapWindows)
+                    {
+                        wnd.Key.miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position.position, index = index });
+                    }
                     currentPoints.Add(new MiniMapPointLogical()
                     {
                         position = position.position,
@@ -602,8 +663,12 @@ namespace DemoCutterGUI
             }
 
             miniMapRenderer.map = map;
-
             miniMapRenderer.Update();
+            foreach (var wnd in miniMapWindows)
+            {
+                wnd.Key.miniMapRenderer.map = map;
+                wnd.Key.miniMapRenderer.Update();
+            }
         }
 
         MiniMapPointLogical miniMapPointEditorPoint = null;
@@ -625,6 +690,8 @@ namespace DemoCutterGUI
             miniMapPointEditorNoteTxt.Text = "";
             if (position is null) return;
             position.note = editedNote;
+
+            UpdateMiniMap();
         }
 
         private void FieldMan_fieldInfoChanged(object sender, DatabaseFieldInfo e)
@@ -1350,8 +1417,8 @@ namespace DemoCutterGUI
         {
             lock (savedPoints)
             {
-                MiniMapRenderer renderer = miniMapRenderer;
-                if (renderer is null) return;
+                //MiniMapRenderer renderer = miniMapRenderer;
+                //if (renderer is null) return;
 
                 //MiniMapPoint[] points = renderer.items.ToArray();
 

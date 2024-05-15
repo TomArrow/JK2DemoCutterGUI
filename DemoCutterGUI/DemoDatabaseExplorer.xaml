@@ -99,6 +99,7 @@
                             <Button x:Name="resetMinimapBtn" Click="resetMinimapBtn_Click">Reset view</Button>
                             <Button x:Name="updateMinimapBtn" Click="updateMinimapBtn_Click">Update</Button>
                             <Button x:Name="applyMinimapRangeBtn" Click="applyMinimapRangeBtn_Click">Apply range</Button>
+                            <Button x:Name="newMiniMapWindowBtn" Click="newMiniMapWindowBtn_Click">❐</Button>
                         </WrapPanel>
                         <GroupBox x:Name="miniMapPointEditor"  Header="Point edit" Visibility="Collapsed" d:Visibility="Visible">
                             <WrapPanel >

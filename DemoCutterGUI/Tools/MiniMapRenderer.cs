@@ -226,6 +226,7 @@ namespace DemoCutterGUI.Tools
         public Vector3 position;
         public bool main;
         public int index;
+        public string note;
 
         // for clicked callback
         public object callbackReferenceObject;
@@ -299,11 +300,13 @@ namespace DemoCutterGUI.Tools
         BitmapFont font = null;
 
         GLWpfControl OpenTkControl = null;
-        public MiniMapRenderer(GLWpfControl control)
+        bool _showNotes = false;
+        public MiniMapRenderer(GLWpfControl control, bool showNotes=false)
         {
             OpenTkControl = control;
             OpenTkControl.Render += OpenTkControl_Render;
             InitOpenTK();
+            _showNotes = showNotes;
             //OpenTkControl.Cursor = Cursors.SizeWE;
             //System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.SizeNS;
         }
@@ -1288,6 +1291,11 @@ namespace DemoCutterGUI.Tools
                 Vector2 onePixel = xySquare.getUnitVec();
                 foreach (var point in points)
                 {
+                    string text = point.index.ToString();
+                    if (_showNotes && !string.IsNullOrWhiteSpace(point.note))
+                    {
+                        text += $": \n{point.note}";
+                    }
                     if (point.main)
                     {
 
@@ -1303,7 +1311,7 @@ namespace DemoCutterGUI.Tools
                     {
 
                         double textXLeft = position.X + onePixel.X * 3.0f ;
-                        font.Draw((point.index).ToString(), (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)position.Y), 0.0f, new TextConfiguration
+                        font.Draw(text, (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)position.Y), 0.0f, new TextConfiguration
                         {
                             SizeInPixels = (uint)fontSize,
                             MaximalWidth = 1000,
@@ -1315,7 +1323,7 @@ namespace DemoCutterGUI.Tools
                     if (xzQuadCorners.InRectangle(position))
                     {
                         double textXLeft = position.X + onePixel.X * 3.0f;
-                        font.Draw((point.index).ToString(), (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)position.Y), 0.0f, new TextConfiguration
+                        font.Draw(text, (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)position.Y), 0.0f, new TextConfiguration
                         {
                             SizeInPixels = (uint)fontSize,
                             MaximalWidth = 1000,
@@ -1327,7 +1335,7 @@ namespace DemoCutterGUI.Tools
                     if (yzQuadCorners.InRectangle(position))
                     {
                         double textXLeft = position.X + onePixel.X * 3.0f;
-                        font.Draw((point.index).ToString(), (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)position.Y), 0.0f, new TextConfiguration
+                        font.Draw(text, (float)textXLeft * (float)horizontalScale, 1000.0f * ((float)position.Y), 0.0f, new TextConfiguration
                         {
                             SizeInPixels = (uint)fontSize,
                             MaximalWidth = 1000,
