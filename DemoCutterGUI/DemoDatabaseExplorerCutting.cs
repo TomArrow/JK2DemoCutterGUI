@@ -641,6 +641,7 @@ namespace DemoCutterGUI
                                 else
                                 {
                                     newGroup.demoCuts.Remove(previousCut.Item1);
+                                    originalCuts.Remove(previousCut.Item1);
                                     originalDemoOutputPaths.Remove(previousCut.Item1.GetFinalName(true));
                                 }
                             }

@@ -139,6 +139,7 @@ namespace DemoCutterGUI
             METAEVENT_SABERBLOCK, // any saber block, no matter by who or to who
             METAEVENT_EFFECT, // effect event of any sort
             METAEVENT_LAUGH,
+            //METAEVENT_HIGHLIGHT, // not really used, internal for democutter toools
             METAEVENT_COUNT
         }
         private static readonly Dictionary<string, Type> shortCutToType = new Dictionary<string, Type>()
@@ -154,6 +155,7 @@ namespace DemoCutterGUI
             {"sb",Type.METAEVENT_SABERBLOCK },
             {"ef",Type.METAEVENT_EFFECT },
             {"l",Type.METAEVENT_LAUGH },
+            //{"hl",Type.METAEVENT_HIGHLIGHT },
         };
 
         public static bool TryParseMetaStringElement(string metaString, out Type type, out int timeOffset)
