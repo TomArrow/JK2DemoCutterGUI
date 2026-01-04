@@ -226,6 +226,8 @@ namespace DemoCutterGUI
                 new DatabaseFieldInfo(){ FieldName="timeSinceLastSelfSentryJump", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="groundFrameQuality", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="groundFrameAngleChange", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="throughWallNormal", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="throughWallOcclusion", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="lastSneak", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="lastSneakDuration", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="resultingCaptures", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Kill, Numeric=true},
