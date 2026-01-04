@@ -53,6 +53,8 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? headJumps { get; set; } = null;
         public INTEGER? specialJumps { get; set; } = null;
         public INTEGER? timeSinceLastSelfSentryJump { get; set; } = null;
+        public REAL? groundFrameQuality { get; set; } = null;
+        public REAL? groundFrameAngleChange { get; set; } = null;
         public INTEGER? lastSneak { get; set; } = null;
         public INTEGER? lastSneakDuration { get; set; } = null;
         public INTEGER? resultingCaptures { get; set; } = null;
