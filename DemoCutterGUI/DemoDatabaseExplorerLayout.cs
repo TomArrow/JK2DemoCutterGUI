@@ -439,6 +439,7 @@ namespace DemoCutterGUI
             {
                 { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret)} },
                 { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(TableMappings.Capture)} },
+                { DatabaseFieldInfo.FieldCategory.FlagGrabs, new CategoryInfoCollection(){  midPanel=flagGrabsMidPanel, sidePanel=flagGrabsSidePanel, tableName="flaggrabs", dataType=typeof(TableMappings.FlagGrab)} },
                 { DatabaseFieldInfo.FieldCategory.KillSprees, new CategoryInfoCollection(){  midPanel=killSpreesMidPanel, sidePanel=killSpreesSidePanel, tableName="killSprees", dataType=typeof(KillSpree)} },
                 { DatabaseFieldInfo.FieldCategory.DefragRuns, new CategoryInfoCollection(){  midPanel=defragMidPanel, sidePanel=defragSidePanel, tableName="defragRuns", dataType=typeof(DefragRun)} },
                 { DatabaseFieldInfo.FieldCategory.Laughs, new CategoryInfoCollection(){  midPanel=laughsMidPanel, sidePanel=laughsSidePanel, tableName="laughs", dataType=typeof(Laughs)} }

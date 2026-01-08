@@ -63,6 +63,9 @@
                 <TabItem Header="Captures" IsSelected="{Binding ElementName=capsMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
                     <dee:SidePanel x:Name="capsSidePanel" ReferenceMidPanel="{Binding ElementName=capsMidPanel}"></dee:SidePanel>
                 </TabItem>
+                <TabItem Header="FlagGrabs" IsSelected="{Binding ElementName=flagGrabsMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
+                    <dee:SidePanel x:Name="flagGrabsSidePanel" ReferenceMidPanel="{Binding ElementName=flagGrabsMidPanel}"></dee:SidePanel>
+                </TabItem>
                 <TabItem Header="KillSprees" IsSelected="{Binding ElementName=killSpreesMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
                     <dee:SidePanel x:Name="killSpreesSidePanel" ReferenceMidPanel="{Binding ElementName=killSpreesMidPanel}"></dee:SidePanel>
                 </TabItem>
@@ -128,6 +131,7 @@
                         <StackPanel>
                             <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=retsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=killMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
                             <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=capsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=capsMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
+                            <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=flagGrabsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=flagGrabsMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
                             <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=killSpreesMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=killSpreesMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
                             <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=defragMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=defragMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
                             <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=laughsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=laughsMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
@@ -199,6 +203,9 @@
             </TabItem>
             <TabItem Header="Captures" x:Name="capsMidPanelTab">
                 <dee:MidPanel x:Name="capsMidPanel" Items1Name="Meta" Items2Name="Cap" Items3Name="Movement"></dee:MidPanel>
+            </TabItem>
+            <TabItem Header="FlagGrabs" x:Name="flagGrabsMidPanelTab">
+                <dee:MidPanel x:Name="flagGrabsMidPanel" Items1Name="Meta" Items2Name="FlagGrab" Items3Name="Movement"></dee:MidPanel>
             </TabItem>
             <TabItem Header="KillSprees" x:Name="killSpreesMidPanelTab">
                 <dee:MidPanel x:Name="killSpreesMidPanel" Items1Name="Meta" Items2Name="Kills" Items3Name="Movement"></dee:MidPanel>

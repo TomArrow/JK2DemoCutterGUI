@@ -216,6 +216,87 @@ namespace DemoCutterGUI
                     otherAngleCapture.demoRecorderClientnum = newDemoTiming.Value.Item2;
                     otherItems.Add(otherAngleCapture);
                 }
+            } else if (item is FlagGrab)
+            {
+                FlagGrab grab = item as FlagGrab;
+                if (grab == null) return otherItems;
+
+                // Possible database methods of searching:
+                // 1. Find kills near the cap. Find other demos that have these kills and build other demo list.
+                // or 2. Find FlagGrabs roughly around same serverTime with same capper name, same server, same team
+                // 
+                // 1 isn't bad but maybe overkill and 2 is kinda more elegant overall. But maybe I can just do both?
+
+                HashSet<string> initialSourceDemoFiles = new HashSet<string>();
+                initialSourceDemoFiles.Add(grab.demoPath);
+                //FlagGrab longestGrabAngle = grab;
+                
+                foreach(var otherItem in availableObjectPool)
+                {
+                    FlagGrab otherGrab = otherItem as FlagGrab;
+                    if (otherGrab == grab) continue;
+                    if (otherGrab is null) continue;
+                    if (otherGrab.IsLikelySameFlagGrab(grab))
+                    {
+                        otherItems.Add(otherItem);
+                        initialSourceDemoFiles.Add(otherGrab.demoPath);
+                        //if (otherCap.flagHoldTime.Value > longestGrabAngle.flagHoldTime.Value)
+                        //{
+                        //    longestGrabAngle = otherCap;
+                        //}
+                    }
+                }
+                foreach (var otherItem in otherItems)
+                {
+                    availableObjectPool.Remove(otherItem);
+                }
+
+                string serverNameSearch = grab.serverName.Replace("'","''");
+                string grabberNameSearch = grab.grabberName.Replace("'","''");
+                List<FlagGrab> res = dbConn.Query<FlagGrab>($"SELECT id AS ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.FlagGrabs].tableName} WHERE " +
+                    $"serverName='{serverNameSearch}' AND " +
+                    $"redScore={grab.redScore.Value} AND " +     // This whole block is just the SQL version of IsLikelySameFlagGrab()
+                    $"blueScore={grab.blueScore.Value} AND " +
+                    $"redPlayerCount={grab.redPlayerCount.Value} AND " +
+                    $"bluePlayerCount={grab.bluePlayerCount.Value} AND " +
+                    $"grabberName='{grabberNameSearch}' AND " +
+                    $"grabberClientNum={grab.grabberClientNum.Value} AND " +
+                    $"flagTeam={grab.flagTeam.Value} AND " +
+                    $"ABS(serverTime-{grab.serverTime})<={Constants.EVENT_VALID_MSEC}") as List<FlagGrab>;
+                if(res != null)
+                {
+                    foreach (var result in res)
+                    {
+                        if (!otherItems.Contains(result) && !result.Equals(item) && grab.IsLikelySameFlagGrab(result))
+                        {
+                            otherItems.Add(result);
+                            initialSourceDemoFiles.Add(result.demoPath);
+                            //if (result.flagHoldTime.Value > longestGrabAngle.flagHoldTime.Value)
+                            //{
+                            //    longestGrabAngle = result;
+                            //}
+                        }
+                    }
+                }
+
+                // So, this all works decent enough now, but what if we have a demo that doesn't have the grab, but has some PART of the other cappers hold time in it?
+                // Shouldn't we then maybe search for kills during the hold time and correlate them to other demos?
+                // Or do we just let that be a TODO?
+                // MEH, this was copypasted from caps. Do we really need it? idk. 
+                // Nvm, here we go:
+                /*Dictionary<string, Tuple<long, int>> newlyFoundDemoFileTimingsAndClientNums = FindOtherDemosBasedOnKillTimes(longestGrabAngle.demoPath, longestGrabAngle.demoTime.Value- longestGrabAngle.flagHoldTime.Value, longestGrabAngle.demoTime.Value, initialSourceDemoFiles);
+                int index = -1;
+                foreach (KeyValuePair<string, Tuple<long, int>> newDemoTiming in newlyFoundDemoFileTimingsAndClientNums)
+                {
+                    // Make a copy and change it up. We don't have a real entry since that killspree doesn't exist in that other demo file as a proper find from analyzer.
+                    // Bit dirty but should do the trick.
+                    FlagGrab otherAngleFlagGrab = longestGrabAngle.Clone<FlagGrab>();
+                    otherAngleFlagGrab.rowid = index--;
+                    otherAngleFlagGrab.demoTime = longestGrabAngle.demoTime + newDemoTiming.Value.Item1;
+                    otherAngleFlagGrab.demoPath = newDemoTiming.Key;
+                    otherAngleFlagGrab.demoRecorderClientnum = newDemoTiming.Value.Item2;
+                    otherItems.Add(otherAngleFlagGrab);
+                }*/
             } else if (item is Laughs)
             {
                 Laughs laughs = item as Laughs;

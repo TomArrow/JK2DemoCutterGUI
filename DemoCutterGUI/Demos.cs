@@ -43,6 +43,10 @@ namespace DemoCutterGUI
         public string writer { get; set; }
         [JsonPropertyName("of")]
         public string originalFilename { get; set; }
+        [JsonPropertyName("fd")]
+        public bool? fakeDemo { get; set; }
+        [JsonPropertyName("note")]
+        public string note { get; set; }
 
     }
 
