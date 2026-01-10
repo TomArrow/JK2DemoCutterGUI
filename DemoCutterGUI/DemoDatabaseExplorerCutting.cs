@@ -1044,7 +1044,7 @@ namespace DemoCutterGUI
 
 
         // TODO Add Laughs
-        private string getResultingCapturesString(long? resultingSelfCaptures, long? resultingCaptures, long? resultingLaughs, long? resultingSelfCapturesAfter, long? resultingCapturesAfter, long? resultingLaughsAfter)
+        private string getResultingCapturesString(long? resultingSelfCaptures, long? resultingCaptures, long? resultingEnemyCaptures, long? resultingLaughs, long? resultingSelfCapturesAfter, long? resultingCapturesAfter, long? resultingEnemyCapturesAfter, long? resultingLaughsAfter)
         {
             StringBuilder sb = new StringBuilder();
             if (resultingSelfCaptures >= 1)
@@ -1099,6 +1099,34 @@ namespace DemoCutterGUI
                         if (ledToTeamCapturesAfter > 1)
                         {
                             sb.Append(ledToTeamCapturesAfter);
+                        }
+                    }
+                }
+            }
+            if (resultingEnemyCaptures >= 1)
+            {
+                long ledToTeamEnemyCapturesAfter = resultingEnemyCapturesAfter.HasValue ? resultingEnemyCapturesAfter.Value : resultingEnemyCaptures.Value;
+                sb.Append("_LTEC");
+                if (resultingEnemyCaptures == ledToTeamEnemyCapturesAfter)
+                {
+                    sb.Append("A");
+                    if (resultingEnemyCaptures > 1)
+                    {
+                        sb.Append(resultingEnemyCaptures);
+                    }
+                }
+                else
+                {
+                    if (resultingEnemyCaptures > 1)
+                    {
+                        sb.Append(resultingEnemyCaptures);
+                    }
+                    if (ledToTeamEnemyCapturesAfter > 0)
+                    {
+                        sb.Append("_LTECA");
+                        if (ledToTeamEnemyCapturesAfter > 1)
+                        {
+                            sb.Append(ledToTeamEnemyCapturesAfter);
                         }
                     }
                 }
@@ -1268,7 +1296,7 @@ namespace DemoCutterGUI
                 sb.Append("___");
                 sb.Append(ret.meansOfDeathString);
                 sb.Append(boostString);
-                sb.Append(getResultingCapturesString(ret.resultingSelfCaptures, ret.resultingCaptures, ret.resultingLaughs, null, null, null));
+                sb.Append(getResultingCapturesString(ret.resultingSelfCaptures, ret.resultingCaptures, null, ret.resultingLaughs,null, null, null, null));
                 sb.Append("___");
                 sb.Append(ret.killerName);
                 sb.Append("___");
@@ -1342,8 +1370,9 @@ namespace DemoCutterGUI
                 sb.Append("___CAPTURE");
                 sb.Append(cap.capperKills > 0 ? $"{cap.capperKills}K" : "");
                 sb.Append(cap.capperRets > 0 ? $"{cap.capperRets}R": "");
+                sb.Append(cap.boostCount > 0 ? $"_BST{cap.boostCount}" : "");
 
-                sb.Append(getResultingCapturesString(null, null, cap.resultingLaughs, null, null, cap.resultingLaughsAfter));
+                sb.Append(getResultingCapturesString(null, null,null, cap.resultingLaughs, null, null,null, cap.resultingLaughsAfter));
 
                 sb.Append("___");
                 int milliSeconds = (int)cap.flagHoldTime.Value;
@@ -1360,7 +1389,7 @@ namespace DemoCutterGUI
 
                 sb.Append($"___{cap.capperName}");
                 sb.Append($"___P{cap.flagPickupSource}T{cap.flagTeam}");
-                sb.Append($"___P{(int)cap.moreThanOneVeryCloseEnemyTimePercent}");
+                sb.Append($"___{(int)cap.moreThanOneVeryCloseEnemyTimePercent}");
                 sb.Append($"DANGER{(int)(cap.averageVeryCloseEnemyCount*100)}");
                 sb.Append($"___{(int)cap.maxSpeedCapper}_{(int)cap.averageSpeedCapper}ups");
                 sb.Append(cap.capperWasFollowed == true ? "" : (cap.capperWasFollowedOrVisible == true ? "___thirdperson" : "___NOTvisible"));
@@ -1402,6 +1431,80 @@ namespace DemoCutterGUI
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;
                 return retVal;
+            } else if(entry is FlagGrab)
+            {
+                FlagGrab grab = entry as FlagGrab;
+                if (grab == null) return null;
+                
+                StringBuilder sb = new StringBuilder();
+                retVal.originalDemoPath = grab.demoPath;
+                retVal.reframeClientNum = (int?)grab.capperClientNum;
+                sb.Append(grab.map);
+                sb.Append("___FLAGGRAB");
+                sb.Append(grab.capperKills > 0 ? $"{grab.capperKills}K" : "");
+                sb.Append(grab.capperRets > 0 ? $"{grab.capperRets}R": "");
+                sb.Append(grab.boostCount > 0 ? $"_BST{grab.boostCount}": "");
+
+                sb.Append(getResultingCapturesString(grab.resultingSelfCaptures, grab.resultingCaptures, grab.resultingEnemyCaptures, grab.resultingLaughs, null, null, null, null));
+
+                /*sb.Append("___");
+                
+                int milliSeconds = (int)grab.enemyFlagHoldTime.Value;
+                int pureMilliseconds = milliSeconds % 1000;
+                int seconds = milliSeconds / 1000;
+                int pureSeconds = seconds % 60;
+                int minutes = seconds / 60;
+
+                sb.Append(minutes.ToString("000"));
+                sb.Append("-");
+                sb.Append(pureSeconds.ToString("00"));
+                sb.Append("-");
+                sb.Append(pureMilliseconds.ToString("000"));*/
+
+                sb.Append($"___{grab.grabberName}");
+                sb.Append($"___P{grab.flagPickupSource}T{grab.flagTeam}");
+                sb.Append($"___{(int)grab.veryCloseEnemyCount}");
+                sb.Append($"DANGER{(int)(grab.nearbyEnemyCount)}");
+                sb.Append($"___{(int)grab.maxSpeedGrabberLastSecond}ups");
+                sb.Append(grab.grabberIsFollowed == true ? "" : (grab.grabberIsFollowedOrVisible == true ? "___thirdperson" : "___NOTvisible"));
+                sb.Append("_");
+                sb.Append(grab.grabberClientNum);
+                sb.Append("_");
+                sb.Append(DemoCut.recorderClientNumPlaceHolder);
+                retVal.demoRecorderClientNum = (int?)grab.demoRecorderClientnum;
+
+                retVal.visType = grab.capperWasFollowed == true ? VisibilityType.Followed : (grab.capperWasFollowedOrVisible == true ? VisibilityType.Thirdperson : (grab.capperIsFollowedOrVisible == true ? VisibilityType.PartiallyInvisible : VisibilityType.Invisible));
+
+                long demoTime = grab.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
+
+                //Int64 capStart = demoTime - grab.flagHoldTime.Value;
+                Int64 startTime = demoTime - preBuffertime;
+                Int64 endTime = demoTime + postBufferTime;
+                Int64 earliestPossibleStart = grab.lastGamestateDemoTime.GetValueOrDefault(0) + 1;
+                bool isTruncated = false;
+                Int64 truncationOffset = 0;
+                if (earliestPossibleStart > startTime)
+                {
+                    truncationOffset = earliestPossibleStart - startTime;
+                    startTime = earliestPossibleStart;
+                    isTruncated = true;
+                    retVal.demoCutTruncationOffset = truncationOffset;
+                }
+
+                retVal.metaEventsRaw = grab.metaEvents;
+                retVal.bufferTimeReal = demoTime - startTime;
+                retVal.metaEventsReformatted = TableMappings.TableMapping.reformatMetaEvents(retVal.metaEventsRaw, retVal.bufferTimeReal);
+
+                sb.Append(DemoCut.truncationPlaceHolder);
+                //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
+
+                sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
+
+                retVal.isPreProcessed = grab.serverName == "^1^7^1FAKE ^4^7^4DEMO";
+                retVal.demoName = sb.ToString();
+                retVal.demoTimeStart = startTime;
+                retVal.demoTimeEnd = endTime;
+                return retVal;
             } else if(entry is KillSpree)
             {
                 KillSpree spree = entry as KillSpree;
@@ -1423,7 +1526,7 @@ namespace DemoCutterGUI
                 sb.Append("_U");
                 sb.Append(spree.countUniqueTargets);
 
-                sb.Append(getResultingCapturesString(spree.resultingSelfCaptures, spree.resultingCaptures, spree.resultingLaughs, spree.resultingSelfCapturesAfter, spree.resultingCapturesAfter, spree.resultingLaughsAfter));
+                sb.Append(getResultingCapturesString(spree.resultingSelfCaptures, spree.resultingCaptures,null, spree.resultingLaughs, spree.resultingSelfCapturesAfter, spree.resultingCapturesAfter, null, spree.resultingLaughsAfter));
 
                 sb.Append("___");
                 sb.Append(spree.killerName);

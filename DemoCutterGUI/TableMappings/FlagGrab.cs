@@ -58,6 +58,8 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? redPlayerCount { get; set; } = null;
         public INTEGER? bluePlayerCount { get; set; } = null;
         public INTEGER? sumPlayerCount { get; set; } = null;
+        public TEXT? boosts { get; set; } = null;
+        public INTEGER? boostCount { get; set; } = null;
         public REAL? maxSpeedGrabberLastSecond { get; set; } = null;
         public REAL? maxSpeedCapperLastSecond { get; set; } = null;
         public REAL? maxSpeedCapper { get; set; } = null;

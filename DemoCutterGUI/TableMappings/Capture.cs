@@ -53,6 +53,8 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? redPlayerCount { get; set; } = null;
         public INTEGER? bluePlayerCount { get; set; } = null;
         public INTEGER? sumPlayerCount { get; set; } = null;
+        public TEXT? boosts { get; set; } = null;
+        public INTEGER? boostCount { get; set; } = null;
         public REAL? maxSpeedCapperLastSecond { get; set; } = null;
         public REAL? maxSpeedCapper { get; set; } = null;
         public REAL? averageSpeedCapper { get; set; } = null;
@@ -76,6 +78,7 @@ namespace DemoCutterGUI.TableMappings
         public REAL? positionZ { get; set; } = null;
         public INTEGER? resultingLaughs { get; set; } = null;
         public INTEGER? resultingLaughsAfter { get; set; } = null;
+        public TEXT? pastLocations { get; set; } = null;
         public TEXT? demoName { get; set; } = null;
         public TEXT? demoPath { get; set; } = null;
         public INTEGER? demoTime { get; set; } = null;
