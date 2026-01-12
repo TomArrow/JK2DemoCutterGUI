@@ -26,6 +26,7 @@ using StbImageSharp;
 using DemoCutterGUI.Tools;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Capture = DemoCutterGUI.TableMappings.Capture;
 
 namespace DemoCutterGUI
 {
@@ -50,9 +51,11 @@ namespace DemoCutterGUI
             }
         }
         public Vector3 position;
+        public Vector2[] prePositions;
         public int index { get; set; }
         public string note { get; set; }
         public Ret ret { get; set; } = null;
+        public Capture cap { get; set; } = null; // prolly this should all just be one entry (e.g. dbEntry) but uh, i feel this will make it easier to maintain maybe? Having a semantic distinction between types 
         public object getObject()
         {
             return ret;
@@ -601,16 +604,21 @@ namespace DemoCutterGUI
                         map = ret.map;
                     }
                 }
-                /*else if (selectedItem is TableMappings.Capture)
+                else if (selectedItem is TableMappings.Capture)
                 {
                     TableMappings.Capture cap = selectedItem as TableMappings.Capture;
                     if (!cap.positionX.HasValue || !cap.positionY.HasValue || !cap.positionZ.HasValue) continue;
-                    positions.Add(new Vector3() { X = (float)cap.positionX.Value, Y = (float)cap.positionY.Value, Z = (float)cap.positionZ.Value });
-                    if (cap is null && !string.IsNullOrWhiteSpace(cap.map))
+                    positions.Add(new MiniMapPointLogical()
+                    {
+                        position = new Vector3() { X = (float)cap.positionX.Value, Y = (float)cap.positionY.Value, Z = (float)cap.positionZ.Value },
+                        cap = cap,
+                        prePositions = cap.PastLocationsDecoded
+                    });
+                    if (map is null && !string.IsNullOrWhiteSpace(cap.map))
                     {
                         map = cap.map;
                     }
-                }*/
+                }
             }
 
             miniMapRenderer.items.Clear();
@@ -624,7 +632,7 @@ namespace DemoCutterGUI
             {
                 foreach (MiniMapPointLogical position in savedPoints)
                 {
-                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, index= position.index, note=position.note, callbackReferenceObject=position,clickedCallback=
+                    miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, prePositions=position.prePositions, index= position.index, note=position.note, callbackReferenceObject=position,clickedCallback=
                         (object o) => {
                             editMiniMapPointNote(o as MiniMapPointLogical);
                         }
@@ -633,7 +641,7 @@ namespace DemoCutterGUI
                     foreach (var wnd in miniMapWindows)
                     {
                         MiniMapRendererWindow thisWndLocal = wnd.Key;
-                        wnd.Key.miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, index= position.index, note=position.note, callbackReferenceObject=position,clickedCallback=
+                        wnd.Key.miniMapRenderer.items.Add(new MiniMapPoint() { main = false, position = position.position, prePositions=position.prePositions, index= position.index, note=position.note, callbackReferenceObject=position,clickedCallback=
                         (object o) => {
                             thisWndLocal.editMiniMapPointNote(o as MiniMapPointLogical);
                         }
@@ -648,15 +656,17 @@ namespace DemoCutterGUI
                 currentPoints.Clear();
                 foreach (MiniMapPointLogical position in positions)
                 {
-                    miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position.position, index = index });
+                    miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position.position, prePositions=position.prePositions, index = index });
                     foreach (var wnd in miniMapWindows)
                     {
-                        wnd.Key.miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position.position, index = index });
+                        wnd.Key.miniMapRenderer.items.Add(new MiniMapPoint() { main = true, position = position.position, prePositions = position.prePositions, index = index });
                     }
                     currentPoints.Add(new MiniMapPointLogical()
                     {
                         position = position.position,
                         ret = position.ret,
+                        cap = position.cap,
+                        prePositions = position.prePositions,
                         index = index
                     });
                     index++;

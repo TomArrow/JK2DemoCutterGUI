@@ -224,6 +224,7 @@ namespace DemoCutterGUI.Tools
 
     class MiniMapPoint {
         public Vector3 position;
+        public Vector2[] prePositions;
         public bool main;
         public int index;
         public string note;
@@ -251,6 +252,11 @@ namespace DemoCutterGUI.Tools
                 if (onlyMain && !point.main) continue;
                 maxs = Vector3.ComponentMax(maxs, point.position);
                 mins = Vector3.ComponentMin(mins, point.position);
+                // take prepositions into account?
+                //if(!(point.prePositions is null))
+                //{
+
+                //}
             }
             return new Bounds() { mins = mins, maxs=maxs }; 
         }
@@ -1250,6 +1256,25 @@ namespace DemoCutterGUI.Tools
                         GL.Vertex3(position.X, position.Y + crossSize.Y, 0);
                         GL.Vertex3(position.X - crossSize.X, position.Y, 0);
                         GL.Vertex3(position.X + crossSize.X, position.Y, 0);
+                    }
+
+                    if (!(point.prePositions is null) && point.prePositions.Length > 0)
+                    {
+                        Vector2 lastPos;
+                        GL.LineWidth(1);
+                        for(int i = point.prePositions.Length - 1; i >= 0; i--)
+                        {
+                            Vector2 prePosition = point.prePositions[i];
+                            lastPos = position;
+                            position = xySquare.GetSquarePosition(prePosition);
+                            if (!xyQuadCorners.InRectangle(position))
+                            {
+                                break;
+                            }
+                            GL.Vertex3(lastPos.X, lastPos.Y, 0);
+                            GL.Vertex3(position.X, position.Y, 0);
+                        }
+                        GL.LineWidth(2);
                     }
 
                     position = xzSquare.GetSquarePosition(point.position);

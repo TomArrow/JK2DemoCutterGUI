@@ -10,10 +10,11 @@ using NUM = System.Boolean;
 using BOOLEAN = System.Boolean;
 using REAL = System.Double;
 using TIMESTAMP = System.Int64;
+using System.Numerics;
 
 namespace DemoCutterGUI.TableMappings
 {
-    class Capture : TableMapping
+    public class Capture : TableMapping
     {
         public bool IsLikelySameCapture(Capture otherCapture)
         {
@@ -85,5 +86,19 @@ namespace DemoCutterGUI.TableMappings
         public INTEGER? lastGamestateDemoTime { get; set; } = null;
         public INTEGER? serverTime { get; set; } = null;
         public TIMESTAMP? demoDateTime { get; set; } = null;
+
+        private OpenTK.Mathematics.Vector2[] _pastLocationsDecoded = null;
+        public OpenTK.Mathematics.Vector2[] PastLocationsDecoded
+        { 
+            get
+            {
+                if(_pastLocationsDecoded is null && !string.IsNullOrWhiteSpace(pastLocations))
+                {
+                    _pastLocationsDecoded = SpiralLocationHelper.decodeSpiralString(pastLocations);
+                }
+                return _pastLocationsDecoded;
+            } 
+        }
+
     }
 }

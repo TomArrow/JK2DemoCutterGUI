@@ -154,6 +154,10 @@ namespace DemoCutterGUI
                 foreach(var otherItem in availableObjectPool)
                 {
                     Capture otherCap = otherItem as Capture;
+                    if (otherCap is null && otherItem is MiniMapPointLogical)
+                    {
+                        otherCap = (otherItem as MiniMapPointLogical)?.cap;
+                    }
                     if (otherCap == cap) continue;
                     if (otherCap is null) continue;
                     if (otherCap.IsLikelySameCapture(cap))
@@ -560,7 +564,11 @@ namespace DemoCutterGUI
                     mainItem = (mainItem as MiniMapPointLogical)?.ret;
                     if ((mainItem as Ret) is null)
                     {
-                        continue;
+                        mainItem = (mainItem as MiniMapPointLogical)?.cap;
+                        if ((mainItem as TableMappings.Capture) is null)
+                        {
+                            continue;
+                        }
                     }
                 }
                 originalCuts.Add(mainCut);
@@ -1274,7 +1282,11 @@ namespace DemoCutterGUI
                 entry = (entry as MiniMapPointLogical)?.ret;
                 if ((entry as Ret) is null)
                 {
-                    return null;
+                    entry = (entry as MiniMapPointLogical)?.cap;
+                    if ((entry as TableMappings.Capture) is null)
+                    {
+                        return null;
+                    }
                 }
             }
 

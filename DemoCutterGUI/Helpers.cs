@@ -19,6 +19,243 @@ using System.Windows.Media;
 namespace DemoCutterGUI
 {
 
+    public static class SpiralLocationHelper {
+
+        // 
+        // from:https://github.com/wecand0/base91
+        /*
+        MIT License
+
+        Copyright (c) 2024 Vadim
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+        */
+        public static readonly char[] base91BasicAlphabet_ = new char[91] {
+                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', //00..12
+		        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', //13..25
+		        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', //26..38
+		        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', //39..51
+		        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '#', '$', //52..64
+		        '%', '&', '(', ')', '*', '+', ',', '.', '/', ':', ';', '-', '=', //65..77
+		        '\\', '?', '@', '[', ']', '^', '_', '`', '{', '|', '}', '~', '\''//78..90
+        };
+
+        public static readonly byte[] base91DecAlphabet_ = new byte[256]  {
+                91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,//000..015
+		        91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,//016..031
+		        91, 62, 91, 63, 64, 65, 66, 90, 67, 68, 69, 70, 71, 76, 72, 73,//032..047 // @34: ", @39: ', @45: -
+		        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 74, 75, 91, 77, 91, 79,//048..063 // @60: <, @62: >
+		        80, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,          //064..079
+		        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 81, 78, 82, 83, 84,//080..095 // @92: slash
+		        85, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,//096..111
+		        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 86, 87, 88, 89, 91,//112..127
+		        91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,//128..143
+		        91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,//144..159
+		        91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,//160..175
+		        91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,//176..191
+		        91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,//192..207
+		        91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,//208..223
+		        91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,//224..239
+		        91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91 //240..255
+        };
+        // END from https://github.com/wecand0/base91
+
+
+        // 
+        // from: https://github.com/chmike/fpsqrt (MIT license)
+        /*
+        MIT License
+
+        Copyright (c) 2019 Christophe Meessen
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+        */
+        // sqrt_i64 computes the squrare root of a 64bit integer and returns
+        // a 64bit integer value. It requires that v is positive.
+        static Int64 sqrt_i64(Int64 v)
+        {
+            UInt64 b = ((UInt64)1) << 62, q = 0, r = (UInt64)v;
+            while (b > r)
+                b >>= 2;
+            while (b > 0)
+            {
+                UInt64 t = q + b;
+                q >>= 1;
+                if (r >= t)
+                {
+                    r -= t;
+                    q += b;
+                }
+                b >>= 2;
+            }
+            return (Int64)q;
+        }
+        // fpsqrt end
+
+
+        public static int encode2dspiral(int x, int y)
+        { // sudely there has to be a more efficient way...
+            if (x ==0 && y ==0) return 0;
+            int ring = Math.Max(Math.Abs(x), Math.Abs(y));
+            int sidelen = (ring - 1) * 2 + 1;
+            int index = sidelen * sidelen;
+            sidelen += 2;
+            int premultiplier = sidelen - 1;
+
+            if (x == ring)
+            {
+                index += (ring - y);
+            }
+            else if (y == -ring)
+            {
+                index += premultiplier + (ring - x);
+            }
+            else if (x == -ring)
+            {
+                index += premultiplier * 2 + (y + ring);
+            }
+            else
+            {
+                index += premultiplier * 3 + (x + ring);
+            }
+
+            return index;
+        }
+
+        public static void decode2dspiral(int index, ref int x, ref int y)
+        {
+            if (index == 0)
+            {
+                x = 0;
+                y = 0;
+                return;
+            }
+            int ring = (int)sqrt_i64(index);
+            ring = ((ring - 1) / 2) + 1;
+            int sidelen = (ring - 1) * 2 + 1;
+            index -= sidelen * sidelen;
+            sidelen += 2;
+
+            int premultiplier = sidelen - 1;
+
+            if (index >= premultiplier * 3)
+            {
+                y = ring;
+                x = index - premultiplier * 3 - ring;
+            }
+            else if (index >= premultiplier * 2)
+            {
+                y = index - premultiplier * 2 - ring;
+                x = -ring;
+            }
+            else if (index > premultiplier)
+            {
+                x = premultiplier + ring - index;
+                y = -ring;
+            }
+            else
+            {
+                x = ring;
+                y = ring - index;
+            }
+
+        }
+
+        static OpenTK.Mathematics.Vector2[] decodeSpiralStringAType(ReadOnlySpan<char> encodedLocations, int charcount)
+        {
+
+            if(charcount == 0)
+            {
+                // speciall case. its just a 0,0 locatioon
+                return new OpenTK.Mathematics.Vector2[] { new OpenTK.Mathematics.Vector2(0,0) };
+            }
+            List<OpenTK.Mathematics.Vector2> retVal = new List<OpenTK.Mathematics.Vector2>();
+
+            int sizeleft = encodedLocations.Length;
+            int index = 0;
+            while(sizeleft >= charcount)
+            {
+                int number = 0;
+                int multiplier = 1;
+                for(int i = 0; i < charcount; i++)
+                {
+                    char charHere = encodedLocations[index + i];
+                    if(charHere < 256)
+                    {
+                        charHere = (char)base91DecAlphabet_[charHere];
+                        if(charHere < 91)
+                        {
+                            number += multiplier * charHere;
+                        }
+                    }
+                    multiplier *= 91;
+                }
+
+                int x=0, y=0;
+                decode2dspiral(number, ref x, ref y);
+                retVal.Add(new OpenTK.Mathematics.Vector2(x*500,y*500));
+
+                sizeleft -= charcount;
+                index += charcount;
+            }
+
+
+
+            return retVal.ToArray();
+        }
+
+        public static OpenTK.Mathematics.Vector2[] decodeSpiralString(string encodedLocations)
+        {
+            if(encodedLocations.Length == 0)
+            {
+                return null;
+            }
+            char startChar = encodedLocations[0];
+            if(startChar >= '0' && startChar <= '9')
+            {
+                return decodeSpiralStringAType(encodedLocations.AsSpan(1),startChar-'0');
+            }
+            return null;
+        }
+
+    }
+
+
+
+
+
     static class Helpers
     {
         static public unsafe string DemoCuttersanitizeFilename(string input, bool allowExtension)
