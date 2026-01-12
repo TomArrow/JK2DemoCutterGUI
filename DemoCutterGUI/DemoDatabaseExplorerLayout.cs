@@ -1300,6 +1300,14 @@ namespace DemoCutterGUI
                         sb.Append($"{field.FieldName} ");
                         sb.Append("IS NOT NULL");
                     }
+                    else if (field.Numeric)
+                    {
+                        if (decimal.TryParse(field.Content.Replace(',', '.').Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal number))
+                        {
+                            sb.Append($"{field.FieldName}=");
+                            sb.Append(number.ToString("F99").TrimEnd('0'));
+                        }
+                    }
                     else
                     {
                         sb.Append($"{field.FieldName} ");

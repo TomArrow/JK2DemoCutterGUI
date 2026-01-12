@@ -189,7 +189,7 @@ namespace DemoCutterGUI
                 new DatabaseFieldInfo(){ FieldName="isExplosion", Nullable = false, Bool = true, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Kill},
                 new DatabaseFieldInfo(){ FieldName="isSuicide", Nullable = false, Bool = true, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Kill},
                 new DatabaseFieldInfo(){ FieldName="isModSuicide", Nullable = false, Bool = true, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Kill},
-                new DatabaseFieldInfo(){ FieldName="meansOfDeath", Nullable = false, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Kill},
+                new DatabaseFieldInfo(){ FieldName="meansOfDeath", Nullable = false, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Kill, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="positionX", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="positionY", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="positionZ", Nullable = true, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Movement, Numeric=true},
