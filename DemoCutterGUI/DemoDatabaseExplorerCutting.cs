@@ -49,7 +49,8 @@ namespace DemoCutterGUI
             HashSet<string> killHashes = new HashSet<string>();
 
             string cleanDemoPath = referenceDemo.Replace("'","''");
-            List<Ret> resRef = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE demoTime>={demoTimeRangeStart} AND demoTime<={demoTimeRangeEnd} AND demoPath='{cleanDemoPath}'") as List<Ret>;
+            string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.Rets, false);
+            List<Ret> resRef = dbConn.Query<Ret>($"SELECT {rawTable}.ROWID,{rawTable}.* FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.Rets,true)} WHERE demoTime>={demoTimeRangeStart} AND demoTime<={demoTimeRangeEnd} AND demoPath='{cleanDemoPath}'") as List<Ret>;
             if(resRef != null)
             {
                 foreach(Ret ret in resRef)
@@ -62,7 +63,7 @@ namespace DemoCutterGUI
             Dictionary<string, Tuple<Int64, int>> newlyFoundDemoFileTimingsAndClientNums = new Dictionary<string, Tuple<Int64, int>>();
             foreach (string killHash in killHashes)
             {
-                List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE hash='{killHash}'") as List<Ret>;
+                List<Ret> res = dbConn.Query<Ret>($"SELECT {rawTable}.ROWID,* FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.Rets, true)} WHERE hash='{killHash}'") as List<Ret>;
                 if (res != null)
                 {
                     // First find the ret entry from the same demo as the killspree, for a reference time.
@@ -125,7 +126,8 @@ namespace DemoCutterGUI
                     availableObjectPool.Remove(otherItem);
                 }
 
-                List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE hash='{ret.hash}'") as List<Ret>;
+                string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.Rets, false);
+                List<Ret> res = dbConn.Query<Ret>($"SELECT {rawTable}.ROWID,* FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.Rets, true)} WHERE hash='{ret.hash}'") as List<Ret>;
                 if(res != null)
                 {
                     foreach (var result in res)
@@ -177,7 +179,8 @@ namespace DemoCutterGUI
 
                 string serverNameSearch = cap.serverName.Replace("'","''");
                 string capperNameSearch = cap.capperName.Replace("'","''");
-                List<Capture> res = dbConn.Query<Capture>($"SELECT id AS ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Captures].tableName} WHERE " +
+                string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.Captures, false);
+                List<Capture> res = dbConn.Query<Capture>($"SELECT {rawTable}.id AS ROWID,* FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.Captures, true)} WHERE " +
                     $"serverName='{serverNameSearch}' AND " +
                     $"redScore={cap.redScore.Value} AND " +     // This whole block is just the SQL version of IsLikelySameCapture()
                     $"blueScore={cap.blueScore.Value} AND " +
@@ -257,7 +260,8 @@ namespace DemoCutterGUI
 
                 string serverNameSearch = grab.serverName.Replace("'","''");
                 string grabberNameSearch = grab.grabberName.Replace("'","''");
-                List<FlagGrab> res = dbConn.Query<FlagGrab>($"SELECT id AS ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.FlagGrabs].tableName} WHERE " +
+                string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.FlagGrabs, false);
+                List<FlagGrab> res = dbConn.Query<FlagGrab>($"SELECT {rawTable}.id AS ROWID,* FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.FlagGrabs, true)} WHERE " +
                     $"serverName='{serverNameSearch}' AND " +
                     $"redScore={grab.redScore.Value} AND " +     // This whole block is just the SQL version of IsLikelySameFlagGrab()
                     $"blueScore={grab.blueScore.Value} AND " +
@@ -340,7 +344,8 @@ namespace DemoCutterGUI
                  */
                 string serverNameSearch = laughs.serverName.Replace("'","''");
                 string laughsSearch = laughs.laughs.Replace("'","''");
-                List<Laughs> res = dbConn.Query<Laughs>($"SELECT id AS ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Laughs].tableName} WHERE " +
+                string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.DefragRuns, false);
+                List<Laughs> res = dbConn.Query<Laughs>($"SELECT {rawTable}.id AS ROWID,* FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.Laughs, true)} WHERE " +
                     $"serverName='{serverNameSearch}' AND " +
                     $"laughs='{laughsSearch}' AND " +       // This whole block is just the SQL version of IsLikelySameLaugh()
                     $"ABS(serverTime-{laughs.serverTime})<=1000 AND " +
@@ -413,7 +418,8 @@ namespace DemoCutterGUI
                 string serverNameSearch = run.serverName.Replace("'","''");
                 string playerNameSearch = run.playerName.Replace("'","''");
                 string styleSearch = run.style?.Replace("'","''");
-                List<DefragRun> res = dbConn.Query<DefragRun>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.DefragRuns].tableName} WHERE " +
+                string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.DefragRuns, false);
+                List<DefragRun> res = dbConn.Query<DefragRun>($"SELECT {rawTable}.ROWID,* FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.DefragRuns, true)} WHERE " +
                     $"serverName='{serverNameSearch}' AND " +
                     $"totalMilliseconds={run.totalMilliseconds.Value} AND " +     // This whole block is just the SQL version of IsLikelySameRun()
                     $"playerName='{playerNameSearch}' AND " +
@@ -458,8 +464,9 @@ namespace DemoCutterGUI
                 }
 
                 // Find other demos with the killspree
-                { 
-                    List<KillSpree> res = dbConn.Query<KillSpree>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.KillSprees].tableName} WHERE hash='{spree.hash}'") as List<KillSpree>;
+                {
+                    string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.KillSprees, false);
+                    List<KillSpree> res = dbConn.Query<KillSpree>($"SELECT {rawTable}.ROWID,* FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.KillSprees, true)} WHERE hash='{spree.hash}'") as List<KillSpree>;
                     if (res != null)
                     {
                         foreach (var result in res)
@@ -482,7 +489,8 @@ namespace DemoCutterGUI
                 Dictionary<string, Tuple<Int64,int>> newlyFoundDemoFileTimingsAndClientNums = new Dictionary<string, Tuple<Int64, int>>();
                 foreach(string killHash in killHashes)
                 {
-                    List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE hash='{killHash}'") as List<Ret>;
+                    string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.Rets, false);
+                    List<Ret> res = dbConn.Query<Ret>($"SELECT {rawTable}.ROWID,* FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.Rets, true)} WHERE hash='{killHash}'") as List<Ret>;
                     if (res != null)
                     {
                         // First find the ret entry from the same demo as the killspree, for a reference time.
@@ -1264,7 +1272,7 @@ namespace DemoCutterGUI
             string demoPathSearch = demoPath.Replace("'","''");
             //List<Ret> res = dbConn.Query<Ret>($"SELECT ROWID,* FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE demoPath='{demoPathSearch}' AND serverName='^1^7^1FAKE ^4^7^4DEMO'") as List<Ret>;
             //return res.Count > 0;
-            int res = dbConn.ExecuteScalar<int>($"SELECT COUNT(*) FROM {categoryPanels[DatabaseFieldInfo.FieldCategory.Rets].tableName} WHERE demoPath='{demoPathSearch}' AND serverName!='^1^7^1FAKE ^4^7^4DEMO'");
+            int res = dbConn.ExecuteScalar<int>($"SELECT COUNT(*) FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.Rets, true)} WHERE demoPath='{demoPathSearch}' AND serverName!='^1^7^1FAKE ^4^7^4DEMO'");
             return res == 0; // Sadly we have to do this reversed (make sure there is not a single kill WITHOUT fake demo), because serverName is not saved per kill angle but per kill so if the reframe is analyzed first, .... yikes. We need to change this up, but in the meantime this will have to do. We also should save serverName directly in the killspree.
         }
 

@@ -65,6 +65,7 @@ namespace DemoCutterGUI
     {
         public bool serverNameInKillAngles = false;
         public bool serverNameInKillSpree = false;
+        public bool entryMetaTable = false;
     }
     public class VisibilityToBooleanConverter : IValueConverter
     {
@@ -435,17 +436,30 @@ namespace DemoCutterGUI
         Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> categoryPanels = null;
         Dictionary<DatabaseFieldInfo.FieldCategory, CategorySQLQueryInfo> categorySQLQueryData = new Dictionary<DatabaseFieldInfo.FieldCategory, CategorySQLQueryInfo>();
 
+        string getTableForSelect(DatabaseFieldInfo.FieldCategory category,bool includeEntryMeta)
+        {
+            string tableName = categoryPanels[category].tableName;
+            if (dbProperties.entryMetaTable && includeEntryMeta && categoryPanels[category].usesEntryMeta)
+            {
+                return $"{tableName} LEFT JOIN entryMeta ON (entryMeta.id == {tableName}.entryMeta)";
+            }
+            else
+            {
+                return tableName;
+            }
+        }
+
         partial void Constructor()
         {
             InitMiniMap();
             categoryPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
             {
-                { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret)} },
-                { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(TableMappings.Capture)} },
-                { DatabaseFieldInfo.FieldCategory.FlagGrabs, new CategoryInfoCollection(){  midPanel=flagGrabsMidPanel, sidePanel=flagGrabsSidePanel, tableName="flaggrabs", dataType=typeof(TableMappings.FlagGrab)} },
-                { DatabaseFieldInfo.FieldCategory.KillSprees, new CategoryInfoCollection(){  midPanel=killSpreesMidPanel, sidePanel=killSpreesSidePanel, tableName="killSprees", dataType=typeof(KillSpree)} },
-                { DatabaseFieldInfo.FieldCategory.DefragRuns, new CategoryInfoCollection(){  midPanel=defragMidPanel, sidePanel=defragSidePanel, tableName="defragRuns", dataType=typeof(DefragRun)} },
-                { DatabaseFieldInfo.FieldCategory.Laughs, new CategoryInfoCollection(){  midPanel=laughsMidPanel, sidePanel=laughsSidePanel, tableName="laughs", dataType=typeof(Laughs)} }
+                { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret), usesEntryMeta=true} },
+                { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(TableMappings.Capture), usesEntryMeta=true} },
+                { DatabaseFieldInfo.FieldCategory.FlagGrabs, new CategoryInfoCollection(){  midPanel=flagGrabsMidPanel, sidePanel=flagGrabsSidePanel, tableName="flaggrabs", dataType=typeof(TableMappings.FlagGrab), usesEntryMeta=true} },
+                { DatabaseFieldInfo.FieldCategory.KillSprees, new CategoryInfoCollection(){  midPanel=killSpreesMidPanel, sidePanel=killSpreesSidePanel, tableName="killSprees", dataType=typeof(KillSpree), usesEntryMeta=true} },
+                { DatabaseFieldInfo.FieldCategory.DefragRuns, new CategoryInfoCollection(){  midPanel=defragMidPanel, sidePanel=defragSidePanel, tableName="defragRuns", dataType=typeof(DefragRun), usesEntryMeta=true} },
+                { DatabaseFieldInfo.FieldCategory.Laughs, new CategoryInfoCollection(){  midPanel=laughsMidPanel, sidePanel=laughsSidePanel, tableName="laughs", dataType=typeof(Laughs), usesEntryMeta=true} }
             };
             
             foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> kvp in categoryPanels)
@@ -721,6 +735,7 @@ namespace DemoCutterGUI
             public DatabaseExplorerElements.MidPanel midPanel;
             public DatabaseExplorerElements.SidePanel sidePanel;
             public string tableName;
+            public bool usesEntryMeta;
             public Type dataType;
         }
 
@@ -781,6 +796,9 @@ namespace DemoCutterGUI
                                     case "serverNameInKillSpree":
                                         dbProperties.serverNameInKillSpree = prop.value == "1";
                                         break;
+                                    case "entryMetaTable":
+                                        dbProperties.entryMetaTable = prop.value == "1";
+                                        break;
                                 }
                             }
                         }
@@ -822,6 +840,17 @@ namespace DemoCutterGUI
                     {
                         associatedPanel.Value.midPanel.TheGrid.Columns.Clear();
                         sqlColumns[associatedPanel.Key] =  dbConn.GetTableInfoMore(associatedPanel.Value.tableName);
+                        if (associatedPanel.Value.usesEntryMeta && dbProperties.entryMetaTable)
+                        {
+                            List<SQLColumnInfo> extraFields = dbConn.GetTableInfoMore("entryMeta");
+                            foreach(SQLColumnInfo extraField in extraFields)
+                            {
+                                if(extraField.Name != "id" && extraField.Name != "count")
+                                {
+                                    sqlColumns[associatedPanel.Key].Add(extraField);
+                                }
+                            }
+                        }
                         unmatchedSQLColumns[associatedPanel.Key] = new List<SQLColumnInfo[]>();
 
                         SQLColumnInfo lastColumn = null;
@@ -1097,11 +1126,12 @@ namespace DemoCutterGUI
 
             if (countQuery)
             {
-                sb.Append($"SELECT COUNT(*) FROM {categoryPanels[category].tableName}");
+                sb.Append($"SELECT COUNT(*) FROM {getTableForSelect(category,true)}");
             }
             else
             {
-                sb.Append($"SELECT {primaryKeyASPrefix}ROWID,* FROM {categoryPanels[category].tableName}");
+                string rawTable = getTableForSelect(category, false);
+                sb.Append($"SELECT {rawTable}.{primaryKeyASPrefix}ROWID,* FROM {getTableForSelect(category, true)}");
             }
 
             DatabaseFieldInfo[] activeFields = fieldMan.getActiveFields();
