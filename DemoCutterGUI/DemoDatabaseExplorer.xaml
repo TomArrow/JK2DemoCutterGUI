@@ -75,6 +75,9 @@
                 <TabItem Header="Laughs" IsSelected="{Binding ElementName=laughsMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
                     <dee:SidePanel x:Name="laughsSidePanel" ReferenceMidPanel="{Binding ElementName=laughsMidPanel}"></dee:SidePanel>
                 </TabItem>
+                <TabItem Header="Special" IsSelected="{Binding ElementName=specialMidPanelTab,Path=IsSelected,Mode=TwoWay}" >
+                    <dee:SidePanel x:Name="specialSidePanel" ReferenceMidPanel="{Binding ElementName=specialMidPanel}"></dee:SidePanel>
+                </TabItem>
             </TabControl>
         </DockPanel>
         <WrapPanel Grid.Row="1" Grid.ColumnSpan="2">
@@ -135,6 +138,7 @@
                             <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=killSpreesMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=killSpreesMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
                             <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=defragMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=defragMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
                             <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=laughsMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=laughsMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
+                            <dee:VisibleColumnsPanel ReferenceGrid="{Binding ElementName=specialMidPanel,Path=TheGrid}" Height="200" Visibility="{Binding ElementName=specialMidPanelTab,Path=IsSelected,Mode=TwoWay,Converter={StaticResource checkedToVisibe}}"></dee:VisibleColumnsPanel>
 
                             <WrapPanel>
                                 <ComboBox x:Name="visibleColumnsPresetComboBox" IsEditable="True" SelectedValue="default" MinWidth="100"></ComboBox>
@@ -215,6 +219,9 @@
             </TabItem>
             <TabItem Header="Laughs" x:Name="laughsMidPanelTab">
                 <dee:MidPanel x:Name="laughsMidPanel" Items1Name="Meta" Items2Name="Laughs" Items3Name="Whatever"></dee:MidPanel>
+            </TabItem>
+            <TabItem Header="Special" x:Name="specialMidPanelTab">
+                <dee:MidPanel x:Name="specialMidPanel" Items1Name="Meta" Items2Name="Details" Items3Name="Whatever"></dee:MidPanel>
             </TabItem>
         </TabControl>
         

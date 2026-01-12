@@ -381,6 +381,89 @@ namespace DemoCutterGUI
                     otherAngleLaughs.demoRecorderClientnum = newDemoTiming.Value.Item2;
                     otherItems.Add(otherAngleLaughs);
                 }
+            }else if (item is Special)
+            {
+                Special special = item as Special;
+                if (special == null) return otherItems;
+
+                HashSet<string> initialSourceDemoFiles = new HashSet<string>();
+                initialSourceDemoFiles.Add(special.demoPath);
+                Special longestSpecialAngle = special;
+                
+                foreach(var otherItem in availableObjectPool)
+                {
+                    Special otherLaugh = otherItem as Special;
+                    if (otherLaugh == special) continue;
+                    if (otherLaugh is null) continue;
+                    if (otherLaugh.IsLikelySameSpecial(special))
+                    {
+                        otherItems.Add(otherItem);
+                        initialSourceDemoFiles.Add(otherLaugh.demoPath);
+                        if (otherLaugh.duration.Value > longestSpecialAngle.duration.Value)
+                        {
+                            longestSpecialAngle = otherLaugh;
+                        }
+                    }
+                }
+                foreach (var otherItem in otherItems)
+                {
+                    availableObjectPool.Remove(otherItem);
+                }
+
+                /*
+                 this.serverName == otherSpecial.serverName
+                && this.Special == otherSpecial.Special
+                && this.laughCount == otherSpecial.laughCount
+                //&& this.chatlog == otherSpecial.chatlog
+                && Math.Abs(this.serverTime.GetValueOrDefault(-99999) - otherSpecial.serverTime.GetValueOrDefault(-99999)) <= 1000L // Chats are reliable commands, so in theory this is uncertain since we can potentially get a print many seconds later due to extreme loss of packets. But it will simply have to do.
+                && Math.Abs(this.duration.GetValueOrDefault(-99999) - otherSpecial.duration.GetValueOrDefault(-99999)) <= 1000L
+                 */
+                string serverNameSearch = special.serverName.Replace("'","''");
+                string specialSearch = special.details.Replace("'","''");
+                string playerNameSearch = special.playerName?.Replace("'","''");
+                string playerNameAltSearch = special.playerNameAlt?.Replace("'","''");
+                string playerTable = getPlayerNameTable(DatabaseFieldInfo.FieldCategory.Special);
+                string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.Special, false);
+                List<Special> res = dbConn.Query<Special>($"SELECT {rawTable}.id AS ROWID,*{getPlayerNamesMappingForSelect(DatabaseFieldInfo.FieldCategory.Special)} FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.Special, true)} WHERE " +
+                    $"serverName='{serverNameSearch}' AND " +
+                    (special.clientNum.HasValue ? $"clientNum='{special.clientNum}' AND " : $"clientNum IS NULL AND ") +
+                    (special.clientNumAlt.HasValue ? $"clientNumAlt='{special.clientNumAlt}' AND " : $"clientNumAlt IS NULL AND ") +
+                    (!(special.playerName is null) ? $"{playerTable}.playerName='{playerNameSearch}' AND " : $"{playerTable}.playerName IS NULL AND ") +
+                    (!(special.playerNameAlt is null) ? $"playerNameAlt='{playerNameAltSearch}' AND " : $"playerNameAlt IS NULL AND ") +
+                    (!(special.details is null) ? $"details='{specialSearch}' AND " : $"details IS NULL AND ") +// This whole block is just the SQL version of IsLikelySameLaugh()      
+                    $"ABS(serverTime-{special.serverTime})<=1000 AND " +
+                    $"ABS(duration-{special.duration})<=1000") as List<Special>;
+                if(res != null)
+                {
+                    foreach (var result in res)
+                    {
+                        if (!otherItems.Contains(result) && !result.Equals(item) && special.IsLikelySameSpecial(result))
+                        {
+                            otherItems.Add(result);
+                            initialSourceDemoFiles.Add(result.demoPath);
+                            if (result.duration.Value > longestSpecialAngle.duration.Value)
+                            {
+                                longestSpecialAngle = result;
+                            }
+                        }
+                    }
+                }
+
+                // So, this all works decent enough now, but what if we have a demo that has Special in spectator mode but we have another demo from the player's perspective that doesn't have the Special?
+                // So cross reference some kills over the duration of the Special (and a bit before) and find other angles that way.
+                Dictionary<string, Tuple<long, int>> newlyFoundDemoFileTimingsAndClientNums = FindOtherDemosBasedOnKillTimes(longestSpecialAngle.demoPath, longestSpecialAngle.demoTime.Value- longestSpecialAngle.duration.Value, longestSpecialAngle.demoTime.Value, initialSourceDemoFiles);
+                int index = -1;
+                foreach (KeyValuePair<string, Tuple<long, int>> newDemoTiming in newlyFoundDemoFileTimingsAndClientNums)
+                {
+                    // Make a copy and change it up. We don't have a real entry since that killspree doesn't exist in that other demo file as a proper find from analyzer.
+                    // Bit dirty but should do the trick.
+                    Special otherAngleSpecial = longestSpecialAngle.Clone<Special>();
+                    otherAngleSpecial.rowid = index--;
+                    otherAngleSpecial.demoTime = longestSpecialAngle.demoTime + newDemoTiming.Value.Item1;
+                    otherAngleSpecial.demoPath = newDemoTiming.Key;
+                    otherAngleSpecial.demoRecorderClientnum = newDemoTiming.Value.Item2;
+                    otherItems.Add(otherAngleSpecial);
+                }
             } else if (item is DefragRun)
             {
                 DefragRun run = item as DefragRun;
@@ -418,11 +501,12 @@ namespace DemoCutterGUI
                 string serverNameSearch = run.serverName.Replace("'","''");
                 string playerNameSearch = run.playerName.Replace("'","''");
                 string styleSearch = run.style?.Replace("'","''");
+                string playerTable = getPlayerNameTable(DatabaseFieldInfo.FieldCategory.DefragRuns);
                 string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.DefragRuns, false);
                 List<DefragRun> res = dbConn.Query<DefragRun>($"SELECT {rawTable}.ROWID,*{getPlayerNamesMappingForSelect(DatabaseFieldInfo.FieldCategory.DefragRuns)} FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.DefragRuns, true)} WHERE " +
                     $"serverName='{serverNameSearch}' AND " +
                     $"totalMilliseconds={run.totalMilliseconds.Value} AND " +     // This whole block is just the SQL version of IsLikelySameRun()
-                    $"playerName='{playerNameSearch}' AND " +
+                    $"{playerTable}.playerName='{playerNameSearch}' AND " +
                     $"runnerClientNum={run.runnerClientNum.Value} AND " +
                     (styleSearch is null ? "" : $"style='{styleSearch}' AND ") +
                     $"ABS(serverTime-{run.serverTime})<=1000") as List<DefragRun>;
@@ -819,7 +903,7 @@ namespace DemoCutterGUI
                     }
                     foreach (var cut in newGroup.demoCuts)
                     {
-                        if(cut.type == DemoCutType.CUT && CutSettings.zipThirdPersons && cut.visType < VisibilityType.Followed)
+                        if(cut.type == DemoCutType.CUT && CutSettings.zipThirdPersons && cut.visType < VisibilityType.Followed && !(cut.reframeClientNum is null) && cut.reframeClientNum != -1) // keep if reframing isn't something we can do anyway (reframeclientnum being null or -1 - can -1 happen?)
                         {
                             cut.zipAndDelete = true;
                         }
@@ -1458,7 +1542,7 @@ namespace DemoCutterGUI
                 
                 StringBuilder sb = new StringBuilder();
                 retVal.originalDemoPath = grab.demoPath;
-                retVal.reframeClientNum = (int?)grab.capperClientNum;
+                retVal.reframeClientNum = (int?)grab.grabberClientNum;
                 sb.Append(grab.map);
                 sb.Append("___FLAGGRAB");
                 sb.Append(grab.capperKills > 0 ? $"{grab.capperKills}K" : "");
@@ -1493,7 +1577,7 @@ namespace DemoCutterGUI
                 sb.Append(DemoCut.recorderClientNumPlaceHolder);
                 retVal.demoRecorderClientNum = (int?)grab.demoRecorderClientnum;
 
-                retVal.visType = grab.capperWasFollowed == true ? VisibilityType.Followed : (grab.capperWasFollowedOrVisible == true ? VisibilityType.Thirdperson : (grab.capperIsFollowedOrVisible == true ? VisibilityType.PartiallyInvisible : VisibilityType.Invisible));
+                retVal.visType = grab.grabberIsFollowed == true ? VisibilityType.Followed : (grab.grabberIsFollowedOrVisible == true ? VisibilityType.Thirdperson : VisibilityType.Invisible);
 
                 long demoTime = grab.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
 
@@ -1723,6 +1807,74 @@ namespace DemoCutterGUI
                 sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
 
                 retVal.isPreProcessed = laughs.serverName == "^1^7^1FAKE ^4^7^4DEMO";
+                retVal.demoName = sb.ToString();
+                retVal.demoTimeStart = startTime;
+                retVal.demoTimeEnd = endTime;
+                return retVal;
+            }else if(entry is Special)
+            {
+                Special special = entry as Special;
+                if (special == null) return null;
+                
+                StringBuilder sb = new StringBuilder();
+
+                retVal.originalDemoPath = special.demoPath;
+                retVal.reframeClientNum = null;
+
+                sb.Append(special.map);
+                sb.Append("___SPECIAL___");
+                sb.Append(special.type);
+                sb.Append("___");
+                if (special.playerName != null)
+                {
+                    sb.Append(special.playerName);
+                    sb.Append("___");
+                }
+                //sb.Append(special.duration);
+                sb.Append(special.details.Length > 70 ? special.details.Substring(0,70) : special.details);
+                sb.Append(special.details.Length > 70 ? "--" : "");
+                sb.Append("_");
+                if (special.clientNum.HasValue && special.clientNum != -1)
+                {
+                    sb.Append(special.clientNum);
+                    sb.Append("_");
+                    retVal.reframeClientNum = (int)special.clientNum.Value;
+                }
+                if (special.clientNumAlt.HasValue && special.clientNumAlt != -1)
+                {
+                    sb.Append("ALT");
+                    sb.Append(special.clientNumAlt);
+                    sb.Append("_");
+                }
+                sb.Append(DemoCut.recorderClientNumPlaceHolder);
+                retVal.demoRecorderClientNum = (int?)special.demoRecorderClientnum;
+                retVal.visType = VisibilityType.Unknown;
+
+                long demoTime = special.demoTime.Value; // Just assume that demoTime exists. Otherwise there's nothing we can do anyway.
+                Int64 specialStart = demoTime - special.duration.GetValueOrDefault(0);
+                Int64 startTime = specialStart - preBuffertime;
+                Int64 endTime = demoTime + postBufferTime;
+                Int64 earliestPossibleStart = special.lastGamestateDemoTime.GetValueOrDefault(0) + 1;
+                bool isTruncated = false;
+                Int64 truncationOffset = 0;
+                if (earliestPossibleStart > startTime)
+                {
+                    truncationOffset = earliestPossibleStart - startTime;
+                    startTime = earliestPossibleStart;
+                    isTruncated = true;
+                    retVal.demoCutTruncationOffset = truncationOffset;
+                }
+
+                //retVal.metaEventsRaw = Special.metaEvents;
+                retVal.bufferTimeReal = demoTime - startTime;
+                //retVal.metaEventsReformatted = TableMappings.TableMapping.reformatMetaEvents(retVal.metaEventsRaw, retVal.bufferTimeReal);
+
+                sb.Append(DemoCut.truncationPlaceHolder);
+                //sb.Append(isTruncated ? $"_tr{truncationOffset}" : "");
+
+                sb.Append((entry as TableMapping).IsCopiedEntry ? "_fakeFindOtherAngle" : "");
+
+                retVal.isPreProcessed = special.serverName == "^1^7^1FAKE ^4^7^4DEMO";
                 retVal.demoName = sb.ToString();
                 retVal.demoTimeStart = startTime;
                 retVal.demoTimeEnd = endTime;

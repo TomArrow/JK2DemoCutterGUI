@@ -472,6 +472,23 @@ namespace DemoCutterGUI
 
             return tableName;
         }
+        string getPlayerNameTable(DatabaseFieldInfo.FieldCategory category) // when ambiguous "playerName" and "playerNameStripped"
+        {
+
+            if (dbProperties.playerNamesTable && categoryPanels[category].playerNameMappings != null)
+            {
+                int index = 0;
+                foreach (PlayerNameMapping mapping in categoryPanels[category].playerNameMappings)
+                {
+                    if (mapping.nameField == "playerName" || mapping.nameFieldStripped == "playerNameStripped") // TODO not really a todo, more a TONOTDO. NEVER CREATE NEW TABLES THAT ARENT CONSISTENT IN THIS WAY. PLEASE!
+                    {
+                        return $"playerNames{index}";
+                    }
+                    index++;
+                }
+            }
+            return categoryPanels[category].tableName;
+        }
 
         partial void Constructor()
         {
@@ -483,7 +500,8 @@ namespace DemoCutterGUI
                 { DatabaseFieldInfo.FieldCategory.FlagGrabs, new CategoryInfoCollection(){  midPanel=flagGrabsMidPanel, sidePanel=flagGrabsSidePanel, tableName="flaggrabs", dataType=typeof(TableMappings.FlagGrab), usesEntryMeta=true, playerNameMappings=new PlayerNameMapping[]{ new PlayerNameMapping("grabberId", "grabberName", "grabberNameStripped"), new PlayerNameMapping("capperId", "capperName", "capperNameStripped") }} },
                 { DatabaseFieldInfo.FieldCategory.KillSprees, new CategoryInfoCollection(){  midPanel=killSpreesMidPanel, sidePanel=killSpreesSidePanel, tableName="killSprees", dataType=typeof(KillSpree), usesEntryMeta=true, playerNameMappings=new PlayerNameMapping[]{ new PlayerNameMapping("killerId","killerName","killerNameStripped") }} },
                 { DatabaseFieldInfo.FieldCategory.DefragRuns, new CategoryInfoCollection(){  midPanel=defragMidPanel, sidePanel=defragSidePanel, tableName="defragRuns", dataType=typeof(DefragRun), usesEntryMeta=true, playerNameMappings=new PlayerNameMapping[]{ new PlayerNameMapping("playerId","playerName","playerNameStripped")}} },
-                { DatabaseFieldInfo.FieldCategory.Laughs, new CategoryInfoCollection(){  midPanel=laughsMidPanel, sidePanel=laughsSidePanel, tableName="laughs", dataType=typeof(Laughs), usesEntryMeta=true} }
+                { DatabaseFieldInfo.FieldCategory.Laughs, new CategoryInfoCollection(){  midPanel=laughsMidPanel, sidePanel=laughsSidePanel, tableName="laughs", dataType=typeof(Laughs), usesEntryMeta=true} },
+                { DatabaseFieldInfo.FieldCategory.Special, new CategoryInfoCollection(){  midPanel=specialMidPanel, sidePanel=specialSidePanel, tableName="special", dataType=typeof(Special), usesEntryMeta=true, playerNameMappings=new PlayerNameMapping[]{ new PlayerNameMapping("playerId","playerName","playerNameStripped"),new PlayerNameMapping("playerIdAlt","playerNameAlt","playerNameAltStripped")}} }
             };
             
             foreach(KeyValuePair<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> kvp in categoryPanels)

@@ -218,7 +218,7 @@ namespace DemoCutterGUI
                         SetStatusSafe("Compacting database.");
                         dbConn.Execute("VACUUM");
 
-                        string[] tablesToIndex = new string[] { "rets", "captures", "flaggrabs", "defragRuns", "killSprees", "laughs","entryMeta", "playerNames"/*,"playerDemoStats"*/ };
+                        string[] tablesToIndex = new string[] { "rets", "captures", "flaggrabs", "defragRuns", "killSprees", "laughs","special","entryMeta", "playerNames"/*,"playerDemoStats"*/ };
                         foreach (string table in tablesToIndex)
                         {
                             var fields = dbConn.GetTableInfo(table);

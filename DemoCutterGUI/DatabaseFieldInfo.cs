@@ -107,6 +107,7 @@ namespace DemoCutterGUI
             DefragRuns,
             KillSprees,
             Laughs,
+            Special,
         }
 
         public enum FieldSubCategory
@@ -134,6 +135,9 @@ namespace DemoCutterGUI
             Laughs_Meta = Column1,
             Laughs_Laughs = Column2,
             Laughs_Whatever = Column3,
+            Special_Meta = Column1,
+            Special_Details = Column2,
+            Special_Whatever = Column3,
 
         }
 
@@ -497,6 +501,31 @@ namespace DemoCutterGUI
                 new DatabaseFieldInfo(){ FieldName="lastGamestateDemoTime", Nullable = false, Bool = false, Category=FieldCategory.Laughs, SubCategory=FieldSubCategory.Laughs_Meta, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="serverTime", Nullable = false, Bool = false, Category=FieldCategory.Laughs, SubCategory=FieldSubCategory.Laughs_Meta, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="demoDateTime", Nullable = false, Bool =false, Category=FieldCategory.Laughs, SubCategory=FieldSubCategory.Laughs_Meta, Numeric=true},
+
+                // Special
+                new DatabaseFieldInfo(){ FieldName="id", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="map", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta},
+                new DatabaseFieldInfo(){ FieldName="serverName", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta},
+                new DatabaseFieldInfo(){ FieldName="serverNameStripped", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta},
+                new DatabaseFieldInfo(){ FieldName="type", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Details},
+                new DatabaseFieldInfo(){ FieldName="clientNum", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="clientNumAlt", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="playerName", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta},
+                new DatabaseFieldInfo(){ FieldName="playerNameStripped", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta},
+                new DatabaseFieldInfo(){ FieldName="playerNameAlt", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta},
+                new DatabaseFieldInfo(){ FieldName="playerNameAltStripped", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta},
+                new DatabaseFieldInfo(){ FieldName="details", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Details},
+                new DatabaseFieldInfo(){ FieldName="detailsStripped", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Details},
+                new DatabaseFieldInfo(){ FieldName="comment", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Details},
+                new DatabaseFieldInfo(){ FieldName="commentStripped", Nullable = true, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Details},
+                new DatabaseFieldInfo(){ FieldName="demoRecorderClientnum", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="demoName", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta},
+                new DatabaseFieldInfo(){ FieldName="demoPath", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta},
+                new DatabaseFieldInfo(){ FieldName="duration", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="demoTime", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="lastGamestateDemoTime", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="serverTime", Nullable = false, Bool = false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="demoDateTime", Nullable = false, Bool =false, Category=FieldCategory.Special, SubCategory=FieldSubCategory.Special_Meta, Numeric=true},
             };
         }
     }
