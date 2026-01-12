@@ -268,6 +268,7 @@ namespace DemoCutterGUI
                 new DatabaseFieldInfo(){ FieldName="lastGamestateDemoTime", Nullable = false, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Meta, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="serverTime", Nullable = false, Bool = false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Meta, Numeric=true},
                 new DatabaseFieldInfo(){ FieldName="demoDateTime", Nullable = false, Bool =false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Meta, Numeric=true},
+                new DatabaseFieldInfo(){ FieldName="errorFlags", Nullable = false, Bool =false, Category=FieldCategory.Rets,SubCategory=FieldSubCategory.Rets_Meta, Numeric=true},
 
                 // Captures
                 new DatabaseFieldInfo(){ FieldName="id", Nullable = true, Bool = false, Category=FieldCategory.Captures, SubCategory=FieldSubCategory.Captures_Capture, Numeric=true},

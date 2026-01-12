@@ -119,5 +119,6 @@ namespace DemoCutterGUI.TableMappings
         public REAL? positionX { get; set; } = null;
         public REAL? positionY { get; set; } = null;
         public REAL? positionZ { get; set; } = null;
+        public INTEGER? errorFlags { get; set; } = null;
     }
 }
