@@ -230,8 +230,8 @@ namespace DemoCutterGUI
                         }
 
                         // Analyze the database
-                        SetStatusSafe("Analyzing database.");
-                        dbConn.Execute("ANALYZE");
+                        //SetStatusSafe("Analyzing database.");
+                        //dbConn.Execute("ANALYZE"); // do this in some other software that can do the stat4 table
 
                         SetStatusSafe(null);
 
