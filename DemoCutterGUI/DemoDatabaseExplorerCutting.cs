@@ -344,7 +344,7 @@ namespace DemoCutterGUI
                  */
                 string serverNameSearch = laughs.serverName.Replace("'","''");
                 string laughsSearch = laughs.laughs.Replace("'","''");
-                string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.DefragRuns, false);
+                string rawTable = getTableForSelect(DatabaseFieldInfo.FieldCategory.Laughs, false);
                 List<Laughs> res = dbConn.Query<Laughs>($"SELECT {rawTable}.id AS ROWID,*{getPlayerNamesMappingForSelect(DatabaseFieldInfo.FieldCategory.Laughs)} FROM {getTableForSelect(DatabaseFieldInfo.FieldCategory.Laughs, true)} WHERE " +
                     $"serverName='{serverNameSearch}' AND " +
                     $"laughs='{laughsSearch}' AND " +       // This whole block is just the SQL version of IsLikelySameLaugh()
