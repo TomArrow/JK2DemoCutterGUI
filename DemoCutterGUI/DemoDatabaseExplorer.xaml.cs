@@ -213,11 +213,12 @@ namespace DemoCutterGUI
                         SetStatusSafe("Deleting killAngles table.");
                         dbConn.Execute("DROP TABLE killAngles");
 
+
                         // Compact the database
                         SetStatusSafe("Compacting database.");
                         dbConn.Execute("VACUUM");
 
-                        string[] tablesToIndex = new string[] { "rets", "captures", "flaggrabs", "defragRuns", "killSprees", "laughs","entryMeta"/*,"playerDemoStats"*/ };
+                        string[] tablesToIndex = new string[] { "rets", "captures", "flaggrabs", "defragRuns", "killSprees", "laughs","entryMeta", "playerNames"/*,"playerDemoStats"*/ };
                         foreach (string table in tablesToIndex)
                         {
                             var fields = dbConn.GetTableInfo(table);
@@ -227,6 +228,11 @@ namespace DemoCutterGUI
                                 dbConn.CreateIndex(table, field.Name, false);
                             }
                         }
+
+                        // Analyze the database
+                        SetStatusSafe("Analyzing database.");
+                        dbConn.Execute("ANALYZE");
+
                         SetStatusSafe(null);
 
                     }

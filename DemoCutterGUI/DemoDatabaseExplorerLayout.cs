@@ -66,6 +66,7 @@ namespace DemoCutterGUI
         public bool serverNameInKillAngles = false;
         public bool serverNameInKillSpree = false;
         public bool entryMetaTable = false;
+        public bool playerNamesTable = false;
     }
     public class VisibilityToBooleanConverter : IValueConverter
     {
@@ -436,17 +437,40 @@ namespace DemoCutterGUI
         Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection> categoryPanels = null;
         Dictionary<DatabaseFieldInfo.FieldCategory, CategorySQLQueryInfo> categorySQLQueryData = new Dictionary<DatabaseFieldInfo.FieldCategory, CategorySQLQueryInfo>();
 
-        string getTableForSelect(DatabaseFieldInfo.FieldCategory category,bool includeEntryMeta)
+        string getPlayerNamesMappingForSelect(DatabaseFieldInfo.FieldCategory category)
         {
-            string tableName = categoryPanels[category].tableName;
-            if (dbProperties.entryMetaTable && includeEntryMeta && categoryPanels[category].usesEntryMeta)
+            string mappings = "";
+            if (dbProperties.playerNamesTable && categoryPanels[category].playerNameMappings != null)
             {
-                return $"{tableName} LEFT JOIN entryMeta ON (entryMeta.id == {tableName}.entryMeta)";
+                int index = 0;
+                foreach (PlayerNameMapping mapping in categoryPanels[category].playerNameMappings)
+                {
+                    mappings = $"{mappings}, playerNames{index}.playerName AS {mapping.nameField}, playerNames{index}.playerNameStripped AS {mapping.nameFieldStripped}";
+                    index++;
+                }
             }
-            else
+
+            return mappings;
+        }
+        string getTableForSelect(DatabaseFieldInfo.FieldCategory category,bool includeJoins)
+        {
+            string actualTableName = categoryPanels[category].tableName;
+            string tableName = actualTableName;
+            if (dbProperties.entryMetaTable && includeJoins && categoryPanels[category].usesEntryMeta)
             {
-                return tableName;
+                tableName = $"{tableName} LEFT JOIN entryMeta ON (entryMeta.id == {actualTableName}.entryMeta)";
             }
+            if (dbProperties.playerNamesTable && includeJoins && categoryPanels[category].playerNameMappings != null)
+            {
+                int index = 0;
+                foreach (PlayerNameMapping mapping in categoryPanels[category].playerNameMappings)
+                {
+                    tableName = $"{tableName} LEFT JOIN playerNames AS playerNames{index} ON (playerNames{index}.id == {actualTableName}.{mapping.tableField})";
+                    index++;
+                }
+            }
+
+            return tableName;
         }
 
         partial void Constructor()
@@ -454,11 +478,11 @@ namespace DemoCutterGUI
             InitMiniMap();
             categoryPanels = new Dictionary<DatabaseFieldInfo.FieldCategory, CategoryInfoCollection>()
             {
-                { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret), usesEntryMeta=true} },
-                { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(TableMappings.Capture), usesEntryMeta=true} },
-                { DatabaseFieldInfo.FieldCategory.FlagGrabs, new CategoryInfoCollection(){  midPanel=flagGrabsMidPanel, sidePanel=flagGrabsSidePanel, tableName="flaggrabs", dataType=typeof(TableMappings.FlagGrab), usesEntryMeta=true} },
-                { DatabaseFieldInfo.FieldCategory.KillSprees, new CategoryInfoCollection(){  midPanel=killSpreesMidPanel, sidePanel=killSpreesSidePanel, tableName="killSprees", dataType=typeof(KillSpree), usesEntryMeta=true} },
-                { DatabaseFieldInfo.FieldCategory.DefragRuns, new CategoryInfoCollection(){  midPanel=defragMidPanel, sidePanel=defragSidePanel, tableName="defragRuns", dataType=typeof(DefragRun), usesEntryMeta=true} },
+                { DatabaseFieldInfo.FieldCategory.Rets, new CategoryInfoCollection(){  midPanel=retsMidPanel, sidePanel=retsSidePanel, tableName="rets", dataType=typeof(Ret), usesEntryMeta=true, playerNameMappings=new PlayerNameMapping[]{ new PlayerNameMapping("killerId","killerName","killerNameStripped"), new PlayerNameMapping("victimId", "victimName", "victimNameStripped") } } },
+                { DatabaseFieldInfo.FieldCategory.Captures, new CategoryInfoCollection(){  midPanel=capsMidPanel, sidePanel=capsSidePanel, tableName="captures", dataType=typeof(TableMappings.Capture), usesEntryMeta=true, playerNameMappings=new PlayerNameMapping[]{ new PlayerNameMapping("capperId","capperName","capperNameStripped") }} },
+                { DatabaseFieldInfo.FieldCategory.FlagGrabs, new CategoryInfoCollection(){  midPanel=flagGrabsMidPanel, sidePanel=flagGrabsSidePanel, tableName="flaggrabs", dataType=typeof(TableMappings.FlagGrab), usesEntryMeta=true, playerNameMappings=new PlayerNameMapping[]{ new PlayerNameMapping("grabberId", "grabberName", "grabberNameStripped"), new PlayerNameMapping("capperId", "capperName", "capperNameStripped") }} },
+                { DatabaseFieldInfo.FieldCategory.KillSprees, new CategoryInfoCollection(){  midPanel=killSpreesMidPanel, sidePanel=killSpreesSidePanel, tableName="killSprees", dataType=typeof(KillSpree), usesEntryMeta=true, playerNameMappings=new PlayerNameMapping[]{ new PlayerNameMapping("killerId","killerName","killerNameStripped") }} },
+                { DatabaseFieldInfo.FieldCategory.DefragRuns, new CategoryInfoCollection(){  midPanel=defragMidPanel, sidePanel=defragSidePanel, tableName="defragRuns", dataType=typeof(DefragRun), usesEntryMeta=true, playerNameMappings=new PlayerNameMapping[]{ new PlayerNameMapping("playerId","playerName","playerNameStripped")}} },
                 { DatabaseFieldInfo.FieldCategory.Laughs, new CategoryInfoCollection(){  midPanel=laughsMidPanel, sidePanel=laughsSidePanel, tableName="laughs", dataType=typeof(Laughs), usesEntryMeta=true} }
             };
             
@@ -730,12 +754,24 @@ namespace DemoCutterGUI
             }
         }
 
+        struct PlayerNameMapping {
+            public string tableField;
+            public string nameField;
+            public string nameFieldStripped;
+            public PlayerNameMapping(string tableFieldA, string nameFieldA, string nameFieldStrippedA)
+            {
+                tableField = tableFieldA;
+                nameField = nameFieldA;
+                nameFieldStripped = nameFieldStrippedA;
+            }
+        }
 
         struct CategoryInfoCollection {
             public DatabaseExplorerElements.MidPanel midPanel;
             public DatabaseExplorerElements.SidePanel sidePanel;
             public string tableName;
             public bool usesEntryMeta;
+            public PlayerNameMapping[] playerNameMappings;
             public Type dataType;
         }
 
@@ -799,6 +835,9 @@ namespace DemoCutterGUI
                                     case "entryMetaTable":
                                         dbProperties.entryMetaTable = prop.value == "1";
                                         break;
+                                    case "playerNamesTable":
+                                        dbProperties.playerNamesTable = prop.value == "1";
+                                        break;
                                 }
                             }
                         }
@@ -847,7 +886,33 @@ namespace DemoCutterGUI
                             {
                                 if(extraField.Name != "id" && extraField.Name != "count")
                                 {
-                                    sqlColumns[associatedPanel.Key].Add(extraField);
+                                    SQLColumnInfo fieldCopy = extraField.Clone();
+                                    fieldCopy.pk = 0;
+                                    sqlColumns[associatedPanel.Key].Add(fieldCopy);
+                                }
+                            }
+                        }
+                        if (associatedPanel.Value.playerNameMappings != null && dbProperties.playerNamesTable)
+                        {
+                            List<SQLColumnInfo> extraFields = dbConn.GetTableInfoMore("playerNames");
+                            foreach (SQLColumnInfo extraField in extraFields)
+                            {
+                                foreach(PlayerNameMapping pmap in associatedPanel.Value.playerNameMappings)
+                                {
+                                    if (extraField.Name == "playerName")
+                                    {
+                                        SQLColumnInfo fieldCopy = extraField.Clone();
+                                        fieldCopy.Name = pmap.nameField;
+                                        fieldCopy.pk = 0;
+                                        sqlColumns[associatedPanel.Key].Add(fieldCopy);
+                                    }
+                                    else if (extraField.Name == "playerNameStripped")
+                                    {
+                                        SQLColumnInfo fieldCopy = extraField.Clone();
+                                        fieldCopy.Name = pmap.nameFieldStripped;
+                                        fieldCopy.pk = 0;
+                                        sqlColumns[associatedPanel.Key].Add(fieldCopy);
+                                    }
                                 }
                             }
                         }
@@ -896,8 +961,28 @@ namespace DemoCutterGUI
 
                             if (!matchFound)
                             {
-                                unmatchedSQLColumnCount++;
-                                unmatchedSQLColumns[associatedPanel.Key].Add(new SQLColumnInfo[] { sqlColumn, lastColumn });
+                                bool isReallyUnmatched = true;
+                                if (associatedPanel.Value.usesEntryMeta && dbProperties.entryMetaTable && sqlColumn.Name == "entryMeta")
+                                {
+                                    // this is ok
+                                    isReallyUnmatched = false;
+                                }
+                                else if (associatedPanel.Value.playerNameMappings != null && dbProperties.playerNamesTable)
+                                {
+                                    // this is ok
+                                    foreach (PlayerNameMapping pmap in associatedPanel.Value.playerNameMappings)
+                                    {
+                                        if(sqlColumn.Name == pmap.tableField)
+                                        {
+                                            isReallyUnmatched = false;
+                                        }
+                                    }
+                                }
+                                if (isReallyUnmatched)
+                                {
+                                    unmatchedSQLColumnCount++;
+                                    unmatchedSQLColumns[associatedPanel.Key].Add(new SQLColumnInfo[] { sqlColumn, lastColumn });
+                                }
                             }
 
                             lastColumn = sqlColumn;
@@ -1126,12 +1211,12 @@ namespace DemoCutterGUI
 
             if (countQuery)
             {
-                sb.Append($"SELECT COUNT(*) FROM {getTableForSelect(category,true)}");
+                sb.Append($"SELECT COUNT(*){getPlayerNamesMappingForSelect(category)} FROM {getTableForSelect(category,true)}");
             }
             else
             {
                 string rawTable = getTableForSelect(category, false);
-                sb.Append($"SELECT {rawTable}.{primaryKeyASPrefix}ROWID,* FROM {getTableForSelect(category, true)}");
+                sb.Append($"SELECT {rawTable}.{primaryKeyASPrefix}ROWID,*{getPlayerNamesMappingForSelect(category)} FROM {getTableForSelect(category, true)}");
             }
 
             DatabaseFieldInfo[] activeFields = fieldMan.getActiveFields();

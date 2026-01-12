@@ -31,6 +31,18 @@ namespace DemoCutterGUI
         {
             return $"name:{Name},type:{Type},dflt_value:{dflt_value},cid:{cid},notnull:{notnull},pk:{pk}";
         }
-
+        public SQLColumnInfo Clone()
+        {
+            SQLColumnInfo copy = new SQLColumnInfo()
+            {
+                Name = this.Name,
+                Type = this.Type,
+                dflt_value = this.dflt_value,
+                pk = this.pk,
+                cid = this.cid,
+                notnull = this.notnull,
+            };
+            return copy;
+        }
     }
 }
